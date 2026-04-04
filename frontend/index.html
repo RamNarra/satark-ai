@@ -205,30 +205,6 @@ textarea::placeholder { color: var(--t3); }
 }
 .scan-bar.on { display: flex; }
 
-.live-feed {
-  display: none;
-  margin-bottom: 12px;
-  border: 1px solid rgba(58,240,212,0.15);
-  border-radius: var(--r2);
-  background: rgba(58,240,212,0.04);
-  max-height: 180px;
-  overflow: auto;
-  padding: 10px 12px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: #9ff5e8;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.live-feed.on { display: block; }
-
-.btn-live.active {
-  border-color: rgba(58,240,212,0.5);
-  color: var(--cyan);
-  background: rgba(58,240,212,0.08);
-}
-
 /* ─── EMPTY STATE ───────────────────────────────────── */
 .empty {
   display: flex; flex-direction: column; align-items: center;
@@ -562,7 +538,7 @@ textarea::placeholder { color: var(--t3); }
   <div class="header-gap"></div>
   <div class="model-chip">
     <span class="live-dot"></span>
-    gemini-3.1-flash-live · Vertex AI
+    gemini-3.1-flash · Vertex AI
   </div>
 </header>
 
@@ -591,10 +567,6 @@ textarea::placeholder { color: var(--t3); }
       <span class="input-hint">Text · Screenshot · APK · Voice note</span>
       <div class="input-bar-right">
         <input type="file" id="file-input" style="display:none" accept=".apk,.png,.jpg,.jpeg,.webp,.mp3,.wav,.ogg,.m4a" aria-hidden="true">
-        <button class="btn-attach btn-live" id="live-btn" aria-label="Start live voice stream">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 1 3 3v8a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          Live
-        </button>
         <button class="btn-attach" id="attach-btn" aria-label="Attach a file">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           Attach
@@ -612,12 +584,6 @@ textarea::placeholder { color: var(--t3); }
     <svg class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
     Routing through scam_detector → osint → golden_hour agents…
   </div>
-
-  <div class="scan-bar" id="live-bar" role="status" aria-live="polite">
-    <svg class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-    Listening live and streaming to Gemini Flash Live…
-  </div>
-  <pre class="live-feed" id="live-feed" aria-label="Live fraud analysis feed"></pre>
 
   <!-- EMPTY -->
   <div class="empty" id="empty-state" aria-label="Ready to analyze">
@@ -769,10 +735,6 @@ textarea::placeholder { color: var(--t3); }
 const stats = { analyzed:0, scams:0, critical:0, safe:0 };
 const cases = [];
 let attached = null;
-let liveSocket = null;
-let liveRecorder = null;
-let liveMediaStream = null;
-let liveActive = false;
 
 // File attach
 const fileInput = document.getElementById('file-input');
@@ -793,118 +755,9 @@ function fmt(b){ if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(0)+
 // Analyze
 const analyzeBtn = document.getElementById('analyze-btn');
 const scanBar = document.getElementById('scan-bar');
-const liveBar = document.getElementById('live-bar');
-const liveFeed = document.getElementById('live-feed');
-const liveBtn = document.getElementById('live-btn');
 const emptyEl = document.getElementById('empty-state');
 const resultEl = document.getElementById('result');
 const hlStrip = document.getElementById('hl-strip');
-
-function appendLiveLine(text) {
-  const stamp = new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  liveFeed.textContent += `[${stamp}] ${text}\n`;
-  liveFeed.scrollTop = liveFeed.scrollHeight;
-}
-
-async function startLive() {
-  if (liveActive) return;
-
-  const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const ws = new WebSocket(`${wsProto}//${location.host}/stream`);
-  ws.binaryType = 'arraybuffer';
-
-  let mimeType = 'audio/webm';
-  if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = '';
-  }
-
-  const recorder = mimeType
-    ? new MediaRecorder(mediaStream, { mimeType })
-    : new MediaRecorder(mediaStream);
-
-  liveMediaStream = mediaStream;
-  liveRecorder = recorder;
-
-  ws.onopen = () => {
-    liveActive = true;
-    liveSocket = ws;
-    liveBtn.classList.add('active');
-    liveBtn.innerHTML = liveBtn.innerHTML.replace('Live', 'Stop');
-    liveBar.classList.add('on');
-    liveFeed.classList.add('on');
-    appendLiveLine('Live stream connected. Start speaking...');
-    ws.send(JSON.stringify({ type: 'config', mime_type: mimeType || recorder.mimeType || 'audio/webm' }));
-    recorder.start(250);
-  };
-
-  recorder.ondataavailable = async (event) => {
-    if (!event.data || event.data.size === 0) return;
-    if (!liveSocket || liveSocket.readyState !== WebSocket.OPEN) return;
-    const buff = await event.data.arrayBuffer();
-    liveSocket.send(buff);
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      if (payload.type === 'analysis' && payload.text) {
-        appendLiveLine(payload.text);
-      } else if (payload.type === 'error') {
-        appendLiveLine(`ERROR: ${payload.message || 'stream failure'}`);
-      }
-    } catch (_) {
-      appendLiveLine(String(event.data));
-    }
-  };
-
-  ws.onclose = () => {
-    if (liveActive) {
-      appendLiveLine('Live stream disconnected.');
-    }
-    stopLive(false);
-  };
-
-  ws.onerror = () => {
-    appendLiveLine('Live stream error encountered.');
-  };
-}
-
-function stopLive(sendAudioEnd = true) {
-  if (liveRecorder && liveRecorder.state !== 'inactive') {
-    liveRecorder.stop();
-  }
-  if (liveMediaStream) {
-    liveMediaStream.getTracks().forEach(track => track.stop());
-  }
-  if (liveSocket && liveSocket.readyState === WebSocket.OPEN && sendAudioEnd) {
-    liveSocket.send(JSON.stringify({ type: 'audio_end' }));
-    liveSocket.close();
-  }
-
-  liveSocket = null;
-  liveRecorder = null;
-  liveMediaStream = null;
-  liveActive = false;
-  liveBar.classList.remove('on');
-  liveBtn.classList.remove('active');
-  liveBtn.innerHTML = liveBtn.innerHTML.replace('Stop', 'Live');
-}
-
-liveBtn.addEventListener('click', async () => {
-  if (liveActive) {
-    stopLive(true);
-    appendLiveLine('Live stream stopped.');
-    return;
-  }
-
-  try {
-    await startLive();
-  } catch (err) {
-    appendLiveLine(`Unable to start live mic stream: ${err.message || err}`);
-    stopLive(false);
-  }
-});
 
 analyzeBtn.addEventListener('click', async () => {
   const txt = document.getElementById('main-ta').value.trim();
