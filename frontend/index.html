@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SATARK AI — Cyber Fraud Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --md-sys-color-primary:#4fc3f7;
+  --md-sys-color-primary-container:#0d47a1;
+  --md-sys-color-on-primary:#000;
+  --md-sys-color-secondary:#80cbc4;
+  --md-sys-color-error:#ef5350;
+  --md-sys-color-error-container:#b71c1c33;
+  --md-sys-color-warning:#ffb74d;
+  --md-sys-color-success:#66bb6a;
+  --md-sys-color-surface:#1a1c1e;
+  --md-sys-color-surface-container:#1e2022;
+  --md-sys-color-surface-container-high:#24272a;
+  --md-sys-color-surface-container-highest:#2d3135;
+  --md-sys-color-on-surface:#e2e2e5;
+  --md-sys-color-on-surface-variant:#c4c6cf;
+  --md-sys-color-outline:#8e9099;
+  --md-sys-color-outline-variant:#44464f;
+  --md-sys-color-bg:#111314;
+  --font-body:'Google Sans',sans-serif;
+  --font-mono:'Google Sans Mono',monospace;
+  --radius-xs:4px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:28px;
+  --transition:200ms cubic-bezier(0.2,0,0,1);
+}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--md-sys-color-bg);color:var(--md-sys-color-on-surface);min-height:100dvh;display:flex;flex-direction:column}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:var(--md-sys-color-bg);border-bottom:1px solid var(--md-sys-color-outline-variant);display:flex;align-items:center;gap:16px;padding:0 24px;height:64px}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo svg{flex-shrink:0}
+.nav-logo-text{font-size:20px;font-weight:700;letter-spacing:-.3px;color:var(--md-sys-color-on-surface)}
+.nav-logo-text span{color:var(--md-sys-color-primary)}
+.nav-spacer{flex:1}
+.nav-chip{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-xl);background:var(--md-sys-color-surface-container-high);font-size:13px;color:var(--md-sys-color-on-surface-variant);border:1px solid var(--md-sys-color-outline-variant)}
+.nav-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--md-sys-color-success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* LAYOUT */
+main{flex:1;max-width:1200px;margin:0 auto;width:100%;padding:32px 24px;display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:start}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:16px}}
+
+/* CARDS */
+.card{background:var(--md-sys-color-surface-container);border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{padding:20px 24px 0;display:flex;align-items:center;gap:12px}
+.card-title{font-size:16px;font-weight:600;color:var(--md-sys-color-on-surface)}
+.card-body{padding:20px 24px 24px}
+
+/* INPUT AREA */
+.chat-input-wrapper{display:flex;flex-direction:column;gap:10px}
+.chat-box{background:var(--md-sys-color-surface-container-high);border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--radius-lg);padding:12px;transition:border-color var(--transition), box-shadow var(--transition)}
+.chat-box:focus-within{border-color:var(--md-sys-color-primary);box-shadow:0 0 0 2px rgba(79,195,247,.15)}
+.attachment-preview{display:flex;align-items:center;gap:10px;background:var(--md-sys-color-surface-container-highest);border:1px solid var(--md-sys-color-outline-variant);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:10px}
+.attachment-icon{font-size:16px}
+.attachment-name{font-size:12px;color:var(--md-sys-color-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px}
+.attachment-clear{margin-left:auto;background:none;border:none;color:var(--md-sys-color-outline);cursor:pointer;font-size:16px;padding:4px;border-radius:var(--radius-xs)}
+.attachment-clear:hover{background:var(--md-sys-color-surface-container-high)}
+#main-input{width:100%;min-height:90px;resize:none;padding:6px 2px;border:none;background:transparent;color:var(--md-sys-color-on-surface);font-family:var(--font-body);font-size:15px;line-height:1.6;outline:none}
+#main-input::placeholder{color:var(--md-sys-color-outline)}
+.chat-toolbar{display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--md-sys-color-outline-variant)}
+.attach-btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:var(--radius-sm);color:var(--md-sys-color-on-surface-variant);font-size:13px;transition:background var(--transition), color var(--transition)}
+.attach-btn:hover{background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface)}
+.attach-btn input{display:none}
+.btn-analyze{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--md-sys-color-primary);color:#000;border:none;border-radius:var(--radius-xl);font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;transition:all var(--transition)}
+.btn-analyze:hover{filter:brightness(1.08)}
+.btn-analyze:disabled{opacity:.6;cursor:not-allowed}
+.input-hint{font-size:12px;color:var(--md-sys-color-outline);text-align:center}
+
+/* RESULTS */
+#results{display:flex;flex-direction:column;gap:16px}
+
+/* VERDICT CARD */
+.verdict-card{border-radius:var(--radius-lg);overflow:hidden;border:1px solid}
+.verdict-card.critical{background:rgba(183,28,28,.12);border-color:#b71c1c66}
+.verdict-card.high{background:rgba(230,81,0,.1);border-color:#e6510066}
+.verdict-card.medium{background:rgba(245,127,23,.08);border-color:#f57f1766}
+.verdict-card.low{background:rgba(46,125,50,.1);border-color:#2e7d3266}
+.verdict-card.safe{background:rgba(46,125,50,.1);border-color:#2e7d3266}
+.verdict-header{padding:20px 24px;display:flex;align-items:center;gap:16px}
+.verdict-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+.verdict-card.critical .verdict-icon{background:#b71c1c44}
+.verdict-card.high .verdict-icon{background:#e6510033}
+.verdict-card.medium .verdict-icon{background:#f57f1733}
+.verdict-card.low .verdict-icon,.verdict-card.safe .verdict-icon{background:#2e7d3233}
+.verdict-meta{flex:1}
+.verdict-type{font-size:20px;font-weight:700}
+.verdict-card.critical .verdict-type{color:#ef5350}
+.verdict-card.high .verdict-type{color:#ff7043}
+.verdict-card.medium .verdict-type{color:#ffa726}
+.verdict-card.low .verdict-type,.verdict-card.safe .verdict-type{color:#66bb6a}
+.verdict-risk{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:2px;opacity:.7}
+.confidence-ring{position:relative;width:56px;height:56px;flex-shrink:0}
+.confidence-ring svg{transform:rotate(-90deg)}
+.confidence-ring .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+
+/* ACK ID */
+.ack-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--md-sys-color-surface-container-high);border-top:1px solid var(--md-sys-color-outline-variant);font-family:var(--font-mono);font-size:11px;color:var(--md-sys-color-outline)}
+.ack-bar span{color:var(--md-sys-color-on-surface-variant)}
+
+/* SIGNALS */
+.signals-list{display:flex;flex-direction:column;gap:8px;padding:0 24px 20px}
+.signal-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--md-sys-color-on-surface-variant)}
+.signal-dot{width:6px;height:6px;border-radius:50%;background:var(--md-sys-color-error);flex-shrink:0;margin-top:5px}
+.red-flags-list{margin:0;padding:0 24px 20px;list-style:none;display:flex;flex-direction:column;gap:8px}
+.red-flag-item{font-size:13px;color:var(--md-sys-color-on-surface-variant);line-height:1.5}
+
+/* GOLDEN HOUR */
+.golden-header{display:flex;align-items:center;gap:10px;padding:16px 24px;background:rgba(255,183,77,.06);border-bottom:1px solid rgba(255,183,77,.2)}
+.golden-badge{padding:4px 10px;border-radius:var(--radius-xl);background:#ff8f0033;color:#ffb74d;font-size:11px;font-weight:700;letter-spacing:.8px}
+.golden-timer{font-family:var(--font-mono);font-size:28px;font-weight:700;color:#ffb74d;margin-left:auto}
+.action-steps{display:flex;flex-direction:column;gap:0}
+.action-step{display:flex;gap:16px;padding:16px 24px;border-bottom:1px solid var(--md-sys-color-outline-variant)}
+.action-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--md-sys-color-primary);color:#000;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body{flex:1}
+.step-action{font-size:13px;font-weight:600;color:var(--md-sys-color-on-surface);margin-bottom:4px}
+.step-contact{font-size:12px;color:var(--md-sys-color-primary)}
+.step-limit{font-size:11px;color:var(--md-sys-color-warning);margin-top:4px;font-weight:500}
+
+/* HELPLINE */
+.helpline-bar{display:flex;align-items:center;gap:16px;padding:16px 24px;background:rgba(79,195,247,.06);border-radius:var(--radius-md);border:1px solid rgba(79,195,247,.2);margin-top:4px}
+.helpline-num{font-size:28px;font-weight:700;color:var(--md-sys-color-primary);font-family:var(--font-mono)}
+.helpline-label{font-size:12px;color:var(--md-sys-color-on-surface-variant)}
+.btn-call{margin-left:auto;padding:10px 20px;background:var(--md-sys-color-primary);color:#000;border:none;border-radius:var(--radius-xl);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition)}
+.btn-call:hover{filter:brightness(1.1)}
+
+/* ENTITIES */
+.entity-chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 24px 20px}
+.chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-xl);font-size:12px;font-weight:500;border:1px solid}
+.chip.phone{background:rgba(239,83,80,.1);border-color:#ef535044;color:#ef8a84}
+.chip.url{background:rgba(79,195,247,.1);border-color:#4fc3f744;color:#81d4fa}
+.chip.bank{background:rgba(255,183,77,.1);border-color:#ffb74d44;color:#ffd54f}
+
+/* FIR */
+.fir-box{margin:0 24px 20px;padding:16px;background:var(--md-sys-color-surface-container-high);border-radius:var(--radius-md);border:1px solid var(--md-sys-color-outline-variant)}
+.fir-section{display:grid;grid-template-columns:100px 1fr;gap:8px 12px;font-size:12px}
+.fir-label{color:var(--md-sys-color-outline);font-weight:500;padding-top:2px}
+.fir-val{color:var(--md-sys-color-on-surface-variant)}
+.ipc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ipc-chip{padding:3px 10px;background:rgba(239,83,80,.12);border:1px solid #ef535033;border-radius:var(--radius-xs);color:#ef8a84;font-size:11px;font-weight:600}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:16px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 24px 20px}
+.stat{background:var(--md-sys-color-surface-container-high);border-radius:var(--radius-md);padding:14px;border:1px solid var(--md-sys-color-outline-variant)}
+.stat-val{font-size:22px;font-weight:700;color:var(--md-sys-color-on-surface)}
+.stat-label{font-size:11px;color:var(--md-sys-color-outline);margin-top:2px}
+
+/* RECENT */
+.recent-item{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid var(--md-sys-color-outline-variant);cursor:pointer;transition:background var(--transition)}
+.recent-item:last-child{border-bottom:none}
+.recent-item:hover{background:var(--md-sys-color-surface-container-high)}
+.recent-badge{padding:3px 8px;border-radius:var(--radius-xs);font-size:10px;font-weight:700;letter-spacing:.5px}
+.recent-badge.CRITICAL{background:#b71c1c33;color:#ef5350}
+.recent-badge.HIGH{background:#e6510022;color:#ff7043}
+.recent-badge.MEDIUM{background:#f57f1722;color:#ffa726}
+.recent-badge.LOW{background:#2e7d3222;color:#66bb6a}
+.recent-text{flex:1;font-size:13px;color:var(--md-sys-color-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-time{font-size:11px;color:var(--md-sys-color-outline)}
+
+/* LOADER */
+.loader{display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:16px}
+.loader.active{display:flex}
+.spinner{width:48px;height:48px;border:3px solid var(--md-sys-color-outline-variant);border-top-color:var(--md-sys-color-primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:14px;color:var(--md-sys-color-on-surface-variant)}
+.loader-stage{font-size:12px;color:var(--md-sys-color-outline);font-family:var(--font-mono)}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;text-align:center;gap:16px;opacity:.6}
+.empty-state svg{color:var(--md-sys-color-outline)}
+.empty-state h3{font-size:18px;font-weight:600;color:var(--md-sys-color-on-surface)}
+.empty-state p{font-size:13px;color:var(--md-sys-color-on-surface-variant);max-width:280px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--md-sys-color-outline-variant);border-radius:3px}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .3s ease forwards}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#0d47a1"/>
+      <path d="M8 24L14 10L18 18L21 14L26 24H8Z" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="22" cy="10" r="3" fill="#4fc3f7" opacity=".6"/>
+    </svg>
+    <span class="nav-logo-text">SATARK <span>AI</span></span>
+  </a>
+  <div class="nav-spacer"></div>
+  <div class="nav-chip">
+    <span class="dot"></span>
+    Vertex AI · us-central1
+  </div>
+</nav>
+
+<main>
+  <!-- LEFT: INPUT + RESULTS -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- INPUT CARD -->
+    <div class="card">
+      <div class="card-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="card-title">Analyze for Fraud</span>
+      </div>
+      <div class="card-body">
+        <div class="input-section">
+          <div class="chat-input-wrapper">
+            <div class="chat-box">
+              <div id="attachment-preview" class="attachment-preview" style="display:none">
+                <span id="attachment-icon" class="attachment-icon">📎</span>
+                <span id="attachment-name" class="attachment-name"></span>
+                <button class="attachment-clear" onclick="clearAttachment()" title="Remove attachment">✕</button>
+              </div>
+
+              <textarea id="main-input" placeholder="Paste suspicious message, or attach image/audio/APK. SATARK AI will auto-detect input type." oninput="autoResize(this)"></textarea>
+
+              <div class="chat-toolbar">
+                <label class="attach-btn" title="Attach image, audio, or APK">
+                  <span>📎</span>
+                  <span>Attach</span>
+                  <input type="file" id="unified-file" accept="image/*,audio/*,.apk" onchange="handleFileSelect(this)">
+                </label>
+
+                <button class="btn-analyze" id="analyze-btn" onclick="analyzeInput()">
+                  <span>Analyze</span>
+                  <span>➜</span>
+                </button>
+              </div>
+            </div>
+            <div class="input-hint">One input for all: text, screenshot, voice note, or APK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS AREA -->
+    <div id="results-area">
+      <div class="empty-state">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <h3>No analysis yet</h3>
+        <p>Submit a message, image, audio, or APK to see the fraud intelligence report</p>
+      </div>
+      <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div class="loader-text">Analyzing with SATARK AI...</div>
+        <div class="loader-stage" id="loader-stage">Stage 1: Scam Detection</div>
+      </div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="sidebar">
+    <!-- STATS -->
+    <div class="card">
+      <div class="card-header" style="padding-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span class="card-title">Session Stats</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Analyzed</div></div>
+        <div class="stat"><div class="stat-val" id="stat-scams" style="color:var(--md-sys-color-error)">0</div><div class="stat-label">Scams Found</div></div>
+        <div class="stat"><div class="stat-val" id="stat-critical" style="color:#ef5350">0</div><div class="stat-label">Critical</div></div>
+        <div class="stat"><div class="stat-val" id="stat-safe" style="color:var(--md-sys-color-success)">0</div><div class="stat-label">Safe</div></div>
+      </div>
+    </div>
+
+    <!-- RECENT CASES -->
+    <div class="card">
+      <div class="card-header" style="padding-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="card-title">Recent Cases</span>
+      </div>
+      <div id="recent-list">
+        <div style="padding:24px;text-align:center;font-size:13px;color:var(--md-sys-color-outline)">No cases yet this session</div>
+      </div>
+    </div>
+
+    <!-- QUICK HELPLINES -->
+    <div class="card">
+      <div class="card-header" style="padding-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-warning)">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.17h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.9-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        <span class="card-title">Emergency Helplines</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--md-sys-color-surface-container-high);border-radius:var(--radius-sm)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--md-sys-color-on-surface)">Cybercrime Helpline</div>
+            <div style="font-size:11px;color:var(--md-sys-color-outline)">24×7 National</div>
+          </div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--font-mono);color:var(--md-sys-color-primary)">1930</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--md-sys-color-surface-container-high);border-radius:var(--radius-sm)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--md-sys-color-on-surface)">cybercrime.gov.in</div>
+            <div style="font-size:11px;color:var(--md-sys-color-outline)">Online FIR Portal</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--md-sys-color-surface-container-high);border-radius:var(--radius-sm)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--md-sys-color-on-surface)">TGCSB Helpline</div>
+            <div style="font-size:11px;color:var(--md-sys-color-outline)">Telangana</div>
+          </div>
+          <div style="font-size:20px;font-weight:700;font-family:var(--font-mono);color:var(--md-sys-color-primary)">400</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = window.location.origin;
+let selectedFile = null;
+let stats = {total:0, scams:0, critical:0, safe:0};
+let recentCases = [];
+
+function showLoader(show) {
+  document.getElementById('loader').className = show ? 'loader active' : 'loader';
+  document.querySelector('.empty-state') && (document.querySelector('.empty-state').style.display = show ? 'none' : 'flex');
+}
+
+const loaderStages = [
+  'Stage 1: Scam Detection via Gemini...',
+  'Stage 2: OSINT Intelligence Gathering...',
+  'Stage 3: Golden Hour Response Plan...',
+  'Compiling Intelligence Report...'
+];
+
+async function analyzeInput() {
+  const btn = document.getElementById('analyze-btn');
+  const loader = document.getElementById('loader');
+  const stageEl = document.getElementById('loader-stage');
+  const text = document.getElementById('main-input').value.trim();
+
+  btn.disabled = true;
+  document.getElementById('results').innerHTML = '';
+  document.querySelector('.empty-state') && (document.querySelector('.empty-state').style.display = 'none');
+  loader.className = 'loader active';
+
+  let stageIdx = 0;
+  const stageTimer = setInterval(() => {
+    if (stageIdx < loaderStages.length) stageEl.textContent = loaderStages[stageIdx++];
+  }, 1500);
+
+  try {
+    if (!text && !selectedFile) {
+      alert('Please enter text or attach a file.');
+      btn.disabled = false;
+      loader.className = 'loader';
+      clearInterval(stageTimer);
+      return;
+    }
+
+    const fd = new FormData();
+    if (text) {
+      fd.append('text', text);
+    }
+    if (selectedFile) {
+      fd.append('file', selectedFile);
+    }
+
+    const r = await fetch(API + '/analyze', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) {
+      throw new Error(data.detail || 'Analysis failed');
+    }
+
+    clearInterval(stageTimer);
+    loader.className = 'loader';
+    renderResults(data);
+    updateStats(data);
+    addRecent(data);
+  } catch(e) {
+    clearInterval(stageTimer);
+    loader.className = 'loader';
+    document.getElementById('results').innerHTML = `<div class="card" style="border-color:#ef535066"><div class="card-body" style="color:#ef8a84">⚠ API Error: ${e.message}<br><small style="color:var(--md-sys-color-outline)">Make sure uvicorn is running on port 8080</small></div></div>`;
+  }
+  btn.disabled = false;
+}
+
+
+function handleFileSelect(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  selectedFile = file;
+  const ext = file.name.split('.').pop().toLowerCase();
+  let icon = '📎';
+  if (ext === 'apk') icon = '📦';
+  else if ((file.type || '').startsWith('audio/')) icon = '🎙️';
+  else if ((file.type || '').startsWith('image/')) icon = '🖼️';
+
+  document.getElementById('attachment-icon').textContent = icon;
+  document.getElementById('attachment-name').textContent = `${file.name} • ${(file.size / 1024).toFixed(0)} KB`;
+  document.getElementById('attachment-preview').style.display = 'flex';
+}
+
+
+function clearAttachment() {
+  selectedFile = null;
+  const fileEl = document.getElementById('unified-file');
+  if (fileEl) fileEl.value = '';
+  document.getElementById('attachment-preview').style.display = 'none';
+}
+
+
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 220)}px`;
+}
+
+function getRiskClass(r) {
+  return {CRITICAL:'critical',HIGH:'high',MEDIUM:'medium',LOW:'low'}[r]||'safe';
+}
+
+function getRiskEmoji(r) {
+  return {CRITICAL:'🚨',HIGH:'⚠️',MEDIUM:'⚡',LOW:'✅'}[r]||'✅';
+}
+
+function renderResults(d) {
+  const rc = getRiskClass(d.risk_level);
+  const legacyStages = d.pipeline_stages && !Array.isArray(d.pipeline_stages) ? d.pipeline_stages : null;
+  const det = legacyStages?.detection || d;
+  const gh = legacyStages?.golden_hour || {
+    golden_hour_active: !!d.golden_hour_active,
+    priority_actions: d.priority_actions || [],
+    fir_template: d.fir_template || '',
+  };
+  const entities = det.extracted_entities || d.extracted_entities || {};
+  const firRaw = gh.fir_template || d.fir_template || {};
+  const fir = typeof firRaw === 'string'
+    ? { case_summary: firRaw, section_ipc: [], evidence_to_preserve: [], complaint_portal: 'cybercrime.gov.in' }
+    : firRaw;
+  const parsedTs = d.timestamp ? new Date(d.timestamp) : new Date();
+  const tsLabel = Number.isNaN(parsedTs.getTime()) ? new Date().toLocaleTimeString() : parsedTs.toLocaleTimeString();
+  const flags = (d.red_flags || det.red_flags || det.signals_found || []).filter(Boolean);
+  const redFlagsHTML = flags.length > 0
+    ? flags.map(f => `<li class="red-flag-item">🚩 ${f}</li>`).join('')
+    : '<li class="red-flag-item">🚩 Suspicious content detected</li>';
+  const conf = Math.round((d.confidence||0) * (d.confidence > 1 ? 1 : 100));
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (conf / 100) * circumference;
+  const ringColor = {CRITICAL:'#ef5350',HIGH:'#ff7043',MEDIUM:'#ffa726',LOW:'#66bb6a'}[d.risk_level]||'#66bb6a';
+
+  let html = `<div class="fade-up">`;
+
+  // VERDICT
+  html += `<div class="verdict-card ${rc}" style="margin-bottom:16px">
+    <div class="verdict-header">
+      <div class="verdict-icon">${getRiskEmoji(d.risk_level)}</div>
+      <div class="verdict-meta">
+        <div class="verdict-type">${d.is_scam ? (d.scam_type||'Scam Detected') : 'Likely Safe'}</div>
+        <div class="verdict-risk">${d.risk_level||'LOW'} RISK</div>
+      </div>
+      <div class="confidence-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+          <circle cx="28" cy="28" r="22" fill="none" stroke="${ringColor}" stroke-width="4" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+        </svg>
+        <div class="val">${conf}%</div>
+      </div>
+    </div>`;
+
+  html += `<ul class="red-flags-list">${redFlagsHTML}</ul>`;
+  html += `<div class="ack-bar"><span>Case ID</span> ${d.acknowledgment_id} <span style="margin-left:auto">${tsLabel}</span></div>`;
+  html += `</div>`;
+
+  // VICTIM ADVICE
+  if (d.victim_advice) {
+    html += `<div class="card" style="margin-bottom:16px;border-color:rgba(79,195,247,.3)">
+      <div class="card-body" style="display:flex;gap:12px;align-items:flex-start">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><div style="font-size:12px;font-weight:600;color:var(--md-sys-color-primary);margin-bottom:4px;letter-spacing:.5px">VICTIM ADVICE</div>
+        <div style="font-size:13px;color:var(--md-sys-color-on-surface-variant);line-height:1.6">${d.victim_advice}</div></div>
+      </div>
+    </div>`;
+  }
+
+  // GOLDEN HOUR
+  if (gh.golden_hour_active && gh.priority_actions?.length) {
+    html += `<div class="card" style="margin-bottom:16px;border-color:rgba(255,183,77,.3)">
+      <div class="golden-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffb74d" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div style="font-size:14px;font-weight:600;color:#ffb74d">Golden Hour Response</div>
+        <div class="golden-badge">ACT NOW</div>
+        <div class="golden-timer">60:00</div>
+      </div>
+      <div class="action-steps">${(gh.priority_actions || []).map((a, i) => {
+        const stepObj = typeof a === 'string' ? { step: i + 1, action: a } : a;
+        const timeLimit = stepObj.time_limit_minutes
+          ? `Within ${stepObj.time_limit_minutes} minutes`
+          : (stepObj.time_limit || '');
+        return `
+        <div class="action-step">
+          <div class="step-num">${stepObj.step || i + 1}</div>
+          <div class="step-body">
+            <div class="step-action">${stepObj.action || ''}</div>
+            <div class="step-contact">${stepObj.contact_details || stepObj.contact || ''}</div>
+            ${timeLimit ? `<div class="step-limit">⏱ ${timeLimit}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // HELPLINE
+  html += `<div class="helpline-bar" style="margin-bottom:16px">
+    <div>
+      <div class="helpline-num">1930</div>
+      <div class="helpline-label">National Cybercrime Helpline · 24×7</div>
+    </div>
+    <button class="btn-call" onclick="window.open('tel:1930')">📞 Call Now</button>
+  </div>`;
+
+  // ENTITIES
+  const phones = entities.phone_numbers||entities.phones||[];
+  const urls = entities.urls||[];
+  const banks = entities.bank_names||[];
+  if (phones.length||urls.length||banks.length) {
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span class="card-title">Extracted Indicators</span></div>
+      <div class="entity-chips">
+        ${phones.map(p=>`<div class="chip phone">📞 ${p}</div>`).join('')}
+        ${urls.map(u=>`<div class="chip url">🔗 ${u}</div>`).join('')}
+        ${banks.map(b=>`<div class="chip bank">🏦 ${b}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // FIR
+  if (fir.case_summary) {
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="card-header"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--md-sys-color-primary)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="card-title">FIR Template</span></div>
+      <div class="fir-box">
+        <div class="fir-section">
+          <div class="fir-label">Sections</div>
+          <div class="ipc-chips">${(fir.section_ipc||[]).map(s=>`<span class="ipc-chip">${s}</span>`).join('')}</div>
+          <div class="fir-label">Portal</div>
+          <div class="fir-val">${fir.complaint_portal||'cybercrime.gov.in'}</div>
+          <div class="fir-label">Summary</div>
+          <div class="fir-val">${fir.case_summary}</div>
+          <div class="fir-label">Preserve</div>
+          <div class="fir-val">${(fir.evidence_to_preserve||[]).join(', ')}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  document.getElementById('results').innerHTML = html;
+
+  // Start countdown if golden hour active
+  if (gh.golden_hour_active) {
+    let secs = 3600;
+    const timer = setInterval(() => {
+      secs--;
+      if (secs <= 0) { clearInterval(timer); return; }
+      const m = Math.floor(secs/60).toString().padStart(2,'0');
+      const s = (secs%60).toString().padStart(2,'0');
+      const el = document.querySelector('.golden-timer');
+      if (el) el.textContent = m+':'+s;
+      else clearInterval(timer);
+    }, 1000);
+  }
+}
+
+function updateStats(d) {
+  stats.total++;
+  if (d.is_scam) stats.scams++;
+  if (d.risk_level === 'CRITICAL') stats.critical++;
+  if (!d.is_scam) stats.safe++;
+  document.getElementById('stat-total').textContent = stats.total;
+  document.getElementById('stat-scams').textContent = stats.scams;
+  document.getElementById('stat-critical').textContent = stats.critical;
+  document.getElementById('stat-safe').textContent = stats.safe;
+}
+
+function addRecent(d) {
+  const text = document.getElementById('main-input').value.trim().slice(0,50) || selectedFile?.name || 'Analysis';
+  recentCases.unshift({id:d.acknowledgment_id, text, risk:d.risk_level||'LOW', time:new Date().toLocaleTimeString()});
+  if (recentCases.length > 8) recentCases.pop();
+  document.getElementById('recent-list').innerHTML = recentCases.map(c=>`
+    <div class="recent-item">
+      <span class="recent-badge ${c.risk}">${c.risk}</span>
+      <span class="recent-text">${c.text}</span>
+      <span class="recent-time">${c.time}</span>
+    </div>`).join('');
+}
+
+// Allow Ctrl+Enter to submit
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') analyzeInput();
+});
+</script>
+</body>
+</html>
