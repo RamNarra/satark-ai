@@ -6,6 +6,11 @@ PROJECT_ID  = os.getenv("GOOGLE_CLOUD_PROJECT", "satark-ai-492219")
 LOCATION    = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+# Ensure ADK and google-genai clients default to Vertex AI mode.
+os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "true")
+os.environ.setdefault("GOOGLE_CLOUD_PROJECT", PROJECT_ID)
+os.environ.setdefault("GOOGLE_CLOUD_LOCATION", LOCATION)
+
 # Using Vertex AI with GCP credits — no free tier limits
 MODEL_PRO        = "gemini-2.5-pro"
 MODEL_PRO_TOOLS  = "gemini-2.5-pro"

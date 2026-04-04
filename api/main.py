@@ -2,18 +2,27 @@ import os, sys
 import asyncio
 import json
 import mimetypes
+import uuid
+from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
 from typing import Optional
 import uvicorn
 from agents.manager import run_pipeline
-from db.operations import get_case_stats
+from agents.manager.agent import run as run_legacy_pipeline
+from db.operations import (
+    find_similar_patterns,
+    get_case_stats,
+    save_case,
+    save_fraud_pattern,
+)
+from db.client import get_db
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import base64
+from urllib.parse import urlparse
 from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL
 
 try:
@@ -53,6 +62,627 @@ def serve_ui():
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
+
+class AnalyzeFile(BaseModel):
+    file_name: str
+    file_type: Optional[str] = None
+    file_url: Optional[str] = None
+    content_base64: Optional[str] = None
+
+
+class AnalyzeUserInput(BaseModel):
+    text: str = ""
+    language_hint: Optional[str] = None
+    files: list[AnalyzeFile] = Field(default_factory=list)
+
+
+class AnalyzeUserContext(BaseModel):
+    location: Optional[str] = None
+    channel: str = "web-ui"
+
+
+class AnalyzeOptions(BaseModel):
+    stream: bool = True
+    generate_report: bool = True
+    trigger_mcp_actions: bool = False
+
+
+class AnalyzeRequestV1(BaseModel):
+    session_id: Optional[str] = None
+    user_input: AnalyzeUserInput
+    user_context: AnalyzeUserContext = Field(default_factory=AnalyzeUserContext)
+    options: AnalyzeOptions = Field(default_factory=AnalyzeOptions)
+
+
+RUN_STORE: dict[str, dict] = {}
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _new_id(prefix: str) -> str:
+    return f"{prefix}_{uuid.uuid4().hex[:12]}"
+
+
+def _normalize_agent(agent: str) -> str:
+    alias = {
+        "manager": "manager",
+        "scam": "scam_detector",
+        "scam_detector": "scam_detector",
+        "audio": "audio_analyzer",
+        "audio_analyzer": "audio_analyzer",
+        "apk": "apk_analyzer",
+        "apk_analyzer": "apk_analyzer",
+        "osint": "osint",
+        "golden": "golden_hour",
+        "golden_hour": "golden_hour",
+    }
+    return alias.get(agent, agent)
+
+
+def _classify_flow(user_input: dict) -> tuple[str, list[str]]:
+    files = user_input.get("files") or []
+    text = str(user_input.get("text") or "").lower()
+
+    def _is_audio(file_item: dict) -> bool:
+        ft = str(file_item.get("file_type") or "")
+        fn = str(file_item.get("file_name") or "")
+        return ft.startswith("audio/") or fn.lower().endswith((".mp3", ".wav", ".m4a", ".ogg"))
+
+    def _is_apk(file_item: dict) -> bool:
+        ft = str(file_item.get("file_type") or "")
+        fn = str(file_item.get("file_name") or "")
+        return ft == "application/vnd.android.package-archive" or fn.lower().endswith(".apk")
+
+    has_audio = any(_is_audio(f) for f in files)
+    has_apk = any(_is_apk(f) for f in files)
+    has_image = any(str(f.get("file_type") or "").startswith("image/") for f in files)
+
+    primary_type = "text"
+    if has_audio and has_apk:
+        primary_type = "audio_apk"
+    elif has_audio:
+        primary_type = "audio"
+    elif has_apk:
+        primary_type = "apk"
+    elif has_image:
+        primary_type = "text_image"
+
+    selected_agents = ["manager", "scam_detector", "osint", "golden_hour"]
+    if has_audio or any(k in text for k in ["voice", "call", "audio", "recording"]):
+        selected_agents.insert(2, "audio_analyzer")
+    if has_apk:
+        selected_agents.insert(2, "apk_analyzer")
+
+    deduped = []
+    for agent in selected_agents:
+        norm = _normalize_agent(agent)
+        if norm not in deduped:
+            deduped.append(norm)
+    return primary_type, deduped
+
+
+def _decode_b64(data: str) -> bytes:
+    clean = (data or "").strip()
+    if not clean:
+        return b""
+    if "," in clean and ";base64" in clean.split(",", 1)[0]:
+        clean = clean.split(",", 1)[1]
+    padding = len(clean) % 4
+    if padding:
+        clean += "=" * (4 - padding)
+    return base64.b64decode(clean)
+
+
+def _select_best_file(files: list[dict]) -> Optional[dict]:
+    if not files:
+        return None
+
+    def score(item: dict) -> int:
+        fn = str(item.get("file_name") or "").lower()
+        ft = str(item.get("file_type") or "")
+        if fn.endswith(".apk") or ft == "application/vnd.android.package-archive":
+            return 100
+        if ft.startswith("audio/") or fn.endswith((".mp3", ".wav", ".m4a", ".ogg")):
+            return 90
+        if ft.startswith("image/"):
+            return 80
+        return 10
+
+    return sorted(files, key=score, reverse=True)[0]
+
+
+def _build_similarity_context(similar: list[dict]) -> str:
+    if not similar:
+        return ""
+    lines = []
+    for item in similar[:3]:
+        scam_type = str(item.get("scam_type") or "UNKNOWN")
+        score = int(item.get("score") or 0)
+        sub_type = str(item.get("sub_type") or "")
+        if sub_type:
+            lines.append(f"- {scam_type}/{sub_type} ({score}% match)")
+        else:
+            lines.append(f"- {scam_type} ({score}% match)")
+    return "Similar known patterns:\n" + "\n".join(lines)
+
+
+def _build_pipeline_call(user_input: dict, similar: Optional[list[dict]] = None) -> tuple[str, dict]:
+    text = str(user_input.get("text") or "").strip()
+    files = user_input.get("files") or []
+    selected = _select_best_file(files)
+    similarity_context = _build_similarity_context(similar or [])
+    effective_text = text
+    if similarity_context:
+        effective_text = f"{text}\n\n{similarity_context}" if text else similarity_context
+
+    payload = {
+        "text": effective_text,
+        "fraud_amount": 0,
+        "minutes_since_fraud": None,
+    }
+
+    if not selected:
+        return "text", payload
+
+    file_name = str(selected.get("file_name") or "evidence.bin")
+    file_type = str(selected.get("file_type") or mimetypes.guess_type(file_name)[0] or "application/octet-stream")
+    content_b64 = selected.get("content_base64")
+
+    if not content_b64:
+        # Metadata-only file (e.g. cloud URI). Keep analysis text-first while preserving flow classification.
+        return "text", payload
+
+    raw = _decode_b64(str(content_b64))
+
+    if file_name.lower().endswith(".apk") or file_type == "application/vnd.android.package-archive":
+        from agents.apk_analyzer.agent import run_static_analysis
+
+        static_results = run_static_analysis(raw, file_name)
+        return "apk", {
+            "filename": file_name,
+            "static_results": static_results,
+            "text": effective_text,
+        }
+
+    if file_type.startswith("audio/") or file_name.lower().endswith((".mp3", ".wav", ".m4a", ".ogg")):
+        return "audio", {
+            "audio_b64": base64.b64encode(raw).decode("utf-8"),
+            "filename": file_name,
+            "mime_type": file_type,
+            "text": effective_text,
+            "fraud_amount": 0,
+            "minutes_since_fraud": None,
+        }
+
+    return "image", {
+        "image_b64": base64.b64encode(raw).decode("utf-8"),
+        "filename": file_name,
+        "mime_type": file_type,
+        "text": effective_text,
+        "fraud_amount": 0,
+        "minutes_since_fraud": None,
+    }
+
+
+def _build_legacy_input(user_input: dict) -> dict:
+    text = str(user_input.get("text") or "").strip()
+    files = user_input.get("files") or []
+    selected = _select_best_file(files)
+    if not selected:
+        return {"type": "text", "text": text}
+
+    file_name = str(selected.get("file_name") or "evidence.bin")
+    file_type = str(selected.get("file_type") or mimetypes.guess_type(file_name)[0] or "application/octet-stream")
+    content_b64 = selected.get("content_base64")
+    if not content_b64:
+        return {"type": "text", "text": text}
+
+    raw = _decode_b64(str(content_b64))
+    if file_name.lower().endswith(".apk") or file_type == "application/vnd.android.package-archive":
+        return {"type": "apk", "bytes": raw, "filename": file_name}
+    if file_type.startswith("audio/") or file_name.lower().endswith((".mp3", ".wav", ".m4a", ".ogg")):
+        return {"type": "audio", "bytes": raw, "mime_type": file_type, "text": text}
+    if file_type.startswith("image/"):
+        return {"type": "image", "bytes": raw, "mime_type": file_type, "text": text}
+    return {"type": "text", "text": text}
+
+
+def _needs_legacy_fallback(pipeline_result: dict) -> bool:
+    stages = pipeline_result.get("pipeline_stages") or []
+    if isinstance(stages, list) and any(str(s).endswith("detection_failed") for s in stages):
+        return True
+    err_text = str(pipeline_result.get("error") or "").lower()
+    if "resource_exhausted" in err_text or "quota exceeded" in err_text:
+        return True
+    return False
+
+
+def _event_line(event_name: str, data: dict) -> str:
+    return f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=True)}\n\n"
+
+
+async def _emit_event(run_id: str, event_name: str, payload: dict) -> None:
+    run = RUN_STORE.get(run_id)
+    if not run:
+        return
+
+    merged = {"run_id": run_id, "timestamp": _utc_now(), **payload}
+    event = {"event": event_name, "data": merged}
+    run.setdefault("events", []).append(event)
+    for q in list(run.get("subscribers", [])):
+        await q.put(event)
+
+
+async def _finish_streams(run_id: str) -> None:
+    run = RUN_STORE.get(run_id)
+    if not run:
+        return
+    for q in list(run.get("subscribers", [])):
+        await q.put(None)
+
+
+def _extract_domains(urls: list[str]) -> list[str]:
+    domains = []
+    for u in urls:
+        candidate = str(u or "").strip()
+        if not candidate:
+            continue
+        parsed = urlparse(candidate)
+        domain = parsed.netloc or parsed.path.split("/")[0]
+        if domain and domain not in domains:
+            domains.append(domain)
+    return domains
+
+
+def _load_persisted_case(run_id: str) -> Optional[dict]:
+    db = get_db()
+    if not db:
+        return None
+    try:
+        doc = db.collection("cases").document(run_id).get()
+        if not doc.exists:
+            return None
+        payload = doc.to_dict() or {}
+        return {
+            "run_id": run_id,
+            "case_id": run_id,
+            "status": "completed",
+            "summary": {
+                "title": payload.get("summary", "Recovered case result"),
+                "risk_level": str(payload.get("risk_level", "UNKNOWN")).lower(),
+                "recommended_action": "Call 1930 and file complaint at cybercrime.gov.in",
+            },
+            "classification": {
+                "primary_type": payload.get("input_type", "text"),
+                "scam_type": payload.get("scam_type", "UNKNOWN"),
+                "risk_level": payload.get("risk_level", "UNKNOWN"),
+                "confidence": payload.get("confidence", 0),
+            },
+            "entities": {"domains": [], "phones": [], "ips": []},
+            "agent_outputs": {},
+            "mcp_actions": {"calendar_draft": None, "gmail_draft": None},
+            "evidence": [],
+            "report": {"complaint_draft": "", "golden_hour_active": payload.get("golden_hour_active", False)},
+            "timestamps": {
+                "created_at": payload.get("timestamp"),
+                "completed_at": payload.get("timestamp"),
+            },
+            "raw": {"persisted_case": payload},
+        }
+    except Exception:
+        return None
+
+
+def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: str, selected_agents: list[str]) -> dict:
+    scam_type = pipeline_result.get("scam_type") or "UNKNOWN"
+    risk_level = pipeline_result.get("risk_level") or "UNKNOWN"
+    confidence = pipeline_result.get("confidence") or 0
+    extracted = pipeline_result.get("extracted_entities") or {}
+    urls = extracted.get("urls") or []
+    phones = extracted.get("phone_numbers") or []
+    ips = extracted.get("ips") or []
+
+    agent_outputs = {
+        "manager": {
+            "acknowledgment_id": pipeline_result.get("acknowledgment_id"),
+            "pipeline_stages": pipeline_result.get("pipeline_stages", []),
+        },
+        "scam_detector": {
+            "is_scam": pipeline_result.get("is_scam"),
+            "risk_level": pipeline_result.get("risk_level"),
+            "signals": pipeline_result.get("signals_found", []),
+        }
+        if "scam_detector" in selected_agents
+        else None,
+        "audio_analyzer": {
+            "risk_level": pipeline_result.get("risk_level"),
+            "summary": pipeline_result.get("summary") or pipeline_result.get("victim_advice", ""),
+        }
+        if "audio_analyzer" in selected_agents
+        else None,
+        "apk_analyzer": pipeline_result.get("pipeline_stages", []) if "apk_analyzer" in selected_agents else None,
+        "osint": {
+            "threat_score": pipeline_result.get("threat_score", 0),
+            "summary": pipeline_result.get("osint_summary", ""),
+        }
+        if "osint" in selected_agents
+        else None,
+        "golden_hour": {
+            "priority_actions": pipeline_result.get("priority_actions", []),
+            "fir_template": pipeline_result.get("fir_template", ""),
+        }
+        if "golden_hour" in selected_agents
+        else None,
+    }
+
+    files = run_ctx["request"]["user_input"].get("files") or []
+    evidence = [
+        {
+            "type": f.get("file_type") or "unknown",
+            "source": f.get("file_name") or "unknown",
+            "storage_uri": f.get("file_url"),
+        }
+        for f in files
+    ]
+
+    recommended_action = pipeline_result.get("victim_advice", "Call 1930 and file complaint at cybercrime.gov.in")
+    priority_actions = pipeline_result.get("priority_actions") or []
+    if priority_actions:
+        first_action = priority_actions[0]
+        if isinstance(first_action, dict):
+            recommended_action = str(first_action.get("action") or recommended_action)
+        else:
+            recommended_action = str(first_action)
+
+    summary = {
+        "title": f"Likely {scam_type} incident",
+        "risk_level": str(risk_level).lower(),
+        "recommended_action": recommended_action,
+    }
+
+    calendar_event = pipeline_result.get("calendar_event") if isinstance(pipeline_result.get("calendar_event"), dict) else {}
+
+    return {
+        "run_id": run_ctx["run_id"],
+        "case_id": run_ctx["case_id"],
+        "status": run_ctx["status"],
+        "summary": summary,
+        "classification": {
+            "primary_type": primary_type,
+            "scam_type": scam_type,
+            "risk_level": risk_level,
+            "confidence": confidence,
+        },
+        "entities": {
+            "domains": _extract_domains(urls),
+            "phones": phones,
+            "ips": ips,
+        },
+        "agent_outputs": agent_outputs,
+        "mcp_actions": {
+            "calendar_draft": calendar_event if calendar_event.get("attempted") else None,
+            "gmail_draft": None,
+        },
+        "evidence": evidence,
+        "report": {
+            "complaint_draft": pipeline_result.get("fir_template", ""),
+            "golden_hour_active": pipeline_result.get("golden_hour_active", False),
+        },
+        "timestamps": {
+            "created_at": run_ctx["created_at"],
+            "completed_at": run_ctx.get("completed_at"),
+        },
+        "raw": pipeline_result,
+    }
+
+
+async def _orchestrate_run(run_id: str) -> None:
+    run_ctx = RUN_STORE.get(run_id)
+    if not run_ctx:
+        return
+
+    try:
+        run_ctx["status"] = "running"
+        req = run_ctx["request"]
+        user_input = req["user_input"]
+
+        primary_type, selected_agents = _classify_flow(user_input)
+        run_ctx["primary_type"] = primary_type
+        run_ctx["selected_agents"] = selected_agents
+
+        await _emit_event(
+            run_id,
+            "run.classified",
+            {
+                "case_id": run_ctx["case_id"],
+                "primary_type": primary_type,
+                "selected_agents": selected_agents,
+            },
+        )
+
+        await _emit_event(run_id, "agent.started", {"agent": "manager", "label": "Manager Agent", "status": "booting"})
+        await _emit_event(
+            run_id,
+            "agent.progress",
+            {
+                "agent": "manager",
+                "step": "route_planning",
+                "status": "running",
+                "message": "Manager selected execution graph",
+            },
+        )
+
+        for agent in selected_agents:
+            if agent == "manager":
+                continue
+            await _emit_event(
+                run_id,
+                "agent.started",
+                {"agent": agent, "label": agent.replace("_", " ").title(), "status": "queued"},
+            )
+
+        await _emit_event(
+            run_id,
+            "tool.called",
+            {
+                "agent": "manager",
+                "tool": "manager_pipeline",
+                "message": "Manager delegating to selected agents",
+            },
+        )
+
+        user_text = str(user_input.get("text") or "").strip()
+        similar_patterns: list[dict] = []
+        if user_text:
+            await _emit_event(
+                run_id,
+                "tool.called",
+                {
+                    "agent": "manager",
+                    "tool": "vector_pattern_lookup",
+                    "message": "Searching similar historical fraud patterns",
+                },
+            )
+            similar_patterns = find_similar_patterns(
+                query_text=user_text,
+                scam_type=None,
+                limit=3,
+                min_score=40,
+            )
+            await _emit_event(
+                run_id,
+                "tool.result",
+                {
+                    "agent": "manager",
+                    "tool": "vector_pattern_lookup",
+                    "status": "ok",
+                    "matches": len(similar_patterns),
+                },
+            )
+
+        input_type, payload = _build_pipeline_call(user_input, similar_patterns)
+        if run_pipeline is None:
+            raise RuntimeError("Manager pipeline is unavailable in this environment")
+
+        pipeline_result = await run_pipeline(input_type, payload)
+
+        if _needs_legacy_fallback(pipeline_result):
+            await _emit_event(
+                run_id,
+                "tool.called",
+                {
+                    "agent": "manager",
+                    "tool": "legacy_manager_pipeline",
+                    "message": "Primary pipeline degraded, activating fallback inference path",
+                },
+            )
+            legacy_input = _build_legacy_input(user_input)
+            pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+            await _emit_event(
+                run_id,
+                "tool.result",
+                {
+                    "agent": "manager",
+                    "tool": "legacy_manager_pipeline",
+                    "status": "ok",
+                },
+            )
+
+        await _emit_event(
+            run_id,
+            "tool.result",
+            {
+                "agent": "manager",
+                "tool": "manager_pipeline",
+                "status": "ok",
+            },
+        )
+
+        for agent in selected_agents:
+            if agent == "manager":
+                continue
+            summary = "Stage completed"
+            if agent == "scam_detector":
+                summary = f"Risk {pipeline_result.get('risk_level', 'UNKNOWN')} | type {pipeline_result.get('scam_type', 'UNKNOWN')}"
+            elif agent == "osint":
+                summary = pipeline_result.get("osint_summary", "OSINT correlation complete") or "OSINT complete"
+            elif agent == "golden_hour":
+                summary = "Priority response actions generated"
+            await _emit_event(
+                run_id,
+                "agent.completed",
+                {
+                    "agent": agent,
+                    "status": "done",
+                    "output": {
+                        "summary": summary,
+                    },
+                },
+            )
+
+        await _emit_event(
+            run_id,
+            "agent.completed",
+            {
+                "agent": "manager",
+                "status": "done",
+                "output": {
+                    "summary": "Routing and orchestration complete",
+                },
+            },
+        )
+
+        run_ctx["status"] = "completed"
+        run_ctx["completed_at"] = _utc_now()
+        run_ctx["result"] = _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
+
+        result = run_ctx["result"]
+        classification = result.get("classification", {})
+        report = result.get("report", {})
+
+        save_case(
+            acknowledgment_id=run_id,
+            case_data={
+                "scam_type": classification.get("scam_type", "UNKNOWN"),
+                "risk_level": classification.get("risk_level", "UNKNOWN"),
+                "confidence": classification.get("confidence", 0),
+                "golden_hour_active": report.get("golden_hour_active", False),
+                "input_type": classification.get("primary_type", "text"),
+                "summary": result.get("summary", {}).get("title", ""),
+            },
+        )
+
+        final_user_text = user_text
+        final_scam_type = str(classification.get("scam_type") or "UNKNOWN")
+        final_confidence = float(classification.get("confidence", 0) or 0)
+        if final_user_text and final_scam_type.upper() not in {"UNKNOWN", "NONE", ""}:
+            save_fraud_pattern(final_user_text, final_scam_type, final_confidence)
+
+        await _emit_event(
+            run_id,
+            "run.completed",
+            {
+                "case_id": run_ctx["case_id"],
+                "result_url": f"/api/result/{run_id}",
+            },
+        )
+    except Exception as e:
+        run_ctx["status"] = "failed"
+        run_ctx["completed_at"] = _utc_now()
+        run_ctx["error"] = str(e)
+        await _emit_event(
+            run_id,
+            "run.failed",
+            {
+                "case_id": run_ctx["case_id"],
+                "error": str(e),
+            },
+        )
+    finally:
+        await _finish_streams(run_id)
+
 class TextRequest(BaseModel):
     text: str
     fraud_amount: Optional[float] = 0
@@ -66,6 +696,133 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/health")
+def api_health():
+    return {
+        "status": "healthy",
+        "service": "satark-api",
+        "timestamp": _utc_now(),
+    }
+
+
+@app.post("/api/analyze")
+async def api_analyze(req: AnalyzeRequestV1):
+    run_id = _new_id("run")
+    case_id = _new_id("case")
+
+    RUN_STORE[run_id] = {
+        "run_id": run_id,
+        "case_id": case_id,
+        "status": "accepted",
+        "created_at": _utc_now(),
+        "completed_at": None,
+        "request": req.model_dump(),
+        "result": None,
+        "error": None,
+        "events": [],
+        "subscribers": [],
+    }
+
+    await _emit_event(
+        run_id,
+        "run.accepted",
+        {
+            "case_id": case_id,
+            "status": "accepted",
+        },
+    )
+
+    asyncio.create_task(_orchestrate_run(run_id))
+
+    return {
+        "run_id": run_id,
+        "case_id": case_id,
+        "status": "accepted",
+        "stream_url": f"/api/stream/{run_id}",
+        "result_url": f"/api/result/{run_id}",
+    }
+
+
+@app.get("/api/stream/{run_id}")
+async def api_stream(run_id: str):
+    run_ctx = RUN_STORE.get(run_id)
+    if not run_ctx:
+        raise HTTPException(status_code=404, detail="run_id not found")
+
+    queue: asyncio.Queue = asyncio.Queue()
+    history = list(run_ctx.get("events", []))
+    run_ctx.setdefault("subscribers", []).append(queue)
+
+    async def stream_generator():
+        try:
+            for evt in history:
+                yield _event_line(evt["event"], evt["data"])
+
+            while True:
+                current = RUN_STORE.get(run_id) or {}
+                if current.get("status") in {"completed", "failed"} and queue.empty():
+                    break
+                try:
+                    evt = await asyncio.wait_for(queue.get(), timeout=15)
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+                    continue
+
+                if evt is None:
+                    break
+                yield _event_line(evt["event"], evt["data"])
+        finally:
+            latest = RUN_STORE.get(run_id)
+            if latest and queue in latest.get("subscribers", []):
+                latest["subscribers"].remove(queue)
+
+    return StreamingResponse(
+        stream_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/api/result/{run_id}")
+async def api_result(run_id: str):
+    run_ctx = RUN_STORE.get(run_id)
+    if not run_ctx:
+        persisted = _load_persisted_case(run_id)
+        if persisted is None:
+            raise HTTPException(status_code=404, detail="run_id not found")
+        return persisted
+
+    status = run_ctx.get("status")
+    if status in {"accepted", "running"}:
+        return JSONResponse(
+            status_code=202,
+            content={
+                "run_id": run_id,
+                "case_id": run_ctx.get("case_id"),
+                "status": status,
+                "message": "Run still in progress",
+            },
+        )
+
+    if status == "failed":
+        return {
+            "run_id": run_id,
+            "case_id": run_ctx.get("case_id"),
+            "status": "failed",
+            "error": run_ctx.get("error", "Unknown error"),
+            "timestamps": {
+                "created_at": run_ctx.get("created_at"),
+                "completed_at": run_ctx.get("completed_at"),
+            },
+        }
+
+    return run_ctx.get("result")
 
 
 @app.get("/stats")
