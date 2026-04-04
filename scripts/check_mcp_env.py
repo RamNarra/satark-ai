@@ -19,11 +19,13 @@ REQUIRED_CORE = [
     "GOOGLE_CLOUD_LOCATION",
 ]
 
-REQUIRED_MCP = [
+REQUIRED_MCP_REFRESH = [
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_REFRESH_TOKEN",
 ]
+
+REQUIRED_MCP_OAUTH_FILE = "GOOGLE_OAUTH_CREDENTIALS"
 
 OPTIONAL = [
     "OPENAPI_MCP_HEADERS",
@@ -56,7 +58,7 @@ def _check_node_tools() -> bool:
 
     try:
         result = subprocess.run(
-            ["npm", "view", "@modelcontextprotocol/server-google", "version"],
+            ["npm", "view", "@cocal/google-calendar-mcp", "version"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -64,13 +66,31 @@ def _check_node_tools() -> bool:
             check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
-            print(f"[OK] @modelcontextprotocol/server-google available (latest: {result.stdout.strip()})")
+            print(f"[OK] @cocal/google-calendar-mcp available (latest: {result.stdout.strip()})")
             return True
-        print("[WARN] Could not verify @modelcontextprotocol/server-google via npm view.")
+        print("[WARN] Could not verify @cocal/google-calendar-mcp via npm view.")
         return True
     except Exception:
         print("[WARN] npm view check skipped (network or npm issue).")
         return True
+
+
+def _check_mcp_auth_mode() -> bool:
+    oauth_file = os.getenv(REQUIRED_MCP_OAUTH_FILE, "").strip()
+    oauth_ok = bool(oauth_file)
+    refresh_checks = [_print_status(key, required=True) for key in REQUIRED_MCP_REFRESH]
+    refresh_ok = all(refresh_checks)
+
+    oauth_marker = "OK" if oauth_ok else "MISSING"
+    print(f"[{oauth_marker}] {REQUIRED_MCP_OAUTH_FILE} (required OR use refresh-token triplet)")
+    if oauth_ok and not os.path.exists(oauth_file):
+        print(f"[WARN] {REQUIRED_MCP_OAUTH_FILE} path does not exist: {oauth_file}")
+
+    if oauth_ok or refresh_ok:
+        return True
+
+    print("[FAIL] Configure either GOOGLE_OAUTH_CREDENTIALS or all refresh-token variables.")
+    return False
 
 
 def main() -> int:
@@ -80,9 +100,8 @@ def main() -> int:
     print("--------------------")
 
     core_checks = [_print_status(key, required=True) for key in REQUIRED_CORE]
-    mcp_checks = [_print_status(key, required=True) for key in REQUIRED_MCP]
     core_ok = all(core_checks)
-    mcp_ok = all(mcp_checks)
+    mcp_ok = _check_mcp_auth_mode()
 
     for key in OPTIONAL:
         _print_status(key, required=False)

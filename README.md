@@ -177,6 +177,10 @@ Minimum recommended:
 
 MCP Google tool auth required by Golden Hour agent:
 
+- GOOGLE_OAUTH_CREDENTIALS (absolute path to OAuth desktop credentials JSON)
+
+Alternative auth mode (if your MCP server supports refresh tokens):
+
 - GOOGLE_CLIENT_ID
 - GOOGLE_CLIENT_SECRET
 - GOOGLE_REFRESH_TOKEN
@@ -189,7 +193,7 @@ cp .env.example .env
 python scripts/check_mcp_env.py
 ```
 
-If you use OAuth refresh tokens for demo, ensure your one-time consent flow includes both scopes:
+If you use refresh-token mode, ensure your one-time consent flow includes both scopes:
 
 - https://www.googleapis.com/auth/calendar.events
 - https://www.googleapis.com/auth/gmail.compose

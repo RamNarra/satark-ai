@@ -13,26 +13,25 @@ except Exception:
 
 
 def _build_google_mcp_toolset():
-    """Build MCP toolset for Google services (Calendar + Gmail + Drive) via
-    the official @modelcontextprotocol/server-google package.
+    """Build MCP toolset for Google Calendar via @cocal/google-calendar-mcp.
 
     NOTE: @modelcontextprotocol/server-google-calendar does NOT exist on npm.
-    The correct package is @modelcontextprotocol/server-google which covers
-    Calendar, Gmail, and Drive in a single MCP server.
 
     Required env vars (set in .env):
+        GOOGLE_OAUTH_CREDENTIALS (absolute path to OAuth desktop credentials JSON)
+    Optional:
+        GOOGLE_APPLICATION_CREDENTIALS
         GOOGLE_CLIENT_ID
         GOOGLE_CLIENT_SECRET
         GOOGLE_REFRESH_TOKEN
-    Optional:
-        GOOGLE_APPLICATION_CREDENTIALS  (service-account path, if using SA)
-        OPENAPI_MCP_HEADERS             (extra headers forwarded to MCP)
+        OPENAPI_MCP_HEADERS
     """
     if MCPToolset is None or StdioConnectionParams is None:
         return None
 
     env = {}
     for key in [
+        "GOOGLE_OAUTH_CREDENTIALS",
         "GOOGLE_APPLICATION_CREDENTIALS",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
@@ -46,7 +45,7 @@ def _build_google_mcp_toolset():
     return MCPToolset(
         connection_params=StdioConnectionParams(
             command="npx",
-            args=["-y", "@modelcontextprotocol/server-google"],
+            args=["-y", "@cocal/google-calendar-mcp"],
             env=env or None,
         ),
         tool_name_prefix="google_mcp_",
@@ -60,7 +59,7 @@ GOLDEN_HOUR_TOOLS = [GOOGLE_MCP_TOOLSET] if GOOGLE_MCP_TOOLSET is not None else 
 golden_hour_agent = Agent(
     name="golden_hour_agent",
     model=GEMINI_FLASH_MODEL,
-    description="Generates victim action plan, FIR-ready complaint, Google Calendar event, and Gmail draft",
+    description="Generates victim action plan, FIR-ready complaint, and Google Calendar event",
     instruction="""
 You are a cyber crime response specialist working for TGCSB (Telangana Cyber
 Security Bureau). Your job is to generate an urgent, actionable response plan
@@ -80,11 +79,9 @@ MCP Calendar integration (MANDATORY when golden_hour_active is true):
 - Add a popup reminder at 10 minutes before
 - If golden_hour_active is false, skip calendar creation
 
-MCP Gmail integration (MANDATORY when golden_hour_active is true):
-- Call google_mcp_gmail_create_draft (or equivalent gmail tool from MCP)
-- Subject: [SATARK ALERT] Cyber Fraud Complaint — [case_id]
-- Body: Include full investigation summary, NCRP portal link, 1930 helpline, and pre-filled complaint text
-- If MCP tools are unavailable, set gmail_draft.error accordingly
+MCP Gmail integration (OPTIONAL ONLY IF TOOL IS AVAILABLE):
+- If a Gmail tool exists in this MCP toolset, create a draft summary mail.
+- If Gmail tool is unavailable, set gmail_draft.error with a clear reason.
 
 Generate a complete FIR-ready complaint template that matches the NCRP format.
 
