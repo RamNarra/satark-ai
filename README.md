@@ -100,7 +100,7 @@ What it does:
 - Live WebSocket stream route for microphone-to-model fraud analysis updates.
 - Real-time browser capture using MediaRecorder and streamed server responses.
 - A2A handoff envelopes across manager and specialist agents.
-- Pattern intelligence matching and case persistence hooks.
+- Firestore native vector search for fraud pattern similarity (nearest-neighbor retrieval).
 - Golden Hour response generation with calendar event integration.
 - Session stats and case-oriented output in UI.
 
@@ -174,6 +174,61 @@ Minimum recommended:
 - GEMINI_API_KEY (only for components running API-key mode)
 - GOOGLE_CALENDAR_ID (optional, defaults to primary)
 - SATARK_CALENDAR_TIMEZONE (optional, defaults to Asia/Kolkata)
+
+MCP Google tool auth required by Golden Hour agent:
+
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_REFRESH_TOKEN
+
+Quick setup:
+
+```bash
+cp .env.example .env
+# edit .env and fill required values
+python scripts/check_mcp_env.py
+```
+
+If you use OAuth refresh tokens for demo, ensure your one-time consent flow includes both scopes:
+
+- https://www.googleapis.com/auth/calendar.events
+- https://www.googleapis.com/auth/gmail.compose
+
+## Firestore Vector Search Setup (Real)
+
+SATARK uses Firestore vector indexes against the fraud_patterns collection with embeddings generated from gemini-embedding-2-preview.
+
+1. Seed and backfill vectors:
+
+```bash
+python scripts/seed_fraud_patterns.py
+python scripts/backfill_pattern_embeddings.py
+```
+
+2. Create required vector indexes:
+
+```bash
+gcloud firestore indexes composite create \
+  --project=satark-ai-492219 \
+  --collection-group=fraud_patterns \
+  --query-scope=COLLECTION \
+  --field-config=order=ASCENDING,field-path=active \
+  --field-config=order=ASCENDING,field-path=scam_type \
+  --field-config=vector-config='{"dimension":"768","flat": "{}"}',field-path=embedding
+
+gcloud firestore indexes composite create \
+  --project=satark-ai-492219 \
+  --collection-group=fraud_patterns \
+  --query-scope=COLLECTION \
+  --field-config=order=ASCENDING,field-path=active \
+  --field-config=vector-config='{"dimension":"768","flat": "{}"}',field-path=embedding
+```
+
+3. Verify indexes are ready:
+
+```bash
+gcloud firestore indexes composite list --project=satark-ai-492219
+```
 
 ## 60-Second Judge Demo Script
 

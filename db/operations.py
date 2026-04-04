@@ -2,10 +2,20 @@ from db.client import get_db
 from datetime import datetime, timezone
 import hashlib
 import logging
-import re
-from difflib import SequenceMatcher
+from functools import lru_cache
+import os
+import time
 
+from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore_v1.vector import Vector
+
+from config import LOCATION, MODEL_EMBEDDING, PROJECT_ID
+
+try:
+    from google import genai
+except Exception:
+    genai = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +24,14 @@ FRAUD_PATTERNS = "fraud_patterns"
 THREAT_INTEL = "threat_intelligence"
 CASES = "cases"
 OSINT_CACHE = "osint_cache"
+
+
+_embed_client = (
+    genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+    if genai is not None
+    else None
+)
+EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "768"))
 
 
 def upsert_fraud_pattern_record(pattern: dict) -> bool:
@@ -34,6 +52,13 @@ def upsert_fraud_pattern_record(pattern: dict) -> bool:
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "active": bool(pattern.get("active", True)),
         }
+        embedding_source = pattern.get("embedding_source_text") or _build_pattern_embedding_text(payload)
+        embedding = _get_embedding_vector(embedding_source)
+        if embedding:
+            payload["embedding"] = Vector(embedding)
+            payload["embedding_source_text"] = embedding_source
+            payload["embedding_model"] = MODEL_EMBEDDING
+            payload["embedding_updated_at"] = datetime.now(timezone.utc).isoformat()
         db.collection(FRAUD_PATTERNS).document(doc_id).set(payload, merge=True)
         return True
     except Exception as e:
@@ -84,6 +109,12 @@ def save_fraud_pattern(text: str, scam_type: str, confidence: float) -> bool:
             "active": True,
             "source": "runtime_observation",
         }
+        embedding = _get_embedding_vector(text)
+        if embedding:
+            doc["embedding"] = Vector(embedding)
+            doc["embedding_source_text"] = text
+            doc["embedding_model"] = MODEL_EMBEDDING
+            doc["embedding_updated_at"] = datetime.now(timezone.utc).isoformat()
         db.collection(FRAUD_PATTERNS).document(pattern_hash).set(doc, merge=True)
         return True
     except Exception as e:
@@ -97,7 +128,7 @@ def find_similar_patterns(
     limit: int = 5,
     min_score: int = 25,
 ) -> list:
-    """Find semantically similar fraud patterns using phrase overlap and fuzzy matching."""
+    """Find semantically similar fraud patterns using Firestore native vector search."""
     db = get_db()
     if not db:
         return []
@@ -115,23 +146,35 @@ def find_similar_patterns(
             )
             return [doc.to_dict() for doc in docs]
 
-        query_tokens = _tokenize(query_text)
-        corpus = db.collection(FRAUD_PATTERNS).limit(400).stream()
+        embedding = _get_embedding_vector(query_text)
+        if not embedding:
+            return []
 
-        scored = []
-        for doc in corpus:
+        base_query = db.collection(FRAUD_PATTERNS).where(filter=FieldFilter("active", "==", True))
+        if scam_type:
+            base_query = base_query.where(filter=FieldFilter("scam_type", "==", scam_type))
+
+        vector_query = base_query.find_nearest(
+            vector_field="embedding",
+            query_vector=Vector(embedding),
+            limit=max(1, int(limit)),
+            distance_measure=DistanceMeasure.COSINE,
+            distance_result_field="vector_distance",
+        )
+
+        matches = []
+        for doc in vector_query.stream():
             item = doc.to_dict() or {}
-            score = _score_pattern_match(
-                query_text=query_text,
-                query_tokens=query_tokens,
-                pattern=item,
-                scam_type=scam_type,
-            )
-            if score >= min_score:
-                scored.append({**item, "score": score})
+            distance = float(item.get("vector_distance", 2.0))
+            score = _distance_to_score(distance, DistanceMeasure.COSINE)
+            if score < min_score:
+                continue
+            item["score"] = score
+            item["distance"] = distance
+            matches.append(item)
 
-        scored.sort(key=lambda x: x.get("score", 0), reverse=True)
-        return scored[:limit]
+        matches.sort(key=lambda x: x.get("score", 0), reverse=True)
+        return matches[:limit]
     except Exception as e:
         logger.error(f"find_similar_patterns failed: {e}")
         return []
@@ -222,63 +265,64 @@ def get_case_stats() -> dict:
         return {"total_cases": 0, "breakdown": {}}
 
 
-def _score_pattern_match(
-    query_text: str,
-    query_tokens: set[str],
-    pattern: dict,
-    scam_type: str | None = None,
-) -> int:
-    query_l = query_text.lower().strip()
-    score = 0.0
+def _distance_to_score(distance: float, metric: DistanceMeasure) -> int:
+    if metric == DistanceMeasure.COSINE:
+        similarity = 1.0 - min(max(distance, 0.0), 2.0) / 2.0
+    elif metric == DistanceMeasure.DOT_PRODUCT:
+        similarity = min(max((distance + 1.0) / 2.0, 0.0), 1.0)
+    else:
+        similarity = 1.0 / (1.0 + max(distance, 0.0))
+    return int(round(similarity * 100))
 
-    pattern_scam = str(pattern.get("scam_type", "")).lower()
-    if scam_type and pattern_scam and pattern_scam == scam_type.lower():
-        score += 18
 
-    trigger_phrases = [str(p).lower() for p in pattern.get("trigger_phrases", []) if p]
-    phrase_hits = sum(1 for phrase in trigger_phrases if phrase and phrase in query_l)
-    score += min(phrase_hits * 8, 48)
-
-    examples = [str(x).lower() for x in pattern.get("example_messages", []) if x]
-    if examples:
-        best_ratio = max(SequenceMatcher(None, query_l, ex).ratio() for ex in examples)
-        score += best_ratio * 26
-
-    pattern_blob = " ".join(
+def _build_pattern_embedding_text(pattern: dict) -> str:
+    trigger_blob = " ".join(str(x) for x in pattern.get("trigger_phrases", []))
+    red_flag_blob = " ".join(str(x) for x in pattern.get("red_flags", []))
+    example_blob = " ".join(str(x) for x in pattern.get("example_messages", []))
+    return " | ".join(
         [
-            str(pattern.get("preview", "")),
+            str(pattern.get("scam_type", "")),
+            str(pattern.get("sub_type", "")),
+            str(pattern.get("official_category", "")),
+            trigger_blob,
+            red_flag_blob,
+            example_blob,
             str(pattern.get("modus_operandi", "")),
-            " ".join(str(v) for v in pattern.get("red_flags", [])),
-            " ".join(trigger_phrases),
         ]
-    )
-    pattern_tokens = _tokenize(pattern_blob)
-    token_overlap = _jaccard(query_tokens, pattern_tokens)
-    score += token_overlap * 22
-
-    severity_bonus = {
-        "CRITICAL": 8,
-        "HIGH": 5,
-        "MEDIUM": 2,
-    }.get(str(pattern.get("severity", "")).upper(), 0)
-    score += severity_bonus
-
-    return int(min(score, 100))
+    )[:8000]
 
 
-def _tokenize(text: str) -> set[str]:
-    if not text:
-        return set()
-    tokens = re.findall(r"[a-zA-Z0-9]+", text.lower())
-    return {t for t in tokens if len(t) > 2}
-
-
-def _jaccard(a: set[str], b: set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    inter = len(a.intersection(b))
-    union = len(a.union(b))
-    return inter / union if union else 0.0
+@lru_cache(maxsize=1024)
+def _get_embedding_vector(text: str) -> tuple[float, ...] | None:
+    clean = (text or "").strip()
+    if not clean:
+        return None
+    if _embed_client is None:
+        logger.error("Embedding client unavailable; verify google-genai dependency")
+        return None
+    for attempt in range(3):
+        try:
+            response = _embed_client.models.embed_content(
+                model=MODEL_EMBEDDING,
+                contents=clean,
+                config={"output_dimensionality": EMBEDDING_DIMENSION},
+            )
+            if getattr(response, "embeddings", None):
+                values = response.embeddings[0].values
+            elif getattr(response, "embedding", None):
+                values = response.embedding.values
+            else:
+                return None
+            return tuple(float(v) for v in values)
+        except Exception as e:
+            if "429" in str(e) and attempt < 2:
+                wait_seconds = 2 ** attempt
+                logger.warning(f"Embedding quota throttled; retrying in {wait_seconds}s")
+                time.sleep(wait_seconds)
+                continue
+            logger.error(f"Embedding generation failed: {e}")
+            return None
+    return None
 
 
 def _severity_from_confidence(confidence: float) -> str:
