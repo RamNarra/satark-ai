@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 import base64
 from urllib.parse import urlparse
 from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL
+from api.workflow_api import router as workflow_router
 
 try:
     from google import genai
@@ -52,6 +53,8 @@ app = FastAPI(
     description="Smart Anti-fraud Technology for Awareness, Reporting & Knowledge",
     version="1.0.0"
 )
+
+app.include_router(workflow_router)
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 

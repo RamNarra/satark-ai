@@ -6,7 +6,7 @@
   <title>Satark AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -19,7 +19,7 @@
     <div class="brand">
       <div class="brand-mark"></div>
       <div>
-        <p class="eyebrow">CYBER FRAUD RESPONSE GRID</p>
+        <p class="eyebrow">AUTONOMOUS PRODUCTIVITY GRID</p>
         <h1>Satark AI</h1>
       </div>
     </div>
@@ -29,19 +29,19 @@
         <span class="pulse"></span>
         Gemini Flash Live
       </div>
-      <div class="chip secure-chip">Secure Session</div>
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">Theme</button>
+      <div class="chip">Secure Session</div>
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">Theme</button>
     </div>
   </header>
 
-  <main class="app-shell" id="appShell">
+  <main class="app-shell">
     <section class="hero" id="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">AUTONOMOUS THREAT TRIAGE</p>
-        <h2>Drop the evidence.<br />Watch the system wake up.</h2>
+        <p class="hero-kicker">MISSION CONTROL</p>
+        <h2>Drop the mess.<br />Watch the system organize it.</h2>
         <p class="hero-sub">
-          Paste a suspicious message, upload a screenshot, audio clip, or APK,
-          and let Satark AI coordinate the investigation in real time.
+          Paste a chaotic request, add notes or files, and let the manager wake up
+          the specialists for tasks, schedule, notes, research, and memory.
         </p>
       </div>
 
@@ -51,7 +51,7 @@
 
           <textarea
             id="promptInput"
-            placeholder="Paste the scam message, describe the incident, or attach evidence..."
+            placeholder="Plan my week, create follow-ups from these notes, schedule two meetings, summarize actions..."
             rows="1"
           ></textarea>
 
@@ -61,13 +61,13 @@
               Attach
             </label>
 
-            <button class="live-btn" id="liveBtn" type="button" aria-label="Gemini live mode">
+            <button class="live-btn" id="liveBtn" type="button" aria-label="Live mode">
               <span class="live-ring"></span>
               <span>Live</span>
             </button>
 
             <button class="send-btn" id="sendBtn" type="button" aria-label="Send">
-              Send
+              Launch
             </button>
           </div>
         </div>
@@ -75,49 +75,189 @@
     </section>
 
     <section class="ops hidden" id="opsView">
-      <div class="report-panel glass">
+      <section class="output-panel glass">
         <div class="panel-head">
-          <span class="panel-label">Investigation Feed</span>
-          <span class="panel-meta" id="runState">Awaiting activation</span>
+          <div>
+            <span class="panel-label">Mission Output</span>
+            <h3 class="panel-title" id="outputTitle">Awaiting orchestration</h3>
+          </div>
+          <div class="panel-badges">
+            <span class="mini-chip" id="runState">Idle</span>
+            <span class="mini-chip" id="artifactCount">0 artifacts</span>
+          </div>
         </div>
-        <div class="feed" id="feed"></div>
-      </div>
+
+        <div class="merge-flare" id="mergeFlare"></div>
+
+        <section class="summary-hero" id="summaryHero">
+          <div class="summary-main">
+            <p class="summary-kicker">Primary result</p>
+            <h2 id="summaryHeadline">No output yet</h2>
+            <p id="summaryText">
+              Your tasks, meetings, and notes will appear here the moment the agents finish.
+            </p>
+          </div>
+          <div class="summary-stats">
+            <div class="stat-card">
+              <span>Tasks</span>
+              <strong id="taskCount">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Meetings</span>
+              <strong id="eventCount">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Notes</span>
+              <strong id="noteCount">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="artifact-stage" id="artifactStage">
+          <article class="artifact-column" id="tasksColumn">
+            <div class="artifact-head">
+              <span class="artifact-label">Tasks</span>
+            </div>
+            <div class="artifact-list" id="tasksList">
+              <div class="empty-artifact">No tasks generated yet.</div>
+            </div>
+          </article>
+
+          <article class="artifact-column" id="eventsColumn">
+            <div class="artifact-head">
+              <span class="artifact-label">Schedule</span>
+            </div>
+            <div class="artifact-list" id="eventsList">
+              <div class="empty-artifact">No calendar actions yet.</div>
+            </div>
+          </article>
+
+          <article class="artifact-column artifact-column-wide" id="notesColumn">
+            <div class="artifact-head">
+              <span class="artifact-label">Notes</span>
+            </div>
+            <div class="artifact-list" id="notesList">
+              <div class="empty-artifact">No notes generated yet.</div>
+            </div>
+          </article>
+        </section>
+
+        <section class="approval-strip" id="approvalStrip">
+          <div class="approval-copy">
+            <p class="approval-kicker">Operator action</p>
+            <h4 id="approvalTitle">No approval pending</h4>
+            <p id="approvalText">When an artifact needs confirmation, the action will appear here.</p>
+          </div>
+          <button class="approve-btn" id="approveBtn" type="button" disabled>Approve first artifact</button>
+        </section>
+
+        <section class="session-replay" id="sessionReplay">
+          <div class="artifact-head">
+            <span class="artifact-label">Session Replay</span>
+          </div>
+          <div class="replay-list" id="sessionList">
+            <div class="empty-artifact">No replay items yet.</div>
+          </div>
+        </section>
+      </section>
 
       <aside class="agents-panel glass">
         <div class="panel-head">
-          <span class="panel-label">Systems Online</span>
+          <div>
+            <span class="panel-label">Systems Online</span>
+            <h3 class="panel-title">Agent ignition</h3>
+          </div>
           <span class="panel-meta" id="activeCount">0 / 6 active</span>
         </div>
 
         <div class="agent-grid" id="agentGrid">
-          <article class="agent-card" data-agent="manager">
-            <h3>Manager</h3><p>Classify and route</p><span class="status">Idle</span>
+          <article class="agent-card idle" data-agent="manager">
+            <div class="agent-top">
+              <div>
+                <h3>Manager</h3>
+                <p>Classify and orchestrate</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
-          <article class="agent-card" data-agent="scam">
-            <h3>Scam Detector</h3><p>Signal analysis</p><span class="status">Idle</span>
+
+          <article class="agent-card idle" data-agent="task_agent">
+            <div class="agent-top">
+              <div>
+                <h3>Task Agent</h3>
+                <p>Extract actions and priorities</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
-          <article class="agent-card" data-agent="audio">
-            <h3>Audio Analyzer</h3><p>Voice manipulation scan</p><span class="status">Idle</span>
+
+          <article class="agent-card idle" data-agent="schedule_agent">
+            <div class="agent-top">
+              <div>
+                <h3>Schedule Agent</h3>
+                <p>Propose calendar blocks</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
-          <article class="agent-card" data-agent="apk">
-            <h3>APK Analyzer</h3><p>Static malware triage</p><span class="status">Idle</span>
+
+          <article class="agent-card idle" data-agent="notes_agent">
+            <div class="agent-top">
+              <div>
+                <h3>Notes Agent</h3>
+                <p>Generate structured brief</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
-          <article class="agent-card" data-agent="osint">
-            <h3>OSINT</h3><p>WHOIS, DNS, pivots</p><span class="status">Idle</span>
+
+          <article class="agent-card idle" data-agent="research_agent">
+            <div class="agent-top">
+              <div>
+                <h3>Research Agent</h3>
+                <p>Fill context gaps</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
-          <article class="agent-card" data-agent="golden">
-            <h3>Golden Hour</h3><p>Response and complaint draft</p><span class="status">Idle</span>
+
+          <article class="agent-card idle" data-agent="memory_agent">
+            <div class="agent-top">
+              <div>
+                <h3>Memory Agent</h3>
+                <p>Load and update user state</p>
+              </div>
+              <span class="agent-dot"></span>
+            </div>
+            <div class="agent-scan"></div>
+            <div class="agent-wave"></div>
+            <span class="status">Idle</span>
           </article>
         </div>
       </aside>
     </section>
   </main>
 
-  <footer class="status-ticker" id="ticker">
+  <footer class="status-bar">
     <span><strong>Model:</strong> Gemini Flash Live</span>
-    <span id="tickerUpload"><strong>Input:</strong> text</span>
-    <span id="tickerLatency"><strong>Latency:</strong> -- ms</span>
-    <span id="tickerEvidence"><strong>Evidence:</strong> 0</span>
+    <span><strong>Mode:</strong> workflow</span>
+    <span><strong>Latency:</strong> <span id="latencyValue">0 ms</span></span>
+    <span><strong>Artifacts:</strong> <span id="footerArtifactCount">0</span></span>
   </footer>
 
   <script src="/static/app.js"></script>
