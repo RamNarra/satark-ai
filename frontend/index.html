@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Satark AI</title>
+  <title>Satark AI Ops</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -19,17 +19,17 @@
     <div class="brand">
       <div class="brand-mark"></div>
       <div>
-        <p class="eyebrow">AUTONOMOUS PRODUCTIVITY GRID</p>
-        <h1>Satark AI</h1>
+        <p class="eyebrow">SATARK OPERATOR CONSOLE</p>
+        <h1>Fraud Investigation Ops</h1>
       </div>
     </div>
 
     <div class="top-actions">
       <div class="chip live-chip">
         <span class="pulse"></span>
-        Gemini Flash Live
+        Live Orchestration
       </div>
-      <div class="chip">Secure Session</div>
+      <a class="chip" href="/ui">Citizen UI</a>
       <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">Theme</button>
     </div>
   </header>
@@ -37,37 +37,30 @@
   <main class="app-shell">
     <section class="hero" id="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">MISSION CONTROL</p>
-        <h2>Drop the mess.<br />Watch the system organize it.</h2>
+        <p class="hero-kicker">CYBER FRAUD COMMAND</p>
+        <h2>Paste evidence.<br />Watch six agents investigate.</h2>
         <p class="hero-sub">
-          Paste a chaotic request, add notes or files, and let the manager wake up
-          the specialists for tasks, schedule, notes, research, and memory.
+          Manager routes suspicious content across Scam Detector, Audio, APK, OSINT,
+          and Golden Hour response to produce one final case report.
         </p>
       </div>
 
       <section class="composer-wrap">
         <div class="composer glass" id="composer">
           <div class="upload-row" id="filePills"></div>
-
           <textarea
             id="promptInput"
-            placeholder="Plan my week, create follow-ups from these notes, schedule two meetings, summarize actions..."
+            placeholder="Paste suspicious message, call transcript, payment request, or incident details..."
             rows="1"
           ></textarea>
 
           <div class="composer-actions">
             <label class="upload-btn">
               <input type="file" id="fileInput" multiple hidden />
-              Attach
+              Attach Evidence
             </label>
-
-            <button class="live-btn" id="liveBtn" type="button" aria-label="Live mode">
-              <span class="live-ring"></span>
-              <span>Live</span>
-            </button>
-
             <button class="send-btn" id="sendBtn" type="button" aria-label="Send">
-              Launch
+              Launch Investigation
             </button>
           </div>
         </div>
@@ -78,12 +71,12 @@
       <section class="output-panel glass">
         <div class="panel-head">
           <div>
-            <span class="panel-label">Mission Output</span>
-            <h3 class="panel-title" id="outputTitle">Awaiting orchestration</h3>
+            <span class="panel-label">Case Report</span>
+            <h3 class="panel-title" id="outputTitle">Awaiting investigation</h3>
           </div>
           <div class="panel-badges">
             <span class="mini-chip" id="runState">Idle</span>
-            <span class="mini-chip" id="artifactCount">0 artifacts</span>
+            <span class="mini-chip" id="artifactCount">0 signals</span>
           </div>
         </div>
 
@@ -91,73 +84,62 @@
 
         <section class="summary-hero" id="summaryHero">
           <div class="summary-main">
-            <p class="summary-kicker">Primary result</p>
-            <h2 id="summaryHeadline">No output yet</h2>
-            <p id="summaryText">
-              Your tasks, meetings, and notes will appear here the moment the agents finish.
-            </p>
+            <p class="summary-kicker">Final Answer</p>
+            <h2 id="summaryHeadline">No verdict yet</h2>
+            <p id="summaryText">Submit content to generate a fraud investigation report.</p>
           </div>
           <div class="summary-stats">
             <div class="stat-card">
-              <span>Tasks</span>
-              <strong id="taskCount">0</strong>
+              <span>Risk Level</span>
+              <strong id="riskCount">-</strong>
             </div>
             <div class="stat-card">
-              <span>Meetings</span>
-              <strong id="eventCount">0</strong>
+              <span>Confidence</span>
+              <strong id="confidenceCount">-</strong>
             </div>
             <div class="stat-card">
-              <span>Notes</span>
-              <strong id="noteCount">0</strong>
+              <span>Similar Cases</span>
+              <strong id="similarCount">0</strong>
             </div>
           </div>
         </section>
 
         <section class="artifact-stage" id="artifactStage">
-          <article class="artifact-column" id="tasksColumn">
+          <article class="artifact-column" id="signalsColumn">
             <div class="artifact-head">
-              <span class="artifact-label">Tasks</span>
+              <span class="artifact-label">Signals Found</span>
             </div>
-            <div class="artifact-list" id="tasksList">
-              <div class="empty-artifact">No tasks generated yet.</div>
+            <div class="artifact-list" id="signalsList">
+              <div class="empty-artifact">No signals yet.</div>
             </div>
           </article>
 
-          <article class="artifact-column" id="eventsColumn">
+          <article class="artifact-column" id="osintColumn">
             <div class="artifact-head">
-              <span class="artifact-label">Schedule</span>
+              <span class="artifact-label">OSINT Findings</span>
             </div>
-            <div class="artifact-list" id="eventsList">
-              <div class="empty-artifact">No calendar actions yet.</div>
+            <div class="artifact-list" id="osintList">
+              <div class="empty-artifact">No OSINT findings yet.</div>
             </div>
           </article>
 
-          <article class="artifact-column artifact-column-wide" id="notesColumn">
+          <article class="artifact-column artifact-column-wide" id="actionsColumn">
             <div class="artifact-head">
-              <span class="artifact-label">Notes</span>
+              <span class="artifact-label">Recommended Actions</span>
             </div>
-            <div class="artifact-list" id="notesList">
-              <div class="empty-artifact">No notes generated yet.</div>
+            <div class="artifact-list" id="actionsList">
+              <div class="empty-artifact">No action plan yet.</div>
             </div>
           </article>
         </section>
 
         <section class="approval-strip" id="approvalStrip">
           <div class="approval-copy">
-            <p class="approval-kicker">Operator action</p>
-            <h4 id="approvalTitle">No approval pending</h4>
-            <p id="approvalText">When an artifact needs confirmation, the action will appear here.</p>
+            <p class="approval-kicker">Complaint Draft</p>
+            <h4 id="approvalTitle">No complaint draft yet</h4>
+            <p id="approvalText">Case draft will appear here after Golden Hour response.</p>
           </div>
-          <button class="approve-btn" id="approveBtn" type="button" disabled>Approve first artifact</button>
-        </section>
-
-        <section class="session-replay" id="sessionReplay">
-          <div class="artifact-head">
-            <span class="artifact-label">Session Replay</span>
-          </div>
-          <div class="replay-list" id="sessionList">
-            <div class="empty-artifact">No replay items yet.</div>
-          </div>
+          <button class="approve-btn" id="copyComplaintBtn" type="button" disabled>Copy complaint draft</button>
         </section>
       </section>
 
@@ -165,7 +147,7 @@
         <div class="panel-head">
           <div>
             <span class="panel-label">Systems Online</span>
-            <h3 class="panel-title">Agent ignition</h3>
+            <h3 class="panel-title">Fraud agent ignition</h3>
           </div>
           <span class="panel-meta" id="activeCount">0 / 6 active</span>
         </div>
@@ -174,8 +156,8 @@
           <article class="agent-card idle" data-agent="manager">
             <div class="agent-top">
               <div>
-                <h3>Manager</h3>
-                <p>Classify and orchestrate</p>
+                <h3>Manager Agent</h3>
+                <p>Routes investigation plan</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -184,11 +166,11 @@
             <span class="status">Idle</span>
           </article>
 
-          <article class="agent-card idle" data-agent="task_agent">
+          <article class="agent-card idle" data-agent="scam_detector">
             <div class="agent-top">
               <div>
-                <h3>Task Agent</h3>
-                <p>Extract actions and priorities</p>
+                <h3>Scam Detector Agent</h3>
+                <p>Classifies fraud patterns</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -197,11 +179,11 @@
             <span class="status">Idle</span>
           </article>
 
-          <article class="agent-card idle" data-agent="schedule_agent">
+          <article class="agent-card idle" data-agent="audio_analyzer">
             <div class="agent-top">
               <div>
-                <h3>Schedule Agent</h3>
-                <p>Propose calendar blocks</p>
+                <h3>Audio Analyzer Agent</h3>
+                <p>Detects vishing indicators</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -210,11 +192,11 @@
             <span class="status">Idle</span>
           </article>
 
-          <article class="agent-card idle" data-agent="notes_agent">
+          <article class="agent-card idle" data-agent="apk_analyzer">
             <div class="agent-top">
               <div>
-                <h3>Notes Agent</h3>
-                <p>Generate structured brief</p>
+                <h3>APK Analyzer Agent</h3>
+                <p>Inspects Android package risk</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -223,11 +205,11 @@
             <span class="status">Idle</span>
           </article>
 
-          <article class="agent-card idle" data-agent="research_agent">
+          <article class="agent-card idle" data-agent="osint">
             <div class="agent-top">
               <div>
-                <h3>Research Agent</h3>
-                <p>Fill context gaps</p>
+                <h3>OSINT Intelligence Agent</h3>
+                <p>Investigates infrastructure</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -236,11 +218,11 @@
             <span class="status">Idle</span>
           </article>
 
-          <article class="agent-card idle" data-agent="memory_agent">
+          <article class="agent-card idle" data-agent="golden_hour">
             <div class="agent-top">
               <div>
-                <h3>Memory Agent</h3>
-                <p>Load and update user state</p>
+                <h3>Golden Hour Response Agent</h3>
+                <p>Generates urgent action plan</p>
               </div>
               <span class="agent-dot"></span>
             </div>
@@ -254,10 +236,9 @@
   </main>
 
   <footer class="status-bar">
-    <span><strong>Model:</strong> Gemini Flash Live</span>
-    <span><strong>Mode:</strong> workflow</span>
+    <span><strong>Mode:</strong> Fraud ops</span>
     <span><strong>Latency:</strong> <span id="latencyValue">0 ms</span></span>
-    <span><strong>Artifacts:</strong> <span id="footerArtifactCount">0</span></span>
+    <span><strong>Signals:</strong> <span id="footerArtifactCount">0</span></span>
   </footer>
 
   <script src="/static/app.js"></script>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Satark AI | Fraud Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/ui.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">TGCSB-INSPIRED CITIZEN ASSIST</p>
+      <h1>Check if this message, call, image, or APK is a scam.</h1>
+      <p class="subtext">Paste a WhatsApp message, or upload a screenshot, audio clip, or APK for fast fraud triage.</p>
+    </header>
+
+    <section class="intake card">
+      <label for="inputText" class="field-label">Suspicious content</label>
+      <textarea id="inputText" rows="7" placeholder="Paste suspicious message, call transcript, payment request, or incident details..."></textarea>
+
+      <div class="intake-row">
+        <label class="upload-btn" for="inputFile">Upload file</label>
+        <input id="inputFile" type="file" accept="image/*,audio/*,.apk,.txt,.pdf" />
+        <span id="fileName" class="file-name">No file selected</span>
+      </div>
+
+      <div class="actions-row">
+        <button id="submitBtn" class="primary-btn" type="button">Analyze Now</button>
+        <a class="ops-link" href="/ops" target="_blank" rel="noopener noreferrer">Open live ops board</a>
+      </div>
+      <p id="statusText" class="status-text">Ready for analysis.</p>
+    </section>
+
+    <section id="reportRoot" class="report hidden">
+      <article class="answer-card card" id="answerCard">
+        <p class="eyebrow">Final Answer</p>
+        <h2 id="verdictText">Pending analysis</h2>
+        <p id="summaryText">Submit content to generate a fraud report.</p>
+        <div class="answer-metrics">
+          <div><span>Risk Level</span><strong id="riskText">-</strong></div>
+          <div><span>Confidence</span><strong id="confidenceText">-</strong></div>
+          <div><span>Scam Type</span><strong id="scamTypeText">-</strong></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>What you should do now</h3>
+        <p id="goldenHourText" class="small-text"></p>
+        <ul id="actionsList" class="list"></ul>
+      </article>
+
+      <article class="card">
+        <h3>Why this was flagged</h3>
+        <ul id="signalsList" class="list"></ul>
+        <p id="similarCasesText" class="small-text"></p>
+      </article>
+
+      <article class="card">
+        <h3>Infrastructure intelligence</h3>
+        <pre id="osintBlock" class="json-block">No OSINT findings.</pre>
+      </article>
+
+      <article class="card">
+        <h3>Audio or APK findings</h3>
+        <pre id="modalityBlock" class="json-block">No modality-specific findings.</pre>
+      </article>
+
+      <article class="card">
+        <h3>Complaint draft</h3>
+        <p id="caseIdText" class="small-text"></p>
+        <pre id="complaintText" class="complaint-block"></pre>
+      </article>
+    </section>
+
+    <footer class="footer-note">
+      Emergency helpline: <strong>1930</strong> · National Cyber Crime Reporting Portal: <strong>cybercrime.gov.in</strong>
+    </footer>
+  </main>
+
+  <script src="/static/ui.js"></script>
+</body>
+</html>

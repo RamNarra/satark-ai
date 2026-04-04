@@ -9,7 +9,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, W
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Any, Optional
 import uvicorn
 from agents.manager import run_pipeline
 from agents.manager.agent import run as run_legacy_pipeline
@@ -60,7 +60,17 @@ app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/ui")
 def serve_ui():
+    return FileResponse("frontend/ui.html")
+
+
+@app.get("/ops")
+def serve_ops():
     return FileResponse("frontend/index.html")
+
+
+@app.get("/")
+def serve_root_ui():
+    return FileResponse("frontend/ui.html")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
@@ -339,6 +349,56 @@ def _extract_domains(urls: list[str]) -> list[str]:
     return domains
 
 
+def _as_string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _extract_stage(pipeline_result: dict, stage_name: str) -> dict:
+    stages = pipeline_result.get("pipeline_stages")
+    if isinstance(stages, dict):
+        stage = stages.get(stage_name)
+        if isinstance(stage, dict):
+            return stage
+    return {}
+
+
+def _normalize_recommended_actions(pipeline_result: dict) -> list[str]:
+    actions: list[str] = []
+
+    priority_actions = pipeline_result.get("priority_actions")
+    if isinstance(priority_actions, list):
+        for item in priority_actions:
+            if isinstance(item, dict):
+                action = str(item.get("action") or "").strip()
+                if action:
+                    actions.append(action)
+            elif str(item).strip():
+                actions.append(str(item).strip())
+
+    victim_advice = str(pipeline_result.get("victim_advice") or "").strip()
+    if victim_advice:
+        actions.append(victim_advice)
+
+    deduped: list[str] = []
+    for action in actions:
+        if action not in deduped:
+            deduped.append(action)
+
+    if deduped:
+        return deduped[:6]
+
+    return [
+        "Do not click suspicious links",
+        "Do not share OTP or PIN",
+        "Call 1930 immediately",
+        "File complaint at cybercrime.gov.in",
+    ]
+
+
 def _load_persisted_case(run_id: str) -> Optional[dict]:
     db = get_db()
     if not db:
@@ -348,137 +408,222 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
         if not doc.exists:
             return None
         payload = doc.to_dict() or {}
+        risk_level = str(payload.get("risk_level") or "UNKNOWN")
+        confidence = int(payload.get("confidence") or 0)
+        summary = str(payload.get("summary") or "Recovered case result")
+        recommended = ["Call 1930 immediately", "File complaint at cybercrime.gov.in"]
         return {
             "run_id": run_id,
             "case_id": run_id,
             "status": "completed",
-            "summary": {
-                "title": payload.get("summary", "Recovered case result"),
-                "risk_level": str(payload.get("risk_level", "UNKNOWN")).lower(),
-                "recommended_action": "Call 1930 and file complaint at cybercrime.gov.in",
+            "input_type": payload.get("input_type", "text"),
+            "verdict": "Likely scam" if confidence >= 50 else "Needs manual review",
+            "summary": summary,
+            "scam_type": payload.get("scam_type", "UNKNOWN"),
+            "official_category": payload.get("scam_type", "UNKNOWN"),
+            "risk_level": risk_level,
+            "confidence": confidence,
+            "signals_found": _as_string_list(payload.get("signals_found")),
+            "similar_cases": int(payload.get("similar_cases", 0) or 0),
+            "golden_hour_status": "ACTIVE" if payload.get("golden_hour_active") else "STANDBY",
+            "golden_hour_message": "Contact helpline 1930 and preserve evidence.",
+            "entities": {
+                "phone_numbers": [],
+                "domains": [],
+                "urls": [],
+                "ips": [],
+                "banks_claimed": [],
             },
-            "classification": {
-                "primary_type": payload.get("input_type", "text"),
-                "scam_type": payload.get("scam_type", "UNKNOWN"),
-                "risk_level": payload.get("risk_level", "UNKNOWN"),
-                "confidence": payload.get("confidence", 0),
+            "osint": None,
+            "audio_analysis": None,
+            "apk_analysis": None,
+            "evidence_summary": _as_string_list(payload.get("signals_found"))[:5],
+            "recommended_actions": recommended,
+            "complaint_draft": {
+                "title": "Cyber Fraud Complaint Draft",
+                "acknowledgment_id": run_id,
+                "body": "I am reporting a suspected cyber fraud incident. Please investigate and initiate fund-protection steps.",
             },
-            "entities": {"domains": [], "phones": [], "ips": []},
-            "agent_outputs": {},
-            "mcp_actions": {"calendar_draft": None, "gmail_draft": None},
-            "evidence": [],
-            "report": {"complaint_draft": "", "golden_hour_active": payload.get("golden_hour_active", False)},
+            "follow_up_actions": {
+                "calendar_event_created": False,
+                "gmail_draft_created": False,
+                "tgcsb_alert_sent": False,
+            },
+            "agent_results": {
+                "manager": {"status": "done"},
+                "scam_detector": {"status": "done"},
+                "audio_analyzer": {"status": "skipped"},
+                "apk_analyzer": {"status": "skipped"},
+                "osint": {"status": "done"},
+                "golden_hour": {"status": "done"},
+            },
             "timestamps": {
                 "created_at": payload.get("timestamp"),
                 "completed_at": payload.get("timestamp"),
             },
-            "raw": {"persisted_case": payload},
+            "raw": payload,
         }
     except Exception:
         return None
 
 
 def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: str, selected_agents: list[str]) -> dict:
-    scam_type = pipeline_result.get("scam_type") or "UNKNOWN"
-    risk_level = pipeline_result.get("risk_level") or "UNKNOWN"
-    confidence = pipeline_result.get("confidence") or 0
-    extracted = pipeline_result.get("extracted_entities") or {}
-    urls = extracted.get("urls") or []
-    phones = extracted.get("phone_numbers") or []
-    ips = extracted.get("ips") or []
+    scam_type = str(pipeline_result.get("scam_type") or "UNKNOWN")
+    risk_level = str(pipeline_result.get("risk_level") or "UNKNOWN").upper()
+    confidence = int(float(pipeline_result.get("confidence") or 0))
+    is_scam = bool(pipeline_result.get("is_scam", confidence >= 60))
 
-    agent_outputs = {
-        "manager": {
-            "acknowledgment_id": pipeline_result.get("acknowledgment_id"),
-            "pipeline_stages": pipeline_result.get("pipeline_stages", []),
-        },
-        "scam_detector": {
-            "is_scam": pipeline_result.get("is_scam"),
-            "risk_level": pipeline_result.get("risk_level"),
-            "signals": pipeline_result.get("signals_found", []),
+    extracted = pipeline_result.get("extracted_entities") if isinstance(pipeline_result.get("extracted_entities"), dict) else {}
+    urls = _as_string_list(extracted.get("urls"))
+    phones = _as_string_list(extracted.get("phone_numbers") or extracted.get("phones"))
+    ips = _as_string_list(extracted.get("ips"))
+    banks_claimed = _as_string_list(extracted.get("bank_names") or extracted.get("banks_claimed"))
+
+    osint_stage = _extract_stage(pipeline_result, "osint")
+    osint_payload: Optional[dict] = None
+    if "osint" in selected_agents:
+        osint_payload = {
+            "threat_summary": str(osint_stage.get("threat_summary") or pipeline_result.get("osint_summary") or "OSINT scan completed."),
+            "overall_threat_score": int(osint_stage.get("overall_threat_score") or pipeline_result.get("threat_score") or 0),
+            "domains": osint_stage.get("domains") if isinstance(osint_stage.get("domains"), dict) else {},
+            "ips": osint_stage.get("ips") if isinstance(osint_stage.get("ips"), dict) else {},
+            "urls": osint_stage.get("urls") if isinstance(osint_stage.get("urls"), dict) else {},
         }
-        if "scam_detector" in selected_agents
-        else None,
-        "audio_analyzer": {
-            "risk_level": pipeline_result.get("risk_level"),
-            "summary": pipeline_result.get("summary") or pipeline_result.get("victim_advice", ""),
-        }
-        if "audio_analyzer" in selected_agents
-        else None,
-        "apk_analyzer": pipeline_result.get("pipeline_stages", []) if "apk_analyzer" in selected_agents else None,
-        "osint": {
-            "threat_score": pipeline_result.get("threat_score", 0),
-            "summary": pipeline_result.get("osint_summary", ""),
-        }
-        if "osint" in selected_agents
-        else None,
-        "golden_hour": {
-            "priority_actions": pipeline_result.get("priority_actions", []),
-            "fir_template": pipeline_result.get("fir_template", ""),
-        }
-        if "golden_hour" in selected_agents
-        else None,
-    }
+
+    recommended_actions = _normalize_recommended_actions(pipeline_result)
+    verdict = "Likely scam" if is_scam else "Likely safe"
+    summary_text = str(pipeline_result.get("summary") or "").strip()
+    if not summary_text:
+        if is_scam:
+            summary_text = "This input contains multiple indicators of cyber fraud. Avoid engaging further and start immediate reporting."
+        else:
+            summary_text = "No high-confidence scam pattern was confirmed, but stay cautious and verify independently."
 
     files = run_ctx["request"]["user_input"].get("files") or []
-    evidence = [
-        {
-            "type": f.get("file_type") or "unknown",
-            "source": f.get("file_name") or "unknown",
-            "storage_uri": f.get("file_url"),
-        }
-        for f in files
-    ]
+    evidence_summary = _as_string_list(pipeline_result.get("signals_found") or pipeline_result.get("red_flags"))
+    if not evidence_summary:
+        evidence_summary = [
+            "Automated multi-agent analysis completed",
+            "Pattern checks and response planning executed",
+        ]
 
-    recommended_action = pipeline_result.get("victim_advice", "Call 1930 and file complaint at cybercrime.gov.in")
-    priority_actions = pipeline_result.get("priority_actions") or []
-    if priority_actions:
-        first_action = priority_actions[0]
-        if isinstance(first_action, dict):
-            recommended_action = str(first_action.get("action") or recommended_action)
-        else:
-            recommended_action = str(first_action)
-
-    summary = {
-        "title": f"Likely {scam_type} incident",
-        "risk_level": str(risk_level).lower(),
-        "recommended_action": recommended_action,
-    }
+    similar_cases = int(
+        run_ctx.get("similar_patterns_count")
+        or pipeline_result.get("similar_cases_found")
+        or 0
+    )
 
     calendar_event = pipeline_result.get("calendar_event") if isinstance(pipeline_result.get("calendar_event"), dict) else {}
+    fir_template = pipeline_result.get("fir_template")
+    if isinstance(fir_template, dict):
+        complaint_body = str(fir_template.get("case_summary") or "")
+    else:
+        complaint_body = str(fir_template or "")
+
+    if not complaint_body:
+        complaint_body = (
+            "I am reporting a suspected cyber fraud incident and request immediate action. "
+            "Please initiate evidence-based investigation and fund-protection steps."
+        )
+
+    modality_audio = None
+    if "audio_analyzer" in selected_agents:
+        modality_audio = {
+            "summary": str(pipeline_result.get("summary") or pipeline_result.get("victim_advice") or "Audio fraud analysis completed."),
+            "confidence": confidence,
+            "risk_level": risk_level,
+        }
+
+    modality_apk = None
+    if "apk_analyzer" in selected_agents:
+        modality_apk = {
+            "summary": str(pipeline_result.get("summary") or "APK static and behavioral indicators analyzed."),
+            "risk_level": risk_level,
+            "is_malicious": bool(pipeline_result.get("is_malicious") or is_scam),
+        }
+
+    selected_set = set(selected_agents)
+    agent_results = {
+        "manager": {"status": "done"},
+        "scam_detector": {"status": "done" if "scam_detector" in selected_set else "skipped"},
+        "audio_analyzer": {"status": "done" if "audio_analyzer" in selected_set else "skipped"},
+        "apk_analyzer": {"status": "done" if "apk_analyzer" in selected_set else "skipped"},
+        "osint": {"status": "done" if "osint" in selected_set else "skipped"},
+        "golden_hour": {"status": "done" if "golden_hour" in selected_set else "skipped"},
+    }
 
     return {
         "run_id": run_ctx["run_id"],
         "case_id": run_ctx["case_id"],
         "status": run_ctx["status"],
-        "summary": summary,
-        "classification": {
-            "primary_type": primary_type,
-            "scam_type": scam_type,
-            "risk_level": risk_level,
-            "confidence": confidence,
-        },
+        "input_type": primary_type,
+        "verdict": verdict,
+        "summary": summary_text,
+        "scam_type": scam_type,
+        "official_category": scam_type,
+        "risk_level": risk_level,
+        "confidence": confidence,
+        "signals_found": _as_string_list(pipeline_result.get("signals_found") or pipeline_result.get("red_flags")),
+        "similar_cases": similar_cases,
+        "golden_hour_status": "ACTIVE" if bool(pipeline_result.get("golden_hour_active")) else "STANDBY",
+        "golden_hour_message": recommended_actions[0],
         "entities": {
+            "phone_numbers": phones,
             "domains": _extract_domains(urls),
-            "phones": phones,
+            "urls": urls,
             "ips": ips,
+            "banks_claimed": banks_claimed,
         },
-        "agent_outputs": agent_outputs,
-        "mcp_actions": {
-            "calendar_draft": calendar_event if calendar_event.get("attempted") else None,
-            "gmail_draft": None,
+        "osint": osint_payload,
+        "audio_analysis": modality_audio,
+        "apk_analysis": modality_apk,
+        "evidence_summary": evidence_summary,
+        "recommended_actions": recommended_actions,
+        "complaint_draft": {
+            "title": "Cyber Fraud Complaint Draft",
+            "acknowledgment_id": run_ctx["case_id"],
+            "body": complaint_body,
         },
-        "evidence": evidence,
-        "report": {
-            "complaint_draft": pipeline_result.get("fir_template", ""),
-            "golden_hour_active": pipeline_result.get("golden_hour_active", False),
+        "follow_up_actions": {
+            "calendar_event_created": bool(calendar_event.get("created", False)),
+            "gmail_draft_created": False,
+            "tgcsb_alert_sent": False,
         },
+        "agent_results": agent_results,
+        "evidence": [
+            {
+                "type": f.get("file_type") or "unknown",
+                "source": f.get("file_name") or "unknown",
+                "storage_uri": f.get("file_url"),
+            }
+            for f in files
+        ],
         "timestamps": {
             "created_at": run_ctx["created_at"],
             "completed_at": run_ctx.get("completed_at"),
         },
         "raw": pipeline_result,
     }
+
+
+def _build_sync_report(text: str, files: list[dict], pipeline_result: dict, primary_type: str) -> dict:
+    _, selected_agents = _classify_flow({"text": text, "files": files})
+    now = _utc_now()
+    run_ctx = {
+        "run_id": str(pipeline_result.get("acknowledgment_id") or _new_id("run")),
+        "case_id": str(pipeline_result.get("case_id") or _new_id("case")),
+        "status": "completed",
+        "created_at": now,
+        "completed_at": now,
+        "request": {
+            "user_input": {
+                "text": text,
+                "files": files,
+            }
+        },
+        "similar_patterns_count": int(pipeline_result.get("similar_cases_found") or 0),
+    }
+    return _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
 
 
 async def _orchestrate_run(run_id: str) -> None:
@@ -564,24 +709,21 @@ async def _orchestrate_run(run_id: str) -> None:
                     "matches": len(similar_patterns),
                 },
             )
+        run_ctx["similar_patterns_count"] = len(similar_patterns)
 
         input_type, payload = _build_pipeline_call(user_input, similar_patterns)
+        legacy_input = _build_legacy_input(user_input)
+
         if run_pipeline is None:
-            raise RuntimeError("Manager pipeline is unavailable in this environment")
-
-        pipeline_result = await run_pipeline(input_type, payload)
-
-        if _needs_legacy_fallback(pipeline_result):
             await _emit_event(
                 run_id,
                 "tool.called",
                 {
                     "agent": "manager",
                     "tool": "legacy_manager_pipeline",
-                    "message": "Primary pipeline degraded, activating fallback inference path",
+                    "message": "Primary pipeline unavailable, activating fallback inference path",
                 },
             )
-            legacy_input = _build_legacy_input(user_input)
             pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
             await _emit_event(
                 run_id,
@@ -592,6 +734,50 @@ async def _orchestrate_run(run_id: str) -> None:
                     "status": "ok",
                 },
             )
+        else:
+            try:
+                pipeline_result = await run_pipeline(input_type, payload)
+            except Exception:
+                await _emit_event(
+                    run_id,
+                    "tool.called",
+                    {
+                        "agent": "manager",
+                        "tool": "legacy_manager_pipeline",
+                        "message": "Primary pipeline errored, activating fallback inference path",
+                    },
+                )
+                pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                await _emit_event(
+                    run_id,
+                    "tool.result",
+                    {
+                        "agent": "manager",
+                        "tool": "legacy_manager_pipeline",
+                        "status": "ok",
+                    },
+                )
+
+            if _needs_legacy_fallback(pipeline_result):
+                await _emit_event(
+                    run_id,
+                    "tool.called",
+                    {
+                        "agent": "manager",
+                        "tool": "legacy_manager_pipeline",
+                        "message": "Primary pipeline degraded, activating fallback inference path",
+                    },
+                )
+                pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                await _emit_event(
+                    run_id,
+                    "tool.result",
+                    {
+                        "agent": "manager",
+                        "tool": "legacy_manager_pipeline",
+                        "status": "ok",
+                    },
+                )
 
         await _emit_event(
             run_id,
@@ -642,24 +828,28 @@ async def _orchestrate_run(run_id: str) -> None:
         run_ctx["result"] = _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
 
         result = run_ctx["result"]
-        classification = result.get("classification", {})
-        report = result.get("report", {})
+        scam_type = str(result.get("scam_type") or "UNKNOWN")
+        risk_level = str(result.get("risk_level") or "UNKNOWN")
+        confidence = float(result.get("confidence") or 0)
+        input_type = str(result.get("input_type") or primary_type)
+        golden_hour_active = str(result.get("golden_hour_status") or "").upper() == "ACTIVE"
+        summary_text = str(result.get("summary") or "")
 
         save_case(
             acknowledgment_id=run_id,
             case_data={
-                "scam_type": classification.get("scam_type", "UNKNOWN"),
-                "risk_level": classification.get("risk_level", "UNKNOWN"),
-                "confidence": classification.get("confidence", 0),
-                "golden_hour_active": report.get("golden_hour_active", False),
-                "input_type": classification.get("primary_type", "text"),
-                "summary": result.get("summary", {}).get("title", ""),
+                "scam_type": scam_type,
+                "risk_level": risk_level,
+                "confidence": confidence,
+                "golden_hour_active": golden_hour_active,
+                "input_type": input_type,
+                "summary": summary_text,
             },
         )
 
         final_user_text = user_text
-        final_scam_type = str(classification.get("scam_type") or "UNKNOWN")
-        final_confidence = float(classification.get("confidence", 0) or 0)
+        final_scam_type = scam_type
+        final_confidence = float(confidence or 0)
         if final_user_text and final_scam_type.upper() not in {"UNKNOWN", "NONE", ""}:
             save_fraud_pattern(final_user_text, final_scam_type, final_confidence)
 
@@ -691,10 +881,15 @@ class TextRequest(BaseModel):
     fraud_amount: Optional[float] = 0
     minutes_since_fraud: Optional[int] = None
 
-@app.get("/")
-def root():
-    return {"service": "SATARK AI", "status": "online", "version": "1.0.0",
-            "helpline": "1930", "portal": "cybercrime.gov.in"}
+@app.get("/api")
+def api_root():
+    return {
+        "service": "SATARK AI",
+        "status": "online",
+        "version": "1.0.0",
+        "helpline": "1930",
+        "portal": "cybercrime.gov.in",
+    }
 
 @app.get("/health")
 def health():
@@ -853,7 +1048,13 @@ async def analyze_unified(
                     "minutes_since_fraud": minutes_since_fraud,
                 },
             )
-            return JSONResponse(content=result)
+            report = _build_sync_report(
+                text=(text or "").strip(),
+                files=[],
+                pipeline_result=result,
+                primary_type="text",
+            )
+            return JSONResponse(content=report)
 
         content = await file.read()
         filename = file.filename or "uploaded_file"
@@ -872,7 +1073,13 @@ async def analyze_unified(
                     "text": (text or "").strip(),
                 },
             )
-            return JSONResponse(content=result)
+            report = _build_sync_report(
+                text=(text or "").strip(),
+                files=[{"file_name": filename, "file_type": mime_type}],
+                pipeline_result=result,
+                primary_type="apk",
+            )
+            return JSONResponse(content=report)
 
         if mime_type.startswith("audio/"):
             audio_b64 = base64.b64encode(content).decode("utf-8")
@@ -887,7 +1094,13 @@ async def analyze_unified(
                     "minutes_since_fraud": minutes_since_fraud,
                 },
             )
-            return JSONResponse(content=result)
+            report = _build_sync_report(
+                text=(text or "").strip(),
+                files=[{"file_name": filename, "file_type": mime_type}],
+                pipeline_result=result,
+                primary_type="audio",
+            )
+            return JSONResponse(content=report)
 
         image_b64 = base64.b64encode(content).decode("utf-8")
         result = await run_pipeline(
@@ -901,7 +1114,13 @@ async def analyze_unified(
                 "minutes_since_fraud": minutes_since_fraud,
             },
         )
-        return JSONResponse(content=result)
+        report = _build_sync_report(
+            text=(text or "").strip(),
+            files=[{"file_name": filename, "file_type": mime_type}],
+            pipeline_result=result,
+            primary_type="text_image",
+        )
+        return JSONResponse(content=report)
 
     except HTTPException:
         raise
@@ -916,7 +1135,8 @@ async def analyze_text(req: TextRequest):
             "fraud_amount": req.fraud_amount,
             "minutes_since_fraud": req.minutes_since_fraud,
         })
-        return JSONResponse(content=result)
+        report = _build_sync_report(req.text, [], result, "text")
+        return JSONResponse(content=report)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -936,7 +1156,13 @@ async def analyze_image(
             "fraud_amount": fraud_amount,
             "minutes_since_fraud": minutes_since_fraud,
         })
-        return JSONResponse(content=result)
+        report = _build_sync_report(
+            "",
+            [{"file_name": file.filename or "upload.jpg", "file_type": file.content_type or "image/jpeg"}],
+            result,
+            "text_image",
+        )
+        return JSONResponse(content=report)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -956,7 +1182,13 @@ async def analyze_audio(
             "fraud_amount": fraud_amount,
             "minutes_since_fraud": minutes_since_fraud,
         })
-        return JSONResponse(content=result)
+        report = _build_sync_report(
+            "",
+            [{"file_name": file.filename or "upload.audio", "file_type": file.content_type or "audio/mp3"}],
+            result,
+            "audio",
+        )
+        return JSONResponse(content=report)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -970,7 +1202,13 @@ async def analyze_apk(file: UploadFile = File(...)):
             "filename": file.filename,
             "static_results": static_results,
         })
-        return JSONResponse(content=result)
+        report = _build_sync_report(
+            "",
+            [{"file_name": file.filename or "upload.apk", "file_type": file.content_type or "application/vnd.android.package-archive"}],
+            result,
+            "apk",
+        )
+        return JSONResponse(content=report)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
