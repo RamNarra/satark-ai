@@ -1,7 +1,9 @@
 import os, sys
+import asyncio
+import json
 import mimetypes
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -12,6 +14,29 @@ from db.operations import get_case_stats
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import base64
+from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL
+
+try:
+    from google import genai
+    from google.genai import types as genai_types
+except Exception:
+    genai = None  # type: ignore
+    genai_types = None  # type: ignore
+
+
+LIVE_STREAM_INSTRUCTION = (
+    "You are SATARK AI, a real-time cyber fraud analyst. "
+    "As live audio arrives, return concise TEXT updates with: "
+    "RISK (SAFE|MEDIUM|HIGH|CRITICAL), likely scam type, and immediate next action. "
+    "When confidence is high, explicitly advise 1930 and cybercrime.gov.in."
+)
+
+
+live_client = (
+    genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+    if genai is not None
+    else None
+)
 
 app = FastAPI(
     title="SATARK AI",
@@ -188,6 +213,140 @@ async def analyze_apk(file: UploadFile = File(...)):
         return JSONResponse(content=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.websocket("/stream")
+async def stream_audio(websocket: WebSocket):
+    await websocket.accept()
+
+    if live_client is None or genai_types is None:
+        await websocket.send_json({"type": "error", "message": "google-genai live SDK is unavailable"})
+        await websocket.close(code=1011)
+        return
+
+    model_name = GEMINI_LIVE_MODEL
+    mime_type = "audio/webm"
+    stop_event = asyncio.Event()
+
+    try:
+        async with live_client.aio.live.connect(
+            model=model_name,
+            config={
+                "response_modalities": ["AUDIO"],
+                "input_audio_transcription": {},
+                "output_audio_transcription": {},
+            },
+        ) as session:
+            await session.send_client_content(
+                turns={"role": "user", "parts": [{"text": LIVE_STREAM_INSTRUCTION}]},
+                turn_complete=False,
+            )
+
+            async def receive_browser_audio():
+                nonlocal mime_type
+                while not stop_event.is_set():
+                    message = await websocket.receive()
+
+                    if message.get("type") == "websocket.disconnect":
+                        stop_event.set()
+                        break
+
+                    if message.get("bytes") is not None:
+                        chunk = message["bytes"]
+                        if chunk:
+                            await session.send_realtime_input(
+                                audio=genai_types.Blob(data=chunk, mime_type=mime_type)
+                            )
+                        continue
+
+                    text_msg = (message.get("text") or "").strip()
+                    if not text_msg:
+                        continue
+
+                    try:
+                        payload = json.loads(text_msg)
+                    except Exception:
+                        await session.send_realtime_input(text=text_msg)
+                        continue
+
+                    event_type = payload.get("type")
+                    if event_type == "config" and payload.get("mime_type"):
+                        mime_type = str(payload.get("mime_type"))
+                    elif event_type == "audio_end":
+                        await session.send_realtime_input(audio_stream_end=True)
+                    elif event_type == "text" and payload.get("text"):
+                        await session.send_realtime_input(text=str(payload.get("text")))
+
+                stop_event.set()
+
+            async def forward_live_analysis():
+                while not stop_event.is_set():
+                    async for chunk in session.receive():
+                        if chunk.text:
+                            await websocket.send_json({"type": "analysis", "text": chunk.text})
+                        if (
+                            chunk.server_content
+                            and chunk.server_content.input_transcription
+                            and chunk.server_content.input_transcription.text
+                        ):
+                            await websocket.send_json(
+                                {
+                                    "type": "analysis",
+                                    "text": f"CALLER: {chunk.server_content.input_transcription.text}",
+                                }
+                            )
+                        if (
+                            chunk.server_content
+                            and chunk.server_content.output_transcription
+                            and chunk.server_content.output_transcription.text
+                        ):
+                            await websocket.send_json(
+                                {
+                                    "type": "analysis",
+                                    "text": f"SATARK: {chunk.server_content.output_transcription.text}",
+                                }
+                            )
+                        if chunk.server_content and chunk.server_content.turn_complete:
+                            await websocket.send_json({"type": "turn_complete"})
+                        if stop_event.is_set():
+                            break
+
+                stop_event.set()
+
+            in_task = asyncio.create_task(receive_browser_audio())
+            out_task = asyncio.create_task(forward_live_analysis())
+
+            done, pending = await asyncio.wait(
+                [in_task, out_task],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            stop_event.set()
+
+            for task in pending:
+                task.cancel()
+
+            for task in done:
+                exc = task.exception()
+                if exc and not isinstance(exc, WebSocketDisconnect):
+                    await websocket.send_json({"type": "error", "message": str(exc)})
+
+            try:
+                await session.send_realtime_input(audio_stream_end=True)
+            except Exception:
+                pass
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
