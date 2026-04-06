@@ -3,891 +3,2565 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Satark AI</title>
+<title>SATARK AI — Cyber Fraud Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ─── TOKENS ────────────────────────────────────────── */
-:root {
-  --bg:       #080808;
-  --s1:       #0f0f0f;
-  --s2:       #161616;
-  --s3:       #1e1e1e;
-  --s4:       #262626;
-  --b1:       rgba(255,255,255,0.07);
-  --b2:       rgba(255,255,255,0.13);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05070f;
+  --surface:#0a0d1a;
+  --surface-2:#0f1423;
+  --surface-3:#141929;
+  --border:#1a2035;
+  --border-glow:#00d4aa30;
+  --teal:#00d4aa;
+  --accent:#00d4aa;
+  --teal-dim:#00a882;
+  --teal-glow:#00d4aa20;
+  --red:#ff3b3b;
+  --orange:#ff8c00;
+  --yellow:#ffd600;
+  --green:#00d4aa;
+  --text:#e2e8f4;
+  --text-muted:#6b7a99;
+  --text-faint:#3a4460;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --display:'Space Grotesk',sans-serif;
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+html{height:100%;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;overflow-x:hidden}
 
-  --t0:       #f2f2f2;
-  --t1:       #a0a0a0;
-  --t2:       #505050;
-  --t3:       #2a2a2a;
-
-  --orange:   #f96332;
-  --orange-d: rgba(249,99,50,0.12);
-  --green:    #23d05e;
-  --green-d:  rgba(35,208,94,0.10);
-  --yellow:   #f5c842;
-  --yellow-d: rgba(245,200,66,0.10);
-  --red:      #ff3a5c;
-  --red-d:    rgba(255,58,92,0.10);
-  --cyan:     #3af0d4;
-
-  --display:  'Bricolage Grotesque', 'Inter', sans-serif;
-  --body:     'Inter', sans-serif;
-  --mono:     'JetBrains Mono', monospace;
-
-  --r1: 4px; --r2: 8px; --r3: 12px;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
-body {
-  font-family: var(--body);
-  background: var(--bg);
-  color: var(--t0);
-  min-height: 100dvh;
-  font-size: 15px;
-  line-height: 1.6;
-}
-button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
-textarea, input { font: inherit; }
-::selection { background: rgba(249,99,50,0.25); }
-:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; border-radius: var(--r1); }
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 99px; }
-
-/* ─── HEADER ────────────────────────────────────────── */
-header {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; align-items: center; gap: 12px;
-  height: 50px;
-  padding: 0 24px;
-  background: rgba(8,8,8,0.9);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--b1);
-}
-.logo {
-  display: flex; align-items: center; gap: 10px;
-  text-decoration: none;
-  font-family: var(--display);
-  font-size: 17px; font-weight: 800;
-  color: var(--t0); letter-spacing: -0.03em;
-}
-.logo-mark {
-  width: 26px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-}
-.logo span { color: var(--orange); }
-.header-gap { flex: 1; }
-.model-chip {
-  display: flex; align-items: center; gap: 7px;
-  padding: 4px 12px;
-  background: var(--s2);
-  border: 1px solid var(--b1);
-  border-radius: 99px;
-  font-family: var(--mono);
-  font-size: 11px; color: var(--t1);
-}
-.live-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 5px var(--cyan);
-  animation: blink 2.4s ease-in-out infinite;
-}
-@keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
-
-/* ─── PAGE LAYOUT ───────────────────────────────────── */
-.page {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 32px 20px 80px;
+/* GRID BACKGROUND */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:40px 40px;
+  opacity:0.3;pointer-events:none;z-index:0;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 40%,transparent 100%);
 }
 
-/* ─── INPUT BLOCK ───────────────────────────────────── */
-.input-block {
-  border: 1px solid var(--b1);
-  border-radius: var(--r3);
-  background: var(--s1);
-  overflow: hidden;
-  margin-bottom: 12px;
-  transition: border-color 200ms var(--ease);
-}
-.input-block:focus-within { border-color: var(--b2); }
-
-.attach-row {
-  display: none; align-items: center; gap: 10px;
-  padding: 10px 16px 0;
-}
-.attach-row.show { display: flex; }
-.attach-chip {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px;
-  background: var(--s3);
-  border: 1px solid var(--b1);
-  border-radius: var(--r1);
-  font-size: 12px; color: var(--t0);
-  font-family: var(--mono);
-}
-.attach-chip-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.attach-chip-size { color: var(--t2); flex-shrink: 0; }
-.remove-btn {
-  width: 16px; height: 16px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--t2); border-radius: 2px;
-  transition: color 150ms;
-}
-.remove-btn:hover { color: var(--red); }
-
-textarea {
-  width: 100%;
-  min-height: 130px;
-  resize: none;
-  background: transparent;
-  border: none;
-  padding: 16px;
-  font-size: 15px;
-  color: var(--t0);
-  line-height: 1.7;
-  outline: none;
-}
-textarea::placeholder { color: var(--t3); }
-
-.input-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px 12px;
-  gap: 8px;
-}
-.input-hint { font-size: 12px; color: var(--t2); padding-left: 4px; }
-.input-bar-right { display: flex; gap: 8px; }
-
-.btn-attach {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 14px;
-  border: 1px solid var(--b1);
-  border-radius: var(--r2);
-  font-size: 13px; font-weight: 500; color: var(--t1);
-  transition: all 160ms var(--ease);
-}
-.btn-attach:hover { border-color: var(--b2); color: var(--t0); background: var(--s2); }
-
-.btn-analyze {
-  display: flex; align-items: center; gap: 7px;
-  padding: 8px 20px;
-  background: var(--orange);
-  border: none; border-radius: var(--r2);
-  font-family: var(--display);
-  font-size: 13px; font-weight: 700;
-  color: #fff; letter-spacing: -0.01em;
-  transition: all 160ms var(--ease);
-}
-.btn-analyze:hover { background: #ff7a52; box-shadow: 0 0 18px rgba(249,99,50,.3); }
-.btn-analyze:active { background: #e04e1e; }
-.btn-analyze:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
-.btn-analyze svg { flex-shrink: 0; }
-
-/* spinner */
-.spin { animation: spin 0.9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── SCANNING LINE ──────────────────────────────────── */
-.scan-bar {
-  display: none;
-  align-items: center; gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(58,240,212,0.15);
-  border-radius: var(--r2);
-  font-family: var(--mono);
-  font-size: 12px; color: var(--cyan);
-  background: rgba(58,240,212,0.05);
-  margin-bottom: 12px;
-}
-.scan-bar.on { display: flex; }
-
-/* ─── EMPTY STATE ───────────────────────────────────── */
-.empty {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 64px 24px;
-  text-align: center;
-  border: 1px dashed var(--b1);
-  border-radius: var(--r3);
-  gap: 10px;
-}
-.empty svg { color: var(--t3); margin-bottom: 4px; }
-.empty-h { font-size: 15px; font-weight: 500; color: var(--t2); }
-.empty-p { font-size: 13px; color: var(--t3); max-width: 30ch; }
-
-/* ─── RESULT ─────────────────────────────────────────── */
-.result { display: none; }
-.result.on { display: block; animation: up 280ms var(--ease) both; }
-@keyframes up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-
-/* VERDICT BAND */
-.verdict-band {
-  border-radius: var(--r3) var(--r3) 0 0;
-  padding: 28px 32px 24px;
-  background: var(--s1);
-  border: 1px solid var(--b1);
-  border-bottom: none;
-  position: relative;
-  overflow: hidden;
-}
-.verdict-band::before {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px;
-}
-.verdict-band.safe::before   { background: var(--green); }
-.verdict-band.warn::before   { background: var(--yellow); }
-.verdict-band.critical::before { background: var(--red); box-shadow: 4px 0 20px rgba(255,58,92,.3); }
-
-.verdict-ref {
-  font-family: var(--mono);
-  font-size: 11px; color: var(--t2);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.verdict-headline {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.05;
-  letter-spacing: -0.04em;
-  margin-bottom: 8px;
-}
-.verdict-headline.safe     { color: var(--green); }
-.verdict-headline.warn     { color: var(--yellow); }
-.verdict-headline.critical { color: var(--red); }
-
-.verdict-meta {
-  display: flex; align-items: center; gap: 16px;
-  flex-wrap: wrap;
-}
-.vmeta-item {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: var(--t1);
-}
-.vmeta-item svg { color: var(--t2); flex-shrink: 0; }
-.confidence-bar-wrap {
-  position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
-}
-.confidence-circle {
-  width: 64px; height: 64px; position: relative;
-}
-.conf-ring { transform: rotate(-90deg); }
-.conf-bg { fill: none; stroke: var(--s3); stroke-width: 4; }
-.conf-fill { fill: none; stroke-width: 4; stroke-linecap: round;
-  stroke-dasharray: 163; stroke-dashoffset: 163;
-  transition: stroke-dashoffset 900ms var(--ease);
-}
-.conf-fill.safe     { stroke: var(--green); }
-.conf-fill.warn     { stroke: var(--yellow); }
-.conf-fill.critical { stroke: var(--red); }
-.conf-label {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 12px; font-weight: 500;
+/* SCANLINE EFFECT */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,170,0.01) 2px,rgba(0,212,170,0.01) 4px);
+  pointer-events:none;z-index:0;
 }
 
-/* REPORT BODY */
-.report-body {
-  background: var(--s1);
-  border: 1px solid var(--b1);
-  border-top: none;
-  border-bottom: none;
+/* TOP BAR */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;
+  background:rgba(5,7,15,0.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.topbar-logo{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--display);font-size:16px;font-weight:700;
+  letter-spacing:0.08em;color:var(--teal);
+  text-decoration:none;
+}
+.topbar-logo svg{width:22px;height:22px}
+.logo-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 8px var(--teal);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--teal)}50%{opacity:0.5;box-shadow:0 0 3px var(--teal)}}
+
+.topbar-right{display:flex;align-items:center;gap:12px}
+#authBadge{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 12px;border-radius:6px;
+  background:var(--surface-2);border:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);cursor:pointer;
+  transition:all 0.2s;text-decoration:none;
+}
+#authBadge:hover{border-color:var(--text-faint);color:var(--text)}
+
+.badge-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text-faint);flex-shrink:0;
 }
 
-/* SIGNAL ROW */
-.signal-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-bottom: 1px solid var(--b1);
+#authBadge.connected{border-color:rgba(0,212,170,0.35);color:var(--teal)}
+#authBadge.connected .badge-dot{background:var(--teal);box-shadow:0 0 6px rgba(0,212,170,0.6)}
+
+.ops-link{
+  padding:5px 12px;border-radius:6px;
+  border:1px solid var(--border);
+  background:transparent;color:var(--text-muted);
+  font-size:12px;text-decoration:none;font-family:var(--sans);
+  transition:all 0.2s;
 }
-@media(max-width:600px){ .signal-row{ grid-template-columns:1fr 1fr; } }
-.signal-cell {
-  padding: 14px 18px;
-  border-right: 1px solid var(--b1);
+.ops-link:hover{border-color:var(--border-glow);color:var(--text)}
+
+#logoutBtn{
+  padding:5px 10px;border-radius:6px;
+  border:1px solid var(--border);
+  background:transparent;color:var(--text-muted);
+  font-size:11px;font-family:var(--sans);cursor:pointer;
+  transition:all 0.2s;display:none;
 }
-.signal-cell:last-child { border-right: none; }
-.sc-label {
-  font-size: 11px; font-family: var(--mono);
-  text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--t2); margin-bottom: 4px;
-}
-.sc-val {
-  font-size: 14px; font-weight: 500; color: var(--t0);
+#logoutBtn:hover{border-color:rgba(255,59,59,0.25);color:var(--red)}
+#logoutBtn.visible{display:block}
+
+.main{
+  position:relative;
+  z-index:1;
+  min-height:100vh;
+  padding-top:56px;
+  display:flex;
+  flex-direction:column;
 }
 
-/* ADVICE SECTION */
-.advice-section {
-  padding: 24px 32px;
-}
-.advice-label {
-  font-family: var(--mono);
-  font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--t2);
-  margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
-}
-.advice-label::after {
-  content: ''; flex: 1;
-  height: 1px; background: var(--b1);
-}
-.advice-summary {
-  font-size: 15px; color: var(--t1);
-  line-height: 1.75;
-  margin-bottom: 20px;
-  max-width: 68ch;
-}
-.steps {
-  display: flex; flex-direction: column; gap: 10px;
-  counter-reset: steps;
-}
-.step-item {
-  display: flex; gap: 14px; align-items: flex-start;
-  padding: 12px 14px;
-  background: var(--s2);
-  border: 1px solid var(--b1);
-  border-radius: var(--r2);
-  font-size: 14px; color: var(--t1); line-height: 1.6;
-  transition: background 140ms;
-}
-.step-item:hover { background: var(--s3); }
-.step-n {
-  flex-shrink: 0;
-  width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--s4);
-  border-radius: var(--r1);
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
-  color: var(--t1); margin-top: 1px;
+#inputView{
+  width:100%;
+  max-width:860px;
+  margin:0 auto;
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
 }
 
-/* CASE FOOTER */
-.case-foot {
-  background: var(--s1);
-  border: 1px solid var(--b1);
-  border-top: 1px solid var(--b1);
-  border-radius: 0 0 var(--r3) var(--r3);
-  padding: 12px 32px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; flex-wrap: wrap;
-}
-.case-id-label {
-  font-family: var(--mono); font-size: 11px;
-  color: var(--t2); letter-spacing: 0.05em;
-}
-.case-id-val {
-  font-family: var(--mono); font-size: 12px;
-  color: var(--t1); margin-top: 2px;
-}
-.case-time { font-family: var(--mono); font-size: 11px; color: var(--t3); }
-
-/* ─── HELPLINE STRIP ─────────────────────────────────── */
-.hl-strip {
-  display: none; /* shown only when result is visible */
-  align-items: center; gap: 0;
-  margin-top: 10px;
-  border: 1px solid var(--b1);
-  border-radius: var(--r3);
-  overflow: hidden;
-  background: var(--s1);
-}
-.hl-strip.on { display: flex; }
-.hl-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 20px;
-  flex: 1;
-  border-right: 1px solid var(--b1);
-  transition: background 140ms;
-}
-.hl-item:last-child { border-right: none; }
-.hl-item:hover { background: var(--s2); }
-.hl-num {
-  font-family: var(--display);
-  font-size: 22px; font-weight: 800;
-  color: var(--orange);
-  letter-spacing: -0.03em;
-  text-decoration: none; flex-shrink: 0;
-}
-.hl-desc { flex: 1; }
-.hl-name { font-size: 13px; font-weight: 500; color: var(--t0); line-height: 1.3; }
-.hl-sub  { font-size: 11px; color: var(--t2); }
-.hl-call {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  background: var(--s3);
-  border: 1px solid var(--b2);
-  border-radius: 99px;
-  font-size: 12px; font-weight: 600; color: var(--t0);
-  white-space: nowrap;
-  text-decoration: none;
-  transition: all 160ms var(--ease);
-}
-.hl-call:hover { background: var(--orange); border-color: var(--orange); color: #fff; }
-@media(max-width:580px){
-  .hl-strip { flex-direction: column; }
-  .hl-item { border-right: none; border-bottom: 1px solid var(--b1); }
-  .hl-item:last-child { border-bottom: none; }
+.hero-eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.12em;
+  color:var(--teal);text-transform:uppercase;
 }
 
-/* ─── BOTTOM PANEL ───────────────────────────────────── */
-.bottom-panel {
-  margin-top: 24px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.hero-title{
+  font-family:var(--display);font-size:clamp(1.8rem,4vw,3rem);
+  line-height:1.1;font-weight:700;color:var(--text);
 }
-@media(max-width:580px){ .bottom-panel { grid-template-columns: 1fr; } }
-.panel-card {
-  border: 1px solid var(--b1);
-  border-radius: var(--r3);
-  overflow: hidden;
-  background: var(--s1);
-}
-.panel-head {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--b1);
-  font-family: var(--mono);
-  font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--t3);
-  background: var(--bg);
-}
-.stats-grid-2 {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: var(--b1);
-}
-.stat-c {
-  padding: 16px;
-  background: var(--s1);
-  display: flex; flex-direction: column; gap: 2px;
-}
-.stat-n {
-  font-family: var(--display);
-  font-size: 26px; font-weight: 800;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-.stat-n.o { color: var(--orange); }
-.stat-n.r { color: var(--red); }
-.stat-n.g { color: var(--green); }
-.stat-lbl { font-size: 11px; color: var(--t2); }
 
-.recent-list { list-style: none; }
-.recent-li {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px;
-  border-bottom: 1px solid var(--b1);
-  transition: background 120ms;
+.hero-sub{
+  color:var(--text-muted);font-size:13px;max-width:640px;
 }
-.recent-li:last-child { border-bottom: none; }
-.recent-li:hover { background: var(--s2); }
-.rd { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.rd.safe     { background: var(--green); box-shadow: 0 0 4px var(--green); }
-.rd.warn     { background: var(--yellow); box-shadow: 0 0 4px var(--yellow); }
-.rd.critical { background: var(--red); box-shadow: 0 0 4px var(--red); }
-.r-txt { flex: 1; font-size: 12px; color: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.r-time { font-family: var(--mono); font-size: 11px; color: var(--t3); flex-shrink: 0; }
-.no-cases { padding: 24px; text-align: center; font-size: 12px; color: var(--t3); }
 
-/* ─── HELPLINES CARD ─────────────────────────────────── */
-.hlist { list-style: none; }
-.hlist-li {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--b1);
-  transition: background 120ms;
+.input-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  overflow:hidden;
 }
-.hlist-li:last-child { border-bottom: none; }
-.hlist-li:hover { background: var(--s2); }
-.hlist-info { flex: 1; }
-.hlist-name { font-size: 13px; font-weight: 500; color: var(--t0); line-height: 1.2; }
-.hlist-sub  { font-size: 11px; color: var(--t2); }
-.hlist-num  {
-  font-family: var(--display); font-size: 18px;
-  font-weight: 800; color: var(--orange);
-  text-decoration: none; letter-spacing: -0.02em;
+
+.input-label{
+  display:block;
+  padding:10px 14px;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  border-bottom:1px solid var(--border);
 }
-.hlist-link {
-  display: flex; align-items: center;
-  padding: 3px 5px;
-  border: 1px solid var(--b1);
-  border-radius: var(--r1);
-  color: var(--t2);
-  transition: all 160ms;
+
+#inputText{
+  width:100%;
+  min-height:160px;
+  resize:vertical;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.6;
+  padding:12px 14px;
+  caret-color:var(--teal);
 }
-.hlist-link:hover { color: var(--cyan); border-color: rgba(58,240,212,.25); background: rgba(58,240,212,.06); }
+#inputText::placeholder{color:var(--text-faint)}
+
+.input-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border-top:1px solid var(--border);
+}
+
+.primary-btn{
+  padding:9px 14px;
+  border-radius:8px;
+  background:var(--teal);
+  border:none;
+  color:#00130d;
+  font-family:var(--display);
+  font-size:13px;
+  font-weight:600;
+}
+
+.secondary-btn{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text-muted);
+  font-family:var(--sans);
+  font-size:12px;
+}
+
+.submit-row{display:flex;gap:10px;margin-top:14px}
+
+#submitBtn{
+  flex:1;padding:12px 18px;border-radius:10px;
+  border:1px solid transparent;background:var(--teal);color:#02140f;
+  font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.06em;
+  cursor:pointer;transition:all 0.2s;
+}
+#submitBtn:hover{background:#00e4b8;box-shadow:0 0 18px rgba(0,212,170,0.28)}
+#submitBtn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+
+#analyzingView{
+  display:none;
+  flex:1;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:48px 24px;
+}
+#analyzingView.visible{display:flex}
+
+.analyzing-header{text-align:center;margin-bottom:48px}
+.analyzing-title{
+  font-family:var(--sans);font-size:22px;font-weight:600;
+  color:var(--text);letter-spacing:0.04em;margin-bottom:8px;
+}
+.analyzing-sub{
+  font-family:var(--mono);font-size:12px;color:var(--text-muted);
+  letter-spacing:0.1em;
+}
+.typing-cursor{
+  display:none;
+}
+
+.agents-grid{
+  display:flex;flex-direction:column;gap:8px;
+  width:100%;max-width:520px;
+}
+.agent-row{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  transition:all 0.2s;opacity:0.6;
+}
+.agent-row.active{opacity:1;border-color:var(--text-faint);background:var(--surface-2)}
+.agent-row.done{opacity:1;border-color:var(--border)}
+.agent-row.skipped{opacity:1;border-style:dashed}
+.agent-row.failed{opacity:1;border-color:var(--text-faint)}
+.agent-icon{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);
+  flex-shrink:0;transition:all 0.3s;
+  font-size:14px;
+}
+.agent-row.active .agent-icon,.agent-row.done .agent-icon{
+  background:var(--surface-3);border-color:var(--border);
+}
+.agent-row.active .agent-status{color:var(--text-muted)}
+.agent-indicator{
+  width:8px;height:8px;border-radius:50%;background:var(--text-faint);flex-shrink:0;transition:all 0.3s;
+}
+.agent-row.active .agent-indicator{
+  background:var(--text);
+}
+
+/* ============ RESULTS VIEW ============ */
+#resultsView{
+  display:none;
+  flex:1;
+  flex-direction:column;
+  width:100%;
+  max-width:860px;
+  margin:0 auto;
+  padding:24px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  min-width:0;
+}
+#resultsView.visible{display:flex}
+
+#resultsView > *{width:100%;min-width:0}
+
+.report-window{
+  margin-bottom:12px;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface-2);
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-muted);
+}
+#reportWindowLine{word-break:break-word}
+
+.results-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.results-back{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text-muted);cursor:pointer;
+  transition:color 0.2s;background:none;border:none;font-family:var(--sans);
+  padding:0;
+}
+.results-back:hover{color:var(--text)}
+.results-back svg{width:14px;height:14px}
+.case-id{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+.case-meta{display:flex;flex-direction:column;gap:2px}
+.case-ts{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+
+/* ASSESSMENT */
+.assessment-card{
+  border-radius:12px;
+  padding:18px;
+  margin-bottom:12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+}
+.assessment-pre{
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:1.7;
+  color:var(--text);
+  white-space:pre-wrap;
+}
+.risk-line{color:var(--accent)}
+
+/* SECTION CARDS */
+.section-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  margin-bottom:12px;overflow:hidden;
+}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;cursor:pointer;
+  transition:background 0.2s;user-select:none;
+}
+.section-header:hover{background:rgba(0,0,0,0.02)}
+.section-title-row{display:flex;align-items:center;gap:8px}
+.section-icon{width:16px;height:16px;color:var(--text-faint);flex-shrink:0}
+.section-title{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.06em;text-transform:uppercase}
+.section-toggle{
+  width:16px;height:16px;color:var(--text-faint);
+  transition:transform 0.2s;
+}
+.section-card.open .section-toggle{transform:rotate(180deg)}
+.section-body{
+  padding:0 18px 16px;display:none;
+  border-top:1px solid var(--border);padding-top:16px;
+}
+.section-card.open .section-body{display:block}
+.section-content{
+  padding:0 18px 16px;display:none;
+  border-top:1px solid var(--border);padding-top:16px;
+}
+.section-card.open .section-content{display:block}
+
+/* RED FLAGS */
+.flags-list{display:none}
+
+#inputText::-webkit-scrollbar-track{background:transparent}
+#inputText::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.input-divider{
+  display:flex;align-items:center;gap:12px;margin:16px 0;
+}
+.input-divider::before,.input-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.input-divider span{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
+
+/* DROPZONE */
+#dropzone{
+  border:1px dashed var(--border);border-radius:10px;
+  padding:20px;text-align:center;cursor:pointer;
+  transition:all 0.2s;position:relative;overflow:hidden;
+  background:var(--surface-2);
+}
+#dropzone:hover,#dropzone.drag-over{border-color:var(--text-faint);background:var(--surface-3)}
+#dropzone.has-file{border-color:var(--text-faint);border-style:solid;background:var(--surface-3)}
+#fileInput{display:none}
+.drop-icon{
+  width:32px;height:32px;margin:0 auto 8px;
+  color:var(--text-faint);
+}
+#dropzone.has-file .drop-icon{color:var(--text)}
+
+.drop-text{font-size:13px;color:var(--text-muted)}
+.drop-subtext{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:3px}
+
+#fileName{font-size:12px;color:var(--text);font-family:var(--mono);margin-top:6px;word-break:break-all}
+
+.input-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+.tag{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;
+  background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-muted);font-size:11px;font-family:var(--mono);
+}
+.tag svg{width:12px;height:12px;color:var(--text-faint)}
+
+/* FIR */
+.gov-pre{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text);
+  line-height:1.8;
+  white-space:pre-wrap;
+  max-height:320px;
+  overflow-y:auto;
+  word-break:break-word;
+}
+.gov-pre::-webkit-scrollbar{width:4px}
+.gov-pre::-webkit-scrollbar-track{background:transparent}
+.gov-pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.fir-actions{display:flex;gap:8px;margin-top:12px}
+.fir-btn{
+  padding:7px 14px;border-radius:7px;
+  font-size:12px;font-family:var(--sans);cursor:pointer;
+  transition:all 0.2s;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-muted);
+  display:flex;align-items:center;gap:5px;
+}
+.fir-btn:hover{border-color:var(--text-faint);color:var(--text)}
+.fir-btn.primary{background:var(--surface-2);border-color:var(--border);color:var(--text)}
+.fir-btn.primary:hover{border-color:var(--text-faint)}
+
+/* PATTERN MATCHES */
+.evidence-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+.evidence-table th,.evidence-table td{border-top:1px solid var(--border);padding:10px 0;text-align:left;vertical-align:top}
+.evidence-table th{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)}
+.evidence-table td{color:var(--text)}
+.evidence-table td.muted{color:var(--text-muted)}
+
+/* EMERGENCY FOOTER */
+.emergency-footer{
+  margin-top:16px;padding:14px 18px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.emergency-text{font-size:13px;color:var(--text-muted)}
+.emergency-text strong{color:var(--text)}
+.emergency-links{display:flex;gap:8px;flex-wrap:wrap}
+.emergency-link{
+  padding:6px 12px;border-radius:6px;font-size:12px;
+  border:1px solid var(--border);color:var(--text);
+  text-decoration:none;background:var(--surface-2);
+  transition:all 0.2s;font-family:var(--mono);
+}
+.emergency-link:hover{border-color:var(--text-faint)}
+
+.analysis-complete{
+  margin-top:10px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-muted);
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+}
+
+/* ERROR STATE */
+#errorView{
+  display:none;flex:1;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;padding:48px 24px;text-align:center;
+}
+#errorView.visible{display:flex}
+.error-icon{font-size:48px;margin-bottom:8px}
+.error-title{font-family:var(--sans);font-size:18px;font-weight:600;color:var(--text)}
+.error-msg{font-size:13px;color:var(--text-muted);max-width:400px}
+.retry-btn{
+  padding:10px 24px;border-radius:8px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text);cursor:pointer;
+  font-family:var(--sans);font-size:13px;transition:all 0.2s;margin-top:8px;
+}
+.retry-btn:hover{border-color:var(--text-faint);color:var(--text)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
+
+/* UTIL */
+.hidden{display:none!important}
+a{color:var(--text);text-decoration:underline;text-decoration-color:var(--border)}
+a:hover{text-decoration-color:var(--text-faint)}
+
+/* RECENT CASES */
+.recent-cases{display:flex;flex-direction:column;gap:8px}
+.case-item{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  background:var(--surface-2);border:1px solid var(--border);
+}
+.case-item button{
+  background:none;border:none;color:var(--text);text-decoration:underline;
+  text-decoration-color:var(--border);
+  font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;text-align:left;
+}
+.case-item button:hover{text-decoration-color:var(--text-faint)}
+.case-item .case-time{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap}
+
+/* ANALYZING VIEW ENHANCEMENTS */
+.agent-info{flex:1;min-width:0}
+.agent-name{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text)}
+.agent-status{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:2px;letter-spacing:0.06em}
+
+.agent-row{
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity 250ms ease, transform 250ms ease, background 200ms ease, border-color 200ms ease;
+}
+.agent-row.entered{opacity:0.6;transform:translateY(0)}
+.agent-row.active,.agent-row.done,.agent-row.skipped,.agent-row.failed{opacity:1}
+
+@keyframes agentPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.45)}
+  100%{transform:scale(1)}
+}
+.agent-row.active .agent-indicator{animation:agentPulse 900ms ease-in-out infinite}
+.agent-row.done .agent-indicator,
+.agent-row.skipped .agent-indicator,
+.agent-row.failed .agent-indicator{animation:none}
+.agent-indicator svg{display:block;width:8px;height:8px}
+
+#elapsedTimer{
+  margin-left:8px;
+  font-family:var(--mono);
+  color:var(--accent);
+  font-size:11px;
+  letter-spacing:0.04em;
+}
+
+.progress-bar-wrap{
+  width:100%;max-width:520px;
+  background:var(--surface-2);
+  border-radius:4px;
+  height:3px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--teal-dim),var(--accent));
+  transition:width 300ms ease;
+}
+
+/* TGCSB FEED ENTRY ANIMATION */
+#intelFeed{font-family:var(--mono);font-size:12px;line-height:1.5}
+.feed-line{
+  position:relative;
+  margin:0 0 6px 0;
+  padding:2px 0 2px 8px;
+  white-space:pre-wrap;
+  word-break:break-word;
+  animation:feedSlideIn 200ms ease-out;
+}
+.feed-line::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:2px;
+  bottom:2px;
+  width:2px;
+  background:var(--accent);
+  animation:feedFlash 800ms ease-out forwards;
+}
+@keyframes feedSlideIn{
+  from{opacity:0;transform:translateX(-12px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes feedFlash{
+  from{opacity:1}
+  to{opacity:0}
+}
+
+/* RESULTS TRANSITION + CARD STAGGER */
+#analyzingView{opacity:1;transform:translateY(0);transition:opacity 300ms ease, transform 300ms ease}
+#analyzingView.exiting{opacity:0;transform:translateY(-20px)}
+
+#resultsView{opacity:1;transform:translateY(0)}
+#resultsView.results-enter-prep{opacity:0;transform:translateY(20px)}
+#resultsView.results-enter-active{opacity:1;transform:translateY(0);transition:opacity 300ms ease-out, transform 300ms ease-out}
+
+.result-card-enter{
+  opacity:0;
+  transform:translateY(10px);
+  animation:resultCardIn 300ms ease-out forwards;
+}
+@keyframes resultCardIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* RESULT METRICS */
+.result-metrics{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.metric-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  font-family:var(--mono);font-size:11px;color:var(--text-muted);
+}
+.metric-chip strong{color:var(--accent);font-weight:700}
+
+/* REPORT WINDOW COUNTDOWN */
+.report-window{
+  margin-bottom:12px;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface-2);
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-muted);
+}
+#reportWindowLine{word-break:break-word}
+.gh-bar-track{
+  margin-top:8px;
+  width:100%;
+  height:4px;
+  background:var(--surface-3);
+  border:1px solid var(--border);
+  border-radius:999px;
+  overflow:hidden;
+}
+.gh-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--teal-dim),var(--accent));
+  transition:width 1000ms linear;
+}
+@keyframes ghGlow{
+  0%{box-shadow:0 0 8px rgba(0,212,170,0.4)}
+  50%{box-shadow:0 0 8px rgba(0,212,170,1)}
+  100%{box-shadow:0 0 8px rgba(0,212,170,0.4)}
+}
+.report-window.gh-critical .gh-bar{animation:ghGlow 2s ease-in-out infinite}
+
+.conversation-card{
+  margin-bottom:12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:linear-gradient(145deg, rgba(15,20,35,0.95), rgba(10,13,26,0.95));
+  padding:14px 16px;
+}
+.conversation-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.tone-chip{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  background:var(--surface-2);
+}
+.tone-chip.alert{
+  border-color:rgba(255,59,59,0.45);
+  color:#ffb7b7;
+  background:rgba(255,59,59,0.12);
+}
+.tone-chip.safe{
+  border-color:rgba(0,212,170,0.4);
+  color:#98ffe5;
+  background:rgba(0,212,170,0.12);
+}
+.conversation-meta{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-faint);
+}
+.conversation-reply{
+  color:var(--text);
+  line-height:1.7;
+  font-size:14px;
+  letter-spacing:0.01em;
+}
+
+/* OSINT + ACTIONS */
+.osint-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.osint-grid{grid-template-columns:1fr}}
+.osint-item{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.osint-key{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.osint-val{font-size:13px;color:var(--text);font-family:var(--mono)}
+.osint-summary{font-size:13px;color:var(--text-muted);line-height:1.6}
+
+.actions-ol{display:flex;flex-direction:column;gap:8px;padding-left:18px}
+.actions-ol li{color:var(--text);line-height:1.6}
+
+/* RECOVERY FLOW */
+.recovery-flow{
+  margin-top:14px;
+  padding:14px 16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+}
+.recovery-title{
+  font-family:var(--sans);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--text);
+  margin-bottom:10px;
+}
+.recovery-body{font-size:13px;color:var(--text);line-height:1.6}
+.recovery-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.recovery-btn{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:12px;
+  cursor:pointer;
+}
+.recovery-btn.primary{background:var(--accent);border-color:var(--accent);color:#04110d}
+.recovery-btn.link{text-decoration:none;display:inline-flex;align-items:center}
+.recovery-field{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.recovery-field input{
+  min-width:180px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:12px;
+}
+.recovery-note{margin-top:8px;color:var(--text-muted);font-size:12px}
+
+body.modal-open{overflow:hidden}
+.recovery-modal{
+  position:fixed;
+  inset:0;
+  z-index:300;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(2,4,10,0.78);
+  backdrop-filter:blur(3px);
+}
+.recovery-modal-card{
+  width:100%;
+  max-width:540px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 18px 60px rgba(0,0,0,0.45);
+}
+.recovery-modal-title{
+  font-family:var(--display);
+  font-size:18px;
+  font-weight:600;
+  color:var(--text);
+}
+.recovery-modal-sub{
+  margin-top:6px;
+  margin-bottom:12px;
+  font-size:12px;
+  color:var(--text-muted);
+  font-family:var(--mono);
+}
+.recovery-modal .recovery-actions{margin-top:14px}
+
+.intake-progress{
+  margin-bottom:10px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-faint);
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+}
+.intake-question{
+  font-size:14px;
+  color:var(--text);
+  line-height:1.55;
+}
+.intake-option-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+.intake-option{
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text);
+  border-radius:9px;
+  padding:9px 14px;
+  cursor:pointer;
+  font-family:var(--sans);
+  font-size:12px;
+}
+.intake-option.selected{
+  border-color:var(--accent);
+  background:rgba(0,212,170,0.14);
+  color:#c9fff1;
+}
+.intake-actions{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:14px;
+}
+.intake-actions .recovery-btn{min-width:120px}
+
+@media (max-width:768px){
+  #resultsView{padding:16px}
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <a href="#" class="logo" aria-label="Satark AI">
-    <div class="logo-mark">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <polygon points="12,2 21,7 21,14 12,22 3,14 3,7" stroke="#f96332" stroke-width="1.5"/>
-        <polygon points="12,6 17,9 17,13 12,18 7,13 7,9" fill="rgba(249,99,50,0.15)" stroke="rgba(249,99,50,0.5)" stroke-width="1"/>
-        <circle cx="12" cy="12" r="2" fill="#f96332"/>
-      </svg>
-    </div>
-    SATARK<span> AI</span>
+<!-- TOP BAR -->
+<header class="topbar">
+  <a class="topbar-logo" href="/ui">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
+    </svg>
+    <span>SATARK AI</span>
+    <div class="logo-dot"></div>
   </a>
-  <div class="header-gap"></div>
-  <div class="model-chip">
-    <span class="live-dot"></span>
-    gemini-3.1-flash · Vertex AI
+  <div class="topbar-right">
+    <a href="/ops" class="ops-link">OPS BOARD</a>
+    <div id="authBadge">
+      <div class="badge-dot"></div>
+      <span id="authLabel">Sign in with Google</span>
+    </div>
+    <button id="logoutBtn">Sign out</button>
   </div>
 </header>
 
-<!-- PAGE -->
-<main class="page">
+<main class="main">
 
-  <!-- INPUT -->
-  <div class="input-block" id="input-block">
-    <div class="attach-row" id="attach-row">
-      <div class="attach-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        <span class="attach-chip-name" id="file-name"></span>
-        <span class="attach-chip-size" id="file-size"></span>
-        <button class="remove-btn" id="remove-btn" aria-label="Remove file">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-    </div>
-    <textarea
-      id="main-ta"
-      placeholder="Describe what happened — paste a suspicious SMS, explain how you were contacted, or describe what was asked of you…"
-      rows="5"
-      aria-label="Describe the incident"
-    ></textarea>
-    <div class="input-bar">
-      <span class="input-hint">Text · Screenshot · APK · Voice note</span>
-      <div class="input-bar-right">
-        <input type="file" id="file-input" style="display:none" accept=".apk,.png,.jpg,.jpeg,.webp,.mp3,.wav,.ogg,.m4a" aria-hidden="true">
-        <button class="btn-attach" id="attach-btn" aria-label="Attach a file">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-          Attach
-        </button>
-        <button class="btn-analyze" id="analyze-btn" aria-label="Analyze this incident">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" id="btn-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          Analyze
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- INPUT VIEW -->
+  <section id="inputView">
+    <div class="hero-eyebrow">TGCSB-Inspired Citizen Assist</div>
+    <h1 class="hero-title">SATARK AI</h1>
+    <p class="hero-sub">Paste a suspicious message, upload evidence, or submit an APK. Get a full fraud intelligence report in under 60 seconds.</p>
 
-  <!-- SCANNING -->
-  <div class="scan-bar" id="scan-bar" role="status" aria-live="polite">
-    <svg class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-    Routing through scam_detector → osint → golden_hour agents…
-  </div>
+    <div class="input-card">
+      <div class="input-label">// SUSPICIOUS CONTENT</div>
+      <textarea id="inputText" placeholder="Paste a WhatsApp message, email, SMS, or describe the call you received...&#10;&#10;Example: &quot;Your SBI account will be blocked. Share OTP to verify.&quot;" rows="5"></textarea>
 
-  <!-- EMPTY -->
-  <div class="empty" id="empty-state" aria-label="Ready to analyze">
-    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    <div class="empty-h">Nothing analyzed yet</div>
-    <div class="empty-p">Submit a message, file, or voice note to run fraud detection</div>
-  </div>
+      <div class="input-divider"><span>OR UPLOAD EVIDENCE</span></div>
 
-  <!-- RESULT -->
-  <div class="result" id="result" role="region" aria-label="Analysis result">
-
-    <!-- Verdict band -->
-    <div class="verdict-band" id="vband">
-      <div class="verdict-ref" id="vref">CASE REF — —</div>
-      <div class="verdict-headline" id="vheadline">—</div>
-      <div class="verdict-meta">
-        <div class="vmeta-item" id="vmeta-type">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-          <span id="vtype">—</span>
-        </div>
-        <div class="vmeta-item">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <span id="vtime-meta">—</span>
-        </div>
-      </div>
-      <div class="confidence-bar-wrap" role="img" aria-label="Confidence score">
-        <div class="confidence-circle">
-          <svg class="conf-ring" width="64" height="64" viewBox="0 0 64 64">
-            <circle class="conf-bg" cx="32" cy="32" r="26"/>
-            <circle class="conf-fill" id="conf-arc" cx="32" cy="32" r="26"/>
+      <div id="dropzone">
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,audio/*,.apk,.pdf,.mp3,.wav,.ogg">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          <div class="conf-label" id="conf-label">0%</div>
+        </div>
+        <div class="drop-text">Drop image, audio, APK, or PDF here</div>
+        <div class="drop-subtext">or click to browse · max 50MB · Ctrl+V to paste</div>
+        <button type="button" id="pasteScreenshotBtn">Paste Screenshot</button>
+        <div id="fileName"></div>
+      </div>
+
+      <div class="submit-row">
+        <button id="submitBtn">ANALYZE</button>
+      </div>
+
+      <div class="input-tags">
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Private
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          &lt;60s analysis
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Golden Hour
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendar Alert
+        </span>
+      </div>
+    </div>
+
+    <div class="section-card open" id="sectionRecentCases" style="margin-top:14px">
+      <div class="section-header" style="cursor:default">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v5l3 2"/></svg>
+          <span class="section-title">Recent Cases</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="recent-cases" id="recentCasesList">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYZING VIEW -->
+  <section id="analyzingView">
+    <div class="analyzing-header">
+      <div class="analyzing-title">INITIALIZING<span class="typing-cursor"></span></div>
+      <div class="analyzing-sub" id="analyzingStatus">SATARK INTELLIGENCE NETWORK ONLINE <span id="elapsedTimer">0.0s</span></div>
+    </div>
+
+    <div class="agents-grid">
+      <div class="agent-row" id="agent-manager">
+        <div class="agent-icon">MG</div>
+        <div class="agent-info">
+          <div class="agent-name">Manager Agent</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-scam_detector">
+        <div class="agent-icon">SD</div>
+        <div class="agent-info">
+          <div class="agent-name">Scam Detector</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-osint">
+        <div class="agent-icon">OS</div>
+        <div class="agent-info">
+          <div class="agent-name">OSINT Intelligence</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-audio_analyzer">
+        <div class="agent-icon">AU</div>
+        <div class="agent-info">
+          <div class="agent-name">Audio Analyzer</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-golden_hour">
+        <div class="agent-icon">GH</div>
+        <div class="agent-info">
+          <div class="agent-name">Golden Hour Response</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+
+      <div class="agent-row hidden" id="agent-google_calendar">
+        <div class="agent-icon">GC</div>
+        <div class="agent-info">
+          <div class="agent-name">Google Calendar</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row hidden" id="agent-google_tasks">
+        <div class="agent-icon">GT</div>
+        <div class="agent-info">
+          <div class="agent-name">Google Tasks</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row hidden" id="agent-google_gmail">
+        <div class="agent-icon">GM</div>
+        <div class="agent-info">
+          <div class="agent-name">Gmail Draft</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row hidden" id="agent-google_docs">
+        <div class="agent-icon">GD</div>
+        <div class="agent-info">
+          <div class="agent-name">Google Docs</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap" style="margin-top:24px">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="section-card open" style="margin-top:18px">
+      <div class="section-header" style="cursor:default">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
+          <span class="section-title">TGCSB / A2A Feed</span>
+        </div>
+      </div>
+      <div class="section-content" style="padding-top:0">
+        <div id="intelFeed" style="font-family:var(--mono); font-size:12px; line-height:1.5; color:var(--text); max-height:180px; overflow:auto; padding:10px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2)"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ERROR VIEW -->
+  <section id="errorView">
+    <div class="error-icon">!</div>
+    <div class="error-title">Analysis Failed</div>
+    <div class="error-msg" id="errorMsg">Could not complete the threat analysis. Please try again.</div>
+    <button class="retry-btn" onclick="resetToInput()">Try Again</button>
+  </section>
+
+  <!-- RESULTS VIEW -->
+  <section id="resultsView">
+    <div class="results-header">
+      <div class="case-meta">
+        <span class="case-id" id="resultCaseId"></span>
+        <span class="case-ts" id="resultTimestamp"></span>
+      </div>
+      <div class="result-metrics">
+        <span class="metric-chip">CONF <strong id="metricConfidence">0</strong>%</span>
+        <span class="metric-chip">SIM <strong id="metricSimilar">0</strong></span>
+      </div>
+      <button class="results-back" onclick="resetToInput()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        New Analysis
+      </button>
+    </div>
+
+    <div class="report-window">
+      <div id="reportWindowLine">STATUS: —</div>
+      <div class="gh-bar-track"><div id="goldenHourBar" class="gh-bar"></div></div>
+    </div>
+
+    <div class="conversation-card" id="conversationCard">
+      <div class="conversation-head">
+        <span class="tone-chip" id="toneChip">ANALYSIS</span>
+        <span class="conversation-meta" id="conversationMeta">Manager response</span>
+      </div>
+      <div class="conversation-reply" id="conversationReply">Analysis complete.</div>
+    </div>
+
+    <div class="section-card hidden" id="sectionIntegrations">
+      <div class="section-header" onclick="toggleSection('sectionIntegrations')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9"/><path d="M14 17H4"/><path d="M20 17h-5"/><path d="M7 7H4"/><path d="M6 7v10"/></svg>
+          <span class="section-title">Links</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <div class="fir-actions" style="justify-content:flex-start;gap:10px">
+          <a class="fir-btn hidden" id="linkCalendar" href="#" target="_blank">Open Calendar</a>
+          <a class="fir-btn hidden" id="linkTasks" href="#" target="_blank">Open Tasks</a>
+          <a class="fir-btn hidden" id="linkGmail" href="#" target="_blank">Open Gmail Draft</a>
+          <a class="fir-btn hidden" id="linkDoc" href="#" target="_blank">Open Case Report</a>
         </div>
       </div>
     </div>
 
-    <!-- Signals row -->
-    <div class="report-body">
-      <div class="signal-row">
-        <div class="signal-cell">
-          <div class="sc-label">Threat type</div>
-          <div class="sc-val" id="sc-threat">—</div>
-        </div>
-        <div class="signal-cell">
-          <div class="sc-label">Risk level</div>
-          <div class="sc-val" id="sc-risk">—</div>
-        </div>
-        <div class="signal-cell">
-          <div class="sc-label">Signals found</div>
-          <div class="sc-val" id="sc-signals">—</div>
-        </div>
-        <div class="signal-cell">
-          <div class="sc-label">Method</div>
-          <div class="sc-val" id="sc-method">—</div>
+    <div class="assessment-card">
+      <div class="assessment-pre" id="assessmentBlock"></div>
+    </div>
+
+    <div class="section-card open" id="sectionEvidence">
+      <div class="section-header" style="cursor:default">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
+          <span class="section-title" id="evidenceSectionTitle">Evidence</span>
         </div>
       </div>
-
-      <!-- Advice -->
-      <div class="advice-section">
-        <div class="advice-label">What to do now</div>
-        <p class="advice-summary" id="adv-summary">—</p>
-        <ol class="steps" id="adv-steps" aria-label="Recommended action steps"></ol>
+      <div class="section-body">
+        <table class="evidence-table">
+          <thead>
+            <tr>
+              <th>INDICATOR</th>
+              <th>CONFIDENCE</th>
+              <th>WEIGHT</th>
+            </tr>
+          </thead>
+          <tbody id="evidenceBody"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Case footer -->
-    <div class="case-foot">
-      <div>
-        <div class="case-id-label">Case reference</div>
-        <div class="case-id-val" id="case-id-val">—</div>
+    <div class="section-card open" id="sectionActions">
+      <div class="section-header" style="cursor:default">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+          <span class="section-title" id="primaryActionsTitle">Action Steps</span>
+        </div>
       </div>
-      <div class="case-time" id="case-ts">—</div>
-    </div>
-  </div>
-
-  <!-- HELPLINE STRIP (visible after result) -->
-  <div class="hl-strip" id="hl-strip" role="complementary" aria-label="Emergency helplines">
-    <div class="hl-item">
-      <div class="hl-desc">
-        <div class="hl-name">National Cybercrime Helpline</div>
-        <div class="hl-sub">24×7 · Report & recover funds within golden hour</div>
-      </div>
-      <a href="tel:1930" class="hl-num" aria-label="Call 1930">1930</a>
-      <a href="tel:1930" class="hl-call" aria-label="Call 1930 now">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l1.87-1.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        Call now
-      </a>
-    </div>
-    <div class="hl-item">
-      <div class="hl-desc">
-        <div class="hl-name">cybercrime.gov.in</div>
-        <div class="hl-sub">Online FIR · Evidence upload</div>
-      </div>
-      <a href="https://cybercrime.gov.in" target="_blank" rel="noopener noreferrer" class="hl-call" aria-label="Open cybercrime.gov.in">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        File FIR
-      </a>
-    </div>
-  </div>
-
-  <!-- BOTTOM PANEL -->
-  <div class="bottom-panel">
-    <!-- Stats -->
-    <div class="panel-card">
-      <div class="panel-head">Session stats</div>
-      <div class="stats-grid-2">
-        <div class="stat-c"><div class="stat-n" id="s-analyzed">0</div><div class="stat-lbl">Analyzed</div></div>
-        <div class="stat-c"><div class="stat-n o" id="s-scams">0</div><div class="stat-lbl">Scams Found</div></div>
-        <div class="stat-c"><div class="stat-n r" id="s-critical">0</div><div class="stat-lbl">Critical</div></div>
-        <div class="stat-c"><div class="stat-n g" id="s-safe">0</div><div class="stat-lbl">Safe</div></div>
+      <div class="section-body">
+        <ol class="actions-ol" id="actionsList"></ol>
+        <div id="reportingQuickLinks" style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-muted)">
+          FILE: <a href="https://cybercrime.gov.in" target="_blank">cybercrime.gov.in</a> · HELPLINE: <a href="tel:1930">1930</a>
+        </div>
       </div>
     </div>
 
-    <!-- Recent Cases -->
-    <div class="panel-card">
-      <div class="panel-head">Recent cases</div>
-      <ul class="recent-list" id="recent-list" role="list" aria-live="polite" aria-label="Recent case history">
-        <li class="no-cases" id="no-cases">No cases yet this session</li>
-      </ul>
+    <!-- OSINT -->
+    <div class="section-card" id="sectionOsint">
+      <div class="section-header" onclick="toggleSection('sectionOsint')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="section-title">Infrastructure Intelligence</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body" id="osintBody">
+        <div class="osint-summary" id="osintSummary"></div>
+        <div class="osint-grid" id="osintGrid" style="margin-top:12px"></div>
+      </div>
     </div>
-  </div>
 
-  <!-- Helplines card (always visible at bottom) -->
-  <div class="bottom-panel" style="margin-top:10px">
-    <div class="panel-card" style="grid-column:1/-1">
-      <div class="panel-head">Emergency helplines</div>
-      <ul class="hlist" role="list" aria-label="Helpline numbers">
-        <li class="hlist-li">
-          <div class="hlist-info"><div class="hlist-name">Cybercrime Helpline</div><div class="hlist-sub">24×7 National</div></div>
-          <a href="tel:1930" class="hlist-num" aria-label="Call 1930">1930</a>
-        </li>
-        <li class="hlist-li">
-          <div class="hlist-info"><div class="hlist-name">cybercrime.gov.in</div><div class="hlist-sub">Online FIR Portal</div></div>
-          <a href="https://cybercrime.gov.in" target="_blank" rel="noopener noreferrer" class="hlist-link" aria-label="Open cybercrime.gov.in">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
-        </li>
-        <li class="hlist-li">
-          <div class="hlist-info"><div class="hlist-name">TGCSB Helpline</div><div class="hlist-sub">Telangana State Cybersecurity Bureau</div></div>
-          <a href="tel:400" class="hlist-num" aria-label="Call 400">400</a>
-        </li>
-      </ul>
+    <!-- FIR TEMPLATE -->
+    <div class="section-card open" id="sectionFir">
+      <div class="section-header" onclick="toggleSection('sectionFir')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span class="section-title">NCRP Complaint Draft</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <pre class="gov-pre" id="firBox"></pre>
+        <div class="fir-actions">
+          <button class="fir-btn primary" onclick="copyFir()">Copy Complaint</button>
+          <button class="fir-btn" onclick="downloadFir()">Download .txt</button>
+        </div>
+      </div>
     </div>
-  </div>
 
+    <!-- EMERGENCY FOOTER -->
+    <div class="emergency-footer">
+      <div class="emergency-text">Cybercrime Helpline: <strong>1930</strong> · Available 24/7</div>
+      <div class="emergency-links">
+        <a href="tel:1930" class="emergency-link">Call 1930</a>
+        <a href="https://cybercrime.gov.in" target="_blank" class="emergency-link">NCRP Portal</a>
+      </div>
+    </div>
+
+    <div class="analysis-complete" id="analysisCompleteLine"></div>
+
+  </section>
 </main>
 
+<div class="recovery-modal hidden" id="recoveryModal" role="dialog" aria-modal="true" aria-labelledby="recoveryModalTitle">
+  <div class="recovery-modal-card">
+    <div class="recovery-modal-title" id="recoveryModalTitle">Quick Recovery Intake</div>
+    <div class="recovery-modal-sub" id="recoveryModalSub">Answer these to tailor the final action plan.</div>
+    <div id="recoveryModalContent"></div>
+  </div>
+</div>
+
 <script>
-const stats = { analyzed:0, scams:0, critical:0, safe:0 };
-const cases = [];
-let attached = null;
+// ── STATE ──
+let sessionId = null;
+let selectedFile = null;
+let currentRunId = null;
+let pollInterval = null;
+let firContent = '';
+let googleConnected = false;
+let analysisStartMs = null;
+let elapsedTimerInterval = null;
+let goldenHourInterval = null;
+let lastSubmittedText = '';
+let lastResultData = null;
+let pendingIntakeSubmission = null;
+let activePreprocessPromise = null;
+let activePreprocessToken = 0;
+let intakeTokenCounter = 0;
+let integrationLinks = {
+  google_calendar: '',
+  google_tasks: '',
+  google_gmail: '',
+  google_docs: '',
+};
 
-// File attach
-const fileInput = document.getElementById('file-input');
-document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  attached = f;
-  document.getElementById('file-name').textContent = f.name;
-  document.getElementById('file-size').textContent = fmt(f.size);
-  document.getElementById('attach-row').classList.add('show');
-});
-document.getElementById('remove-btn').addEventListener('click', () => {
-  attached = null; fileInput.value = '';
-  document.getElementById('attach-row').classList.remove('show');
-});
-function fmt(b){ if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(0)+'KB'; return(b/1048576).toFixed(1)+'MB'; }
+const SESSION_STORAGE_KEY = 'satark_session_id';
 
-// Analyze
-const analyzeBtn = document.getElementById('analyze-btn');
-const scanBar = document.getElementById('scan-bar');
-const emptyEl = document.getElementById('empty-state');
-const resultEl = document.getElementById('result');
-const hlStrip = document.getElementById('hl-strip');
-
-analyzeBtn.addEventListener('click', async () => {
-  const txt = document.getElementById('main-ta').value.trim();
-  if (!txt && !attached) { document.getElementById('main-ta').focus(); return; }
-
-  analyzeBtn.disabled = true;
-  document.getElementById('btn-icon').outerHTML = '<svg id="btn-icon" class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
-  scanBar.classList.add('on');
-  emptyEl.style.display = 'none';
-  resultEl.classList.remove('on');
-  hlStrip.classList.remove('on');
-
-  try {
-    let body, hdrs = {};
-    if (attached) {
-      const fd = new FormData();
-      if (txt) fd.append('text', txt);
-      fd.append('file', attached, attached.name);
-      body = fd;
+// ── SESSION ID ──
+function getSessionId() {
+  if (!sessionId) {
+    const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (existing && existing.length >= 6) {
+      sessionId = existing;
     } else {
-      hdrs['Content-Type'] = 'application/json';
-      body = JSON.stringify({ text: txt });
+      let created = null;
+      try {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+        created = `sess_${hex}`;
+      } catch (_e) {
+        created = 'sess_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      }
+      sessionId = created;
+      localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
     }
-    const res = await fetch('/analyze', { method:'POST', headers:hdrs, body });
-    const data = await res.json();
-    render(data, txt);
-  } catch(e) {
-    emptyEl.style.display = 'flex'; console.error(e);
-  } finally {
-    analyzeBtn.disabled = false;
-    document.getElementById('btn-icon').outerHTML = '<svg id="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
-    scanBar.classList.remove('on');
   }
+  return sessionId;
+}
+
+// ── AUTH ──
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+    const badge = document.getElementById('authBadge');
+    const label = document.getElementById('authLabel');
+    const logout = document.getElementById('logoutBtn');
+    if (d.connected) {
+      googleConnected = true;
+      badge.classList.add('connected');
+      label.textContent = d.email || 'Google connected';
+      badge.onclick = null;
+      badge.style.cursor = 'default';
+      logout.classList.add('visible');
+    } else {
+      googleConnected = false;
+      badge.classList.remove('connected');
+      label.textContent = 'Sign in with Google (Calendar)';
+      badge.onclick = startAuth;
+      badge.style.cursor = 'pointer';
+      logout.classList.remove('visible');
+    }
+  } catch(e) {}
+}
+
+function _formatElapsed(ms) {
+  const v = Math.max(0, Number(ms || 0)) / 1000;
+  return `${v.toFixed(1)}s`;
+}
+
+function _startElapsedTimer() {
+  const el = document.getElementById('elapsedTimer');
+  if (!el) return;
+  if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
+  el.textContent = '0.0s';
+  const started = Number(analysisStartMs || Date.now());
+  elapsedTimerInterval = setInterval(() => {
+    el.textContent = _formatElapsed(Date.now() - started);
+  }, 100);
+}
+
+function _freezeElapsedTimer() {
+  const el = document.getElementById('elapsedTimer');
+  if (elapsedTimerInterval) {
+    clearInterval(elapsedTimerInterval);
+    elapsedTimerInterval = null;
+  }
+  if (el && typeof analysisStartMs === 'number') {
+    el.textContent = _formatElapsed(Date.now() - analysisStartMs);
+  }
+}
+
+function _clearGoldenHourTicker() {
+  if (goldenHourInterval) {
+    clearInterval(goldenHourInterval);
+    goldenHourInterval = null;
+  }
+}
+
+function _animateResultCards() {
+  const cards = Array.from(document.querySelectorAll('#resultsView .report-window, #resultsView .conversation-card, #resultsView .assessment-card, #resultsView .section-card, #resultsView .emergency-footer, #resultsView .analysis-complete'));
+  for (const card of cards) {
+    card.classList.remove('result-card-enter');
+    card.style.animationDelay = '0ms';
+  }
+  cards.forEach((card, idx) => {
+    card.classList.add('result-card-enter');
+    card.style.animationDelay = `${idx * 80}ms`;
+  });
+}
+
+function _setIndicatorDone(row, status) {
+  const indicator = row ? row.querySelector('.agent-indicator') : null;
+  if (!indicator) return;
+  indicator.innerHTML = '';
+  if (status === 'done') {
+    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3 3L13 4.5"/></svg>';
+    indicator.style.color = '#22c55e';
+  } else if (status === 'failed') {
+    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+    indicator.style.color = '#ef4444';
+  } else if (status === 'skipped') {
+    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10"/></svg>';
+    indicator.style.color = '#94a3b8';
+  } else {
+    indicator.style.color = '';
+  }
+}
+
+function startAuth() {
+  const sid = getSessionId();
+  window.location.href = `/auth/google/start?session_id=${sid}&next=/ui`;
+}
+
+document.getElementById('logoutBtn').onclick = () => {
+  window.location.href = '/auth/google/logout';
+};
+
+// ── FILE HANDLING ──
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const pasteScreenshotBtn = document.getElementById('pasteScreenshotBtn');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0]);
 });
 
-function render(d, inputTxt) {
-  const raw = (d.verdict || d.risk_level || 'UNKNOWN').toUpperCase();
-  const conf = Math.round((d.confidence_score ?? d.confidence ?? 0.5) * 100);
-  const caseId = d.case_id || ('SATARK-' + Date.now());
-  const now = new Date();
-
-  let cls = 'safe', headline = 'No Fraud Detected';
-  if (raw.includes('CRITICAL')||raw.includes('SCAM')||raw.includes('HIGH'))
-    { cls='critical'; headline='Fraud Detected'; }
-  else if (raw.includes('MEDIUM')||raw.includes('WARN')||raw.includes('SUSPICIOUS'))
-    { cls='warn'; headline='Suspicious Activity'; }
-
-  // Verdict band
-  const vband = document.getElementById('vband');
-  vband.className = 'verdict-band ' + cls;
-  document.getElementById('vref').textContent = `CASE REF · ${caseId}`;
-  const vh = document.getElementById('vheadline');
-  vh.textContent = headline; vh.className = 'verdict-headline ' + cls;
-  document.getElementById('vtype').textContent = d.threat_type || d.scam_type || (cls==='safe'?'No threat identified':'Financial fraud');
-  document.getElementById('vtime-meta').textContent = now.toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-
-  // Confidence arc
-  const arc = document.getElementById('conf-arc');
-  arc.className = 'conf-fill ' + cls;
-  const circ = 2 * Math.PI * 26; // ~163.4
-  setTimeout(() => { arc.style.strokeDashoffset = circ - (conf/100)*circ; }, 40);
-  document.getElementById('conf-label').textContent = conf + '%';
-
-  // Signals
-  document.getElementById('sc-threat').textContent = d.threat_type || d.scam_type || (cls==='safe'?'None':'Financial scam');
-  document.getElementById('sc-risk').textContent = cls==='critical'?'Critical':cls==='warn'?'Medium':'Low';
-  document.getElementById('sc-signals').textContent = d.signals_count ?? (d.red_flags?.length ?? (cls==='safe'?'0':'3+'));
-  document.getElementById('sc-method').textContent = d.detection_method || 'ADK multi-agent';
-
-  // Advice
-  const advTxt = d.victim_advice || d.advice || buildAdvice(cls);
-  document.getElementById('adv-summary').textContent = advTxt.split('\n')[0];
-  const stepData = d.action_steps || d.immediate_actions || buildSteps(cls);
-  const stepsEl = document.getElementById('adv-steps');
-  stepsEl.innerHTML = stepData.map((s,i)=>`<li class="step-item"><span class="step-n">${i+1}</span><span>${s}</span></li>`).join('');
-
-  // Footer
-  document.getElementById('case-id-val').textContent = caseId;
-  document.getElementById('case-ts').textContent = now.toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-
-  // Stats
-  stats.analyzed++;
-  if(cls==='safe') stats.safe++; else { stats.scams++; if(cls==='critical') stats.critical++; }
-  document.getElementById('s-analyzed').textContent = stats.analyzed;
-  document.getElementById('s-scams').textContent = stats.scams;
-  document.getElementById('s-critical').textContent = stats.critical;
-  document.getElementById('s-safe').textContent = stats.safe;
-
-  // Recent cases
-  cases.unshift({cls, txt:inputTxt.slice(0,55)+(inputTxt.length>55?'…':''), time:now});
-  if(cases.length>6) cases.pop();
-  const rl = document.getElementById('recent-list');
-  rl.innerHTML = cases.map(c=>`<li class="recent-li"><span class="rd ${c.cls}" aria-label="${c.cls}"></span><span class="r-txt">${c.txt}</span><span class="r-time">${c.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span></li>`).join('');
-
-  resultEl.classList.add('on');
-  hlStrip.classList.add('on');
-  resultEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+function _setPastedImageFile(blob, mimeType) {
+  const type = mimeType || blob.type || 'image/png';
+  const ext = type.includes('webp') ? 'webp' : (type.includes('jpeg') || type.includes('jpg')) ? 'jpg' : 'png';
+  const file = new File([blob], `pasted-screenshot.${ext}`, { type });
+  setFile(file);
 }
 
-function buildAdvice(cls){
-  if(cls==='safe') return 'No fraud patterns were detected in this content. Exercise normal caution — never share OTPs, banking PINs, or Aadhaar details with anyone regardless of who they claim to be.';
-  if(cls==='critical') return 'This is a confirmed fraud attempt. Time is critical — the sooner you act, the higher your chance of recovering lost funds. Do not engage further with the sender under any circumstances.';
-  return 'This content has characteristics consistent with fraud. Do not make any payment or share personal information until you independently verify the sender through official channels.';
-}
-function buildSteps(cls){
-  if(cls==='safe') return [
-    'Block the sender if this was an unsolicited message, even if it looks legitimate.',
-    'Never share OTPs, passwords, or Aadhaar/PAN details over calls or messages.',
-    'If something felt off, report it to TRAI DND or your telecom provider.'
-  ];
-  if(cls==='critical') return [
-    'Call your bank\'s fraud helpline immediately and ask to reverse or freeze the transaction — every minute counts.',
-    'File a complaint on cybercrime.gov.in or call 1930 right now to open an official case and improve fund recovery chances.',
-    'Screenshot every conversation, transaction ID, payment receipt, and sender contact before anything is deleted.',
-    'Block the scammer\'s number but do NOT delete the conversation — it is evidence.',
-    'Do not accept follow-up calls claiming to help you "recover" money — that is a secondary scam.',
-    'Visit your nearest police station and file an FIR; get the acknowledgment slip for bank dispute submission.'
-  ];
-  return [
-    'Do not make any payment or transfer before verifying the sender through their official number or website.',
-    'Block and report the sender; use your device\'s built-in "Report spam" feature.',
-    'If any money was already sent, call 1930 immediately and provide your transaction reference number.',
-    'File a report on cybercrime.gov.in with screenshots as supporting evidence.'
-  ];
+async function pasteScreenshot() {
+  // Prefer Clipboard API when available (button click), fallback to Ctrl+V paste handler.
+  if (navigator.clipboard && navigator.clipboard.read) {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        for (const type of item.types) {
+          if (type && type.startsWith('image/')) {
+            const blob = await item.getType(type);
+            _setPastedImageFile(blob, type);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore and rely on Ctrl+V event.
+    }
+  }
 }
 
-// Ctrl+Enter shortcut
-document.getElementById('main-ta').addEventListener('keydown', e => {
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter') analyzeBtn.click();
+if (pasteScreenshotBtn) {
+  pasteScreenshotBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    pasteScreenshot();
+  });
+}
+
+document.addEventListener('paste', (e) => {
+  try {
+    const cd = e.clipboardData;
+    if (!cd || !cd.items) return;
+    for (const item of cd.items) {
+      if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) setFile(file);
+        return;
+      }
+    }
+  } catch (err) {}
 });
+
+function setFile(f) {
+  selectedFile = f;
+  dropzone.classList.add('has-file');
+  document.getElementById('fileName').textContent = f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
+}
+
+function toDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function _ensureEncodedFileData(submission) {
+  if (!submission || !submission.file) return null;
+  if (typeof submission._cachedDataUrl === 'string' && submission._cachedDataUrl) {
+    return submission._cachedDataUrl;
+  }
+  if (!submission._encodingPromise) {
+    submission._encodingPromise = toDataUrl(submission.file)
+      .then((dataUrl) => {
+        submission._cachedDataUrl = String(dataUrl || '');
+        return submission._cachedDataUrl;
+      })
+      .catch(() => null);
+  }
+  return await submission._encodingPromise;
+}
+
+async function _buildSubmissionInput(submission) {
+  const files = [];
+  if (submission && submission.file) {
+    const dataUrl = await _ensureEncodedFileData(submission);
+    if (dataUrl) {
+      files.push({
+        file_name: submission.file.name,
+        file_type: submission.file.type || 'application/octet-stream',
+        content_base64: dataUrl,
+      });
+    }
+  }
+  return {
+    text: (submission && submission.text) ? String(submission.text) : '',
+    files,
+  };
+}
+
+function _startBackgroundPreprocess(submission, intakeToken) {
+  activePreprocessToken = intakeToken;
+  activePreprocessPromise = (async () => {
+    try {
+      const sid = getSessionId();
+      const user_input = await _buildSubmissionInput(submission);
+      const r = await fetch('/api/analyze/preprocess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, user_input }),
+      });
+      if (!r.ok) return {};
+      const d = await r.json();
+      if (!d || typeof d !== 'object') return {};
+      return (d.context && typeof d.context === 'object') ? d.context : {};
+    } catch (_err) {
+      return {};
+    }
+  })();
+  return activePreprocessPromise;
+}
+
+async function _awaitBackgroundPreprocess(intakeToken) {
+  if (!activePreprocessPromise || activePreprocessToken !== intakeToken) return {};
+  try {
+    const ctx = await activePreprocessPromise;
+    return (ctx && typeof ctx === 'object') ? ctx : {};
+  } catch (_err) {
+    return {};
+  }
+}
+
+// ── SUBMIT ──
+document.getElementById('submitBtn').addEventListener('click', runAnalysis);
+document.getElementById('inputText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) runAnalysis();
+});
+
+async function runAnalysis() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text && !selectedFile) {
+    document.getElementById('inputText').focus();
+    return;
+  }
+  lastSubmittedText = text || '';
+  const submission = { text: text || '', file: selectedFile };
+  const intakeToken = ++intakeTokenCounter;
+  _startBackgroundPreprocess(submission, intakeToken);
+  openRecoveryIntakeModal(submission, intakeToken);
+}
+
+async function _startAnalyzeRequest(submission, recoveryAnswers, intakeToken) {
+  analysisStartMs = Date.now();
+  showAnalyzing();
+  try {
+    const sid = getSessionId();
+    const user_input = await _buildSubmissionInput(submission);
+    const preprocessedContext = await _awaitBackgroundPreprocess(intakeToken);
+    activePreprocessPromise = null;
+    activePreprocessToken = 0;
+
+    const payload = {
+      session_id: sid,
+      user_input,
+      user_context: { channel: 'web-ui', locale: navigator.language || 'en-IN' },
+      options: {
+        stream: true,
+        generate_report: true,
+        trigger_mcp_actions: false,
+        recovery_answers: recoveryAnswers || {},
+        preprocessed_context: preprocessedContext || {},
+      },
+    };
+
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('API error ' + r.status);
+    const d = await r.json();
+    currentRunId = d.run_id;
+    startStreaming(d.run_id);
+    startPolling(d.run_id);
+  } catch(e) {
+    showError('Could not start analysis. Is the server running?');
+  }
+}
+
+// ── STREAMING (named SSE events) ──
+let evtSource = null;
+let agentsDone = new Set();
+let agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
+
+let feedLines = [];
+const FEED_MAX = 28;
+
+function _feedReset() {
+  feedLines = [];
+  const el = document.getElementById('intelFeed');
+  if (el) el.innerHTML = '';
+}
+
+function _feedAdd(text) {
+  const el = document.getElementById('intelFeed');
+  if (!el) return;
+  const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const line = `[${ts}] ${String(text || '').trim()}`;
+  if (!line.trim()) return;
+  const div = document.createElement('div');
+  div.className = 'feed-line';
+  div.textContent = line;
+  el.appendChild(div);
+  feedLines.push(line);
+  while (feedLines.length > FEED_MAX) {
+    feedLines.shift();
+    if (el.firstChild) el.removeChild(el.firstChild);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function _agentRow(agent) {
+  const key = String(agent || '').trim();
+  if (!key) return null;
+  return document.getElementById('agent-' + key) || null;
+}
+
+function _markAgentState(agent, stateText, cls) {
+  const row = _agentRow(agent);
+  if (!row) return;
+  const st = row.querySelector('.agent-status');
+  row.classList.remove('active', 'done', 'skipped', 'failed');
+  if (cls) row.classList.add(cls);
+  if (st) st.textContent = stateText;
+  if (cls === 'done') _setIndicatorDone(row, 'done');
+  else if (cls === 'failed') _setIndicatorDone(row, 'failed');
+  else if (cls === 'skipped') _setIndicatorDone(row, 'skipped');
+  else _setIndicatorDone(row, 'active');
+}
+
+function updateProgress() {
+  const total = Math.max(1, agentsPlanned.size);
+  let done = 0;
+  for (const a of agentsDone) {
+    if (agentsPlanned.has(a)) done++;
+  }
+  document.getElementById('progressBar').style.width = (done / total * 100) + '%';
+}
+
+function _upsertIntegrationLink(agent, url) {
+  const clean = String(url || '').trim();
+  if (!clean) return;
+  integrationLinks[agent] = clean;
+  const integrations = document.getElementById('sectionIntegrations');
+  const map = {
+    google_calendar: document.getElementById('linkCalendar'),
+    google_tasks: document.getElementById('linkTasks'),
+    google_gmail: document.getElementById('linkGmail'),
+    google_docs: document.getElementById('linkDoc'),
+  };
+  const link = map[agent];
+  if (link) {
+    link.href = clean;
+    link.classList.remove('hidden');
+  }
+  if (integrations) {
+    integrations.classList.remove('hidden');
+    integrations.classList.add('open');
+  }
+}
+
+function startStreaming(runId) {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource(`/api/stream/${runId}`);
+
+  evtSource.addEventListener('run.classified', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const selected = Array.isArray(d.selected_agents) ? d.selected_agents : [];
+      const skipped = Array.isArray(d.skipped_agents) ? d.skipped_agents : [];
+      const planned = new Set();
+      planned.add('manager');
+      for (const a of selected) {
+        const agent = String(a || '').trim();
+        if (_agentRow(agent)) planned.add(agent);
+      }
+
+      for (const s of skipped) {
+        const agent = (s && typeof s === 'object') ? String(s.agent || '').trim() : String(s || '').trim();
+        if (agent && _agentRow(agent)) planned.add(agent);
+      }
+
+      if (googleConnected) {
+        for (const agent of ['google_calendar', 'google_tasks', 'google_gmail', 'google_docs']) {
+          if (_agentRow(agent)) planned.add(agent);
+        }
+      }
+      agentsPlanned = planned;
+      updateProgress();
+    } catch (_err) {}
+  });
+
+  const onAgentStarted = (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || d.agent_id || '').trim();
+      if (agent) {
+        _markAgentState(agent, 'ANALYZING...', 'active');
+        const statusEl = document.getElementById('analyzingStatus');
+        if (statusEl) statusEl.textContent = `${agent.replaceAll('_', ' ').toUpperCase()} ONLINE`;
+        const label = String(d.label || d.agent_label || '').trim();
+        _feedAdd(`A2A: ${label || agent} started`);
+      }
+    } catch (_err) {}
+  };
+  evtSource.addEventListener('agent.started', onAgentStarted);
+  evtSource.addEventListener('agent_start', onAgentStarted);
+
+  evtSource.addEventListener('agent.progress', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || '').trim();
+      if (agent) _markAgentState(agent, 'ANALYZING...', 'active');
+      const msg = String(d.message || '').trim();
+      const statusEl = document.getElementById('analyzingStatus');
+      if (statusEl && msg) statusEl.textContent = msg.toUpperCase();
+      if (msg) _feedAdd(`TGCSB: ${msg}`);
+    } catch (_err) {}
+  });
+
+  const onAgentCompleted = (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || d.agent_id || '').trim();
+      if (agent) {
+        const status = String(d.status || d.state || '').trim().toLowerCase();
+        if (status === 'skipped') _markAgentState(agent, 'SKIPPED', 'skipped');
+        else if (status === 'failed') _markAgentState(agent, 'FAILED', 'failed');
+        else _markAgentState(agent, 'COMPLETE', 'done');
+        agentsDone.add(agent);
+        updateProgress();
+
+        const output = d.output && typeof d.output === 'object' ? d.output : {};
+        const summary = String(output.summary || d.summary || '').trim();
+        const deepLink = String(output.deep_link || output.url || d.deep_link || d.url || '').trim();
+        if (agent === 'google_calendar' || agent === 'google_tasks' || agent === 'google_gmail' || agent === 'google_docs') {
+          _upsertIntegrationLink(agent, deepLink);
+        }
+
+        const verb = status === 'skipped' ? 'skipped' : (status === 'failed' ? 'failed' : 'completed');
+        _feedAdd(`A2A: ${agent} ${verb}${summary ? ' — ' + summary : ''}`);
+      }
+    } catch (_err) {}
+  };
+  evtSource.addEventListener('agent.completed', onAgentCompleted);
+  evtSource.addEventListener('agent_done', onAgentCompleted);
+
+  evtSource.addEventListener('tool.called', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const tool = String(d.tool || '').trim();
+      const msg = String(d.message || '').trim();
+      if (tool || msg) _feedAdd(`TOOL: ${tool}${msg ? ' — ' + msg : ''}`);
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('tool.result', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const tool = String(d.tool || '').trim();
+      const status = String(d.status || '').trim();
+      const matches = (typeof d.matches === 'number') ? ` matches=${d.matches}` : '';
+      if (tool || status) _feedAdd(`RESULT: ${tool}${status ? ' [' + status + ']' : ''}${matches}`);
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('run.completed', () => {
+    const statusEl = document.getElementById('analyzingStatus');
+    if (statusEl) statusEl.textContent = 'FINALIZING REPORT…';
+  });
+
+  evtSource.addEventListener('run.failed', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const err = String(d.error || 'Unknown error');
+      showError(err);
+    } catch (_err) {
+      showError('Analysis failed.');
+    }
+  });
+
+  evtSource.onerror = () => {
+    _freezeElapsedTimer();
+    try { evtSource.close(); } catch(_e) {}
+  };
+}
+
+// ── POLLING ──
+function startPolling(runId) {
+  if (pollInterval) clearInterval(pollInterval);
+  let attempts = 0;
+  const maxAttempts = 60;
+  pollInterval = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(pollInterval);
+      showError('Analysis timed out. Server may be busy — please try again.');
+      return;
+    }
+    try {
+      const r = await fetch(`/api/result/${runId}`);
+      if (r.status === 202) return;
+      if (!r.ok) { clearInterval(pollInterval); showError('Analysis failed.'); return; }
+      const d = await r.json();
+      clearInterval(pollInterval);
+      if (evtSource) evtSource.close();
+      showResults(d);
+    } catch(e) {}
+  }, 2000);
+}
+
+// ── VIEWS ──
+function showAnalyzing() {
+  closeRecoveryIntakeModal();
+  agentsDone.clear();
+  agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
+  integrationLinks = { google_calendar: '', google_tasks: '', google_gmail: '', google_docs: '' };
+  _clearGoldenHourTicker();
+  for (const agent of ['google_calendar', 'google_tasks', 'google_gmail', 'google_docs']) {
+    const row = _agentRow(agent);
+    if (row) row.classList.toggle('hidden', !googleConnected);
+    if (googleConnected) agentsPlanned.add(agent);
+  }
+  const integrations = document.getElementById('sectionIntegrations');
+  if (integrations) {
+    integrations.classList.add('hidden');
+    integrations.classList.remove('open');
+  }
+  for (const id of ['linkCalendar', 'linkTasks', 'linkGmail', 'linkDoc']) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+  document.getElementById('progressBar').style.width = '0%';
+  document.querySelectorAll('.agent-row').forEach(r => {
+    r.classList.remove('active','done','skipped','failed','entered');
+    const ind = r.querySelector('.agent-indicator');
+    if (ind) ind.innerHTML = '';
+    r.querySelector('.agent-status').textContent = 'STANDBY';
+  });
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('analyzingView').classList.remove('exiting');
+  document.getElementById('analyzingView').classList.add('visible');
+  const resultsView = document.getElementById('resultsView');
+  document.getElementById('resultsView').classList.remove('visible');
+  resultsView.classList.remove('results-enter-prep', 'results-enter-active');
+  document.getElementById('errorView').classList.remove('visible');
+  document.getElementById('analyzingStatus').textContent = 'SATARK INTELLIGENCE NETWORK ONLINE';
+  _startElapsedTimer();
+
+  const rows = Array.from(document.querySelectorAll('.agent-row')).filter((r) => !r.classList.contains('hidden'));
+  rows.forEach((row, idx) => {
+    setTimeout(() => row.classList.add('entered'), idx * 200);
+  });
+
+  _feedReset();
+  _feedAdd('TGCSB: Listening for intel updates…');
+}
+
+function showError(msg) {
+  _freezeElapsedTimer();
+  _clearGoldenHourTicker();
+  closeRecoveryIntakeModal();
+  activePreprocessPromise = null;
+  activePreprocessToken = 0;
+  document.getElementById('analyzingView').classList.remove('visible');
+  document.getElementById('analyzingView').classList.remove('exiting');
+  document.getElementById('errorView').classList.add('visible');
+  document.getElementById('errorMsg').textContent = msg;
+}
+
+async function loadRecentCases() {
+  const list = document.getElementById('recentCasesList');
+  if (!list) return;
+  try {
+    const r = await fetch('/api/cases');
+    if (!r.ok) throw new Error('failed');
+    const items = await r.json();
+    if (!Array.isArray(items) || items.length === 0) {
+      list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">No cases yet.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const item of items) {
+      const caseId = String(item.case_id || item.run_id || item.id || '').trim();
+      const ts = String(item.timestamp || item.created_at || '').trim();
+      const row = document.createElement('div');
+      row.className = 'case-item';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = caseId || '(unknown)';
+      btn.onclick = () => loadCaseResult(caseId);
+      const time = document.createElement('div');
+      time.className = 'case-time';
+      time.textContent = ts ? new Date(ts).toLocaleString() : '';
+      row.appendChild(btn);
+      row.appendChild(time);
+      list.appendChild(row);
+    }
+  } catch (_e) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Could not load cases.</div>';
+  }
+}
+
+async function loadCaseResult(caseId) {
+  const id = String(caseId || '').trim();
+  if (!id) return;
+  try {
+    const r = await fetch(`/api/result/${encodeURIComponent(id)}`);
+    if (!r.ok) throw new Error('not found');
+    const d = await r.json();
+    if (evtSource) { try { evtSource.close(); } catch(_e) {} }
+    if (pollInterval) clearInterval(pollInterval);
+    showResults(d);
+  } catch (_e) {
+    showError('Could not load case result.');
+  }
+}
+
+function resetToInput() {
+  if (pollInterval) clearInterval(pollInterval);
+  if (evtSource) evtSource.close();
+  _freezeElapsedTimer();
+  _clearGoldenHourTicker();
+  closeRecoveryIntakeModal();
+  pendingIntakeSubmission = null;
+  activePreprocessPromise = null;
+  activePreprocessToken = 0;
+  document.getElementById('inputView').classList.remove('hidden');
+  document.getElementById('analyzingView').classList.remove('visible');
+  document.getElementById('analyzingView').classList.remove('exiting');
+  document.getElementById('resultsView').classList.remove('visible');
+  document.getElementById('resultsView').classList.remove('results-enter-prep', 'results-enter-active');
+  document.getElementById('errorView').classList.remove('visible');
+  document.getElementById('inputText').value = '';
+  selectedFile = null;
+  analysisStartMs = null;
+  dropzone.classList.remove('has-file');
+  document.getElementById('fileName').textContent = '';
+  loadRecentCases();
+}
+
+function closeRecoveryIntakeModal() {
+  const modal = document.getElementById('recoveryModal');
+  if (modal) modal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+
+function _isApkSubmission(submission) {
+  const file = submission && submission.file ? submission.file : null;
+  if (!file) return false;
+  const name = String(file.name || '').toLowerCase();
+  const type = String(file.type || '').toLowerCase();
+  return name.endsWith('.apk') || type === 'application/vnd.android.package-archive';
+}
+
+function _parseAmount(value) {
+  const clean = String(value || '').replace(/[^0-9.]/g, '');
+  const amount = Number(clean);
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  return amount;
+}
+
+function openRecoveryIntakeModal(submission, intakeToken) {
+  const modal = document.getElementById('recoveryModal');
+  const content = document.getElementById('recoveryModalContent');
+  const sub = document.getElementById('recoveryModalSub');
+  if (!modal || !content) return;
+
+  pendingIntakeSubmission = submission;
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  if (sub) sub.textContent = 'Answer a few quick questions while background analysis warms up.';
+
+  const isApk = _isApkSubmission(submission);
+
+  const state = {
+    loseMoney: null,
+    sharedBankDetails: null,
+    installedApk: null,
+    amountLost: 0,
+    timeBucket: 'hours',
+  };
+
+  const allSteps = [
+    {
+      id: 'loseMoney',
+      question: 'Did you lose money in this incident?',
+      type: 'choice',
+      key: 'loseMoney',
+      hint: 'This helps decide whether to trigger emergency reporting mode.',
+      options: [
+        { value: true, label: 'Yes, money was lost' },
+        { value: false, label: 'No financial loss' },
+      ],
+    },
+    {
+      id: 'sharedBankDetails',
+      question: 'Did you share OTP, UPI PIN, card details, or bank credentials?',
+      type: 'choice',
+      key: 'sharedBankDetails',
+      hint: 'Credential exposure changes urgency even without direct financial loss.',
+      options: [
+        { value: true, label: 'Yes, details were shared' },
+        { value: false, label: 'No credentials shared' },
+      ],
+    },
+    {
+      id: 'installedApk',
+      question: 'Did you install the APK on your phone?',
+      type: 'choice',
+      key: 'installedApk',
+      when: () => isApk,
+      hint: 'Installed APKs can escalate risk quickly.',
+      options: [
+        { value: true, label: 'Yes, installed' },
+        { value: false, label: 'No, not installed' },
+      ],
+    },
+    {
+      id: 'amountLost',
+      question: 'How much was lost (INR)?',
+      type: 'amount',
+      key: 'amountLost',
+      when: (s) => s.loseMoney === true,
+      hint: 'Approximate amount is enough.',
+    },
+    {
+      id: 'timeBucket',
+      question: 'When did this happen?',
+      type: 'choice',
+      key: 'timeBucket',
+      when: (s) => Boolean(s.loseMoney || s.sharedBankDetails || s.installedApk),
+      hint: 'Earlier reporting usually improves recovery odds.',
+      options: [
+        { value: 'minutes', label: 'Within minutes' },
+        { value: 'hours', label: 'Within hours' },
+        { value: 'days', label: 'More than a day ago' },
+      ],
+    },
+  ];
+
+  let stepIndex = 0;
+
+  const activeSteps = () => allSteps.filter((step) => !step.when || step.when(state));
+
+  const isValidForStep = (step) => {
+    if (!step) return false;
+    if (step.type === 'choice') {
+      return state[step.key] !== null && state[step.key] !== undefined && state[step.key] !== '';
+    }
+    if (step.type === 'amount') {
+      return Number.isFinite(Number(state.amountLost)) && Number(state.amountLost) >= 0;
+    }
+    return true;
+  };
+
+  const renderCurrentStep = () => {
+    const steps = activeSteps();
+    if (!steps.length) return;
+    if (stepIndex < 0) stepIndex = 0;
+    if (stepIndex >= steps.length) stepIndex = steps.length - 1;
+
+    const step = steps[stepIndex];
+    if (sub) sub.textContent = step.hint || 'Answer this to tailor your final response.';
+
+    let stepBody = '';
+    if (step.type === 'choice') {
+      stepBody = `<div class="intake-option-grid">${(step.options || []).map((opt) => {
+        const selected = state[step.key] === opt.value;
+        return `<button type="button" class="intake-option${selected ? ' selected' : ''}" data-role="option" data-value="${String(opt.value)}">${opt.label}</button>`;
+      }).join('')}</div>`;
+    } else if (step.type === 'amount') {
+      stepBody = `
+        <div class="recovery-field" style="margin-top:12px">
+          <input id="rmAmountSingle" type="text" inputmode="decimal" placeholder="e.g. 25000" value="${state.amountLost ? String(state.amountLost) : ''}">
+        </div>
+      `;
+    }
+
+    const finalStep = stepIndex === steps.length - 1;
+    content.innerHTML = `
+      <div class="intake-progress">Question ${stepIndex + 1} of ${steps.length}</div>
+      <div class="intake-question">${step.question}</div>
+      ${stepBody}
+      <div class="intake-actions">
+        <button class="recovery-btn" id="rmCancel">Cancel</button>
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          ${stepIndex > 0 ? '<button class="recovery-btn" id="rmBack">Back</button>' : ''}
+          <button class="recovery-btn primary" id="rmNext">${finalStep ? 'Start Analysis' : 'Next'}</button>
+        </div>
+      </div>
+    `;
+
+    const cancelBtn = document.getElementById('rmCancel');
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        pendingIntakeSubmission = null;
+        if (activePreprocessToken === intakeToken) {
+          activePreprocessPromise = null;
+          activePreprocessToken = 0;
+        }
+        closeRecoveryIntakeModal();
+      };
+    }
+
+    const backBtn = document.getElementById('rmBack');
+    if (backBtn) {
+      backBtn.onclick = () => {
+        stepIndex = Math.max(0, stepIndex - 1);
+        renderCurrentStep();
+      };
+    }
+
+    if (step.type === 'choice') {
+      content.querySelectorAll('[data-role="option"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const raw = String(btn.getAttribute('data-value') || '');
+          let parsed = raw;
+          if (raw === 'true') parsed = true;
+          else if (raw === 'false') parsed = false;
+          state[step.key] = parsed;
+          renderCurrentStep();
+        });
+      });
+    }
+
+    if (step.type === 'amount') {
+      const amountInput = document.getElementById('rmAmountSingle');
+      if (amountInput) {
+        amountInput.addEventListener('input', () => {
+          state.amountLost = _parseAmount(amountInput.value || '');
+        });
+      }
+    }
+
+    const nextBtn = document.getElementById('rmNext');
+    if (nextBtn) {
+      nextBtn.disabled = !isValidForStep(step);
+      nextBtn.onclick = async () => {
+        if (!isValidForStep(step)) return;
+        const freshSteps = activeSteps();
+        const isLast = stepIndex >= freshSteps.length - 1;
+        if (!isLast) {
+          stepIndex += 1;
+          renderCurrentStep();
+          return;
+        }
+
+        const recoveryAnswers = {
+          did_lose_money: Boolean(state.loseMoney),
+          shared_bank_details: Boolean(state.sharedBankDetails),
+          installed_apk: Boolean(state.installedApk),
+          amount_lost: Number(state.amountLost || 0),
+          time_bucket: state.timeBucket || 'hours',
+          explicit_report_request: Boolean(state.loseMoney || state.sharedBankDetails || state.installedApk),
+        };
+
+        const requestPayload = pendingIntakeSubmission;
+        pendingIntakeSubmission = null;
+        closeRecoveryIntakeModal();
+
+        if (!requestPayload) return;
+        await _startAnalyzeRequest(requestPayload, recoveryAnswers, intakeToken);
+      };
+    }
+  };
+
+  renderCurrentStep();
+}
+
+// ── RENDER RESULTS ──
+function showResults(data) {
+  _freezeElapsedTimer();
+  const analyzingView = document.getElementById('analyzingView');
+  const resultsView = document.getElementById('resultsView');
+
+  const revealResults = () => {
+    resultsView.classList.add('visible', 'results-enter-prep');
+    renderResults(data);
+    requestAnimationFrame(() => {
+      resultsView.classList.add('results-enter-active');
+    });
+    _animateResultCards();
+  };
+
+  if (analyzingView.classList.contains('visible')) {
+    analyzingView.classList.add('exiting');
+    setTimeout(() => {
+      analyzingView.classList.remove('visible', 'exiting');
+      revealResults();
+    }, 300);
+  } else {
+    revealResults();
+  }
+}
+
+function renderResults(d) {
+  lastResultData = d;
+  const follow = (d.follow_up_actions && typeof d.follow_up_actions === 'object') ? d.follow_up_actions : {};
+  const rawCal = (d.raw && typeof d.raw === 'object' && d.raw.calendar_event && typeof d.raw.calendar_event === 'object') ? d.raw.calendar_event : {};
+
+  const caseId = String(d.case_id || d.acknowledgment_id || '').trim();
+  document.getElementById('resultCaseId').textContent = caseId ? `CASE ID: ${caseId}` : '';
+
+  const ts = (d.timestamps && typeof d.timestamps === 'object') ? d.timestamps : {};
+  const completedAt = ts.completed_at ? new Date(String(ts.completed_at)) : null;
+  const createdAt = ts.created_at ? new Date(String(ts.created_at)) : null;
+  const baseTs = (completedAt && !Number.isNaN(completedAt.getTime())) ? completedAt : ((createdAt && !Number.isNaN(createdAt.getTime())) ? createdAt : new Date());
+  const isoTs = baseTs.toISOString();
+  document.getElementById('resultTimestamp').textContent = `TIMESTAMP: ${isoTs}`;
+
+  const responseMode = String(d.response_mode || '').trim().toLowerCase();
+  const reportingRecommendation = (d.reporting_recommendation && typeof d.reporting_recommendation === 'object') ? d.reporting_recommendation : {};
+  const reportingReason = String(reportingRecommendation.reason || '').trim();
+  const hasReportingRationale = reportingReason.length > 0;
+  const requiresReporting = d.requires_reporting === true && hasReportingRationale;
+  const shouldReportNow = requiresReporting && reportingRecommendation.should_report_now === true;
+  const requiresEmergency = d.requires_emergency === true;
+  const presentationSections = (d.presentation_sections && typeof d.presentation_sections === 'object') ? d.presentation_sections : {};
+  const statusLine = String(presentationSections.status_line || d.golden_hour_message || 'Status updated.').trim();
+  const evidenceSectionTitle = document.getElementById('evidenceSectionTitle');
+  const primaryActionsTitle = document.getElementById('primaryActionsTitle');
+  if (evidenceSectionTitle) evidenceSectionTitle.textContent = String(presentationSections.evidence_title || 'Evidence');
+  if (primaryActionsTitle) primaryActionsTitle.textContent = String(presentationSections.actions_title || presentationSections.primary_actions_title || 'Action Steps');
+
+  // Golden Hour (ticker)
+  const ghActive = (String(d.golden_hour_status || '').toUpperCase() === 'ACTIVE') || d.golden_hour_active === true;
+  const startForWindow = (createdAt && !Number.isNaN(createdAt.getTime())) ? createdAt : new Date();
+  const reportLine = document.getElementById('reportWindowLine');
+  const bar = document.getElementById('goldenHourBar');
+  const ghTrack = document.querySelector('.gh-bar-track');
+
+  if (!requiresEmergency || !ghActive) {
+    _clearGoldenHourTicker();
+    if (reportLine) {
+      reportLine.textContent = statusLine;
+    }
+    if (bar) bar.style.width = '0%';
+    if (ghTrack) ghTrack.classList.add('hidden');
+  } else {
+    if (ghTrack) ghTrack.classList.remove('hidden');
+    _startGoldenHourTicker(ghActive, startForWindow, statusLine);
+  }
+
+  // Integrations (Calendar/Tasks/Docs links)
+  const integrations = document.getElementById('sectionIntegrations');
+  const linkCalendar = document.getElementById('linkCalendar');
+  const linkTasks = document.getElementById('linkTasks');
+  const linkGmail = document.getElementById('linkGmail');
+  const linkDoc = document.getElementById('linkDoc');
+
+  const raw = (d.raw && typeof d.raw === 'object') ? d.raw : {};
+  const calCreated = follow.calendar_event_created === true || rawCal.created === true;
+  const calUrl = String(
+    follow.calendar_deep_link
+    || follow.calendar_url
+    || rawCal.deep_link
+    || rawCal.event_url
+    || rawCal.html_link
+    || rawCal.url
+    || integrationLinks.google_calendar
+    || ''
+  ).trim();
+
+  const rawTasks = (raw.google_tasks && typeof raw.google_tasks === 'object') ? raw.google_tasks : {};
+  const rawDoc = (raw.case_report_doc && typeof raw.case_report_doc === 'object') ? raw.case_report_doc : {};
+  const rawGmail = (raw.gmail_draft && typeof raw.gmail_draft === 'object') ? raw.gmail_draft : {};
+
+  const tasksCreated = follow.task_created === true || rawTasks.created === true;
+  const taskUrl = String(follow.task_deep_link || follow.task_url || rawTasks.task_url || rawTasks.deep_link || rawTasks.url || integrationLinks.google_tasks || '').trim();
+  const docCreated = follow.doc_created === true || rawDoc.created === true;
+  const docUrl = String(follow.doc_deep_link || follow.doc_url || rawDoc.doc_url || rawDoc.deep_link || rawDoc.url || integrationLinks.google_docs || '').trim();
+  const gmailCreated = follow.gmail_draft_created === true || rawGmail.created === true;
+  const gmailUrl = String(follow.gmail_draft_url || rawGmail.draft_url || rawGmail.deep_link || rawGmail.url || integrationLinks.google_gmail || '').trim();
+
+  const isRealUrl = (u) => /^https?:\/\//i.test(String(u || '').trim());
+
+  if (calUrl) _upsertIntegrationLink('google_calendar', calUrl);
+  if (taskUrl) _upsertIntegrationLink('google_tasks', taskUrl);
+  if (gmailUrl) _upsertIntegrationLink('google_gmail', gmailUrl);
+  if (docUrl) _upsertIntegrationLink('google_docs', docUrl);
+
+  let any = false;
+  if (linkCalendar) {
+    if (isRealUrl(calUrl)) linkCalendar.href = calUrl;
+    if (calCreated && isRealUrl(calUrl)) { linkCalendar.classList.remove('hidden'); any = true; }
+    else linkCalendar.classList.add('hidden');
+  }
+  if (linkTasks) {
+    if (isRealUrl(taskUrl)) linkTasks.href = taskUrl;
+    if (tasksCreated && isRealUrl(taskUrl)) { linkTasks.classList.remove('hidden'); any = true; }
+    else linkTasks.classList.add('hidden');
+  }
+  if (linkGmail) {
+    if (isRealUrl(gmailUrl)) linkGmail.href = gmailUrl;
+    if (gmailCreated && isRealUrl(gmailUrl)) { linkGmail.classList.remove('hidden'); any = true; }
+    else linkGmail.classList.add('hidden');
+  }
+  if (linkDoc) {
+    if (docCreated && isRealUrl(docUrl)) {
+      linkDoc.href = docUrl;
+      linkDoc.classList.remove('hidden');
+      any = true;
+    } else {
+      linkDoc.classList.add('hidden');
+    }
+  }
+
+  if (integrations) {
+    integrations.classList.toggle('open', any);
+    integrations.classList.toggle('hidden', !any);
+  }
+
+  // ASSESSMENT
+  const riskRaw = String(d.risk_level || 'UNKNOWN').toUpperCase();
+  const risk = riskRaw === 'SAFE' ? 'LOW' : riskRaw;
+  const scamType = String(d.category || d.scam_type || 'Unknown').trim() || 'Unknown';
+  const verdict = String(d.verdict || '').trim() || '—';
+  const summary = String(d.summary || '').trim();
+  const conf = Number(d.confidence);
+  const riskScore = Number.isFinite(conf) ? (Math.max(0, Math.min(conf, 100)) / 100).toFixed(2) : '—';
+  const sim = Number(d.similar_cases);
+  const corpus = Number(d.intel_corpus_size);
+  const typeCount = Number(d.intel_type_count);
+  const intelType = String(d.intel_type || '').trim();
+
+  const conversationReply = String(
+    d.conversational_reply
+    || ((d.response_sections && typeof d.response_sections === 'object') ? d.response_sections.overview : '')
+    || d.summary
+    || ''
+  ).trim() || 'Analysis complete.';
+  const toneChip = document.getElementById('toneChip');
+  const conversationMeta = document.getElementById('conversationMeta');
+  const conversationReplyEl = document.getElementById('conversationReply');
+  if (toneChip) {
+    toneChip.classList.remove('alert', 'safe');
+    if (requiresEmergency) {
+      toneChip.textContent = 'URGENT';
+      toneChip.classList.add('alert');
+    } else if (shouldReportNow) {
+      toneChip.textContent = 'ACTION';
+    } else {
+      toneChip.textContent = 'GUIDE';
+      toneChip.classList.add('safe');
+    }
+  }
+  if (conversationMeta) {
+    const confLabel = Number.isFinite(conf) ? `${Math.round(conf)}% confidence` : 'confidence unavailable';
+    conversationMeta.textContent = `${scamType} • ${confLabel}`;
+  }
+  if (conversationReplyEl) conversationReplyEl.textContent = conversationReply;
+
+  const metricConf = document.getElementById('metricConfidence');
+  const metricSim = document.getElementById('metricSimilar');
+  if (metricConf) metricConf.textContent = '0';
+  if (metricSim) metricSim.textContent = '0';
+  if (metricConf && Number.isFinite(conf)) {
+    _animateNumber(metricConf, Math.round(Math.max(0, Math.min(conf, 100))), 600);
+  }
+  if (metricSim && Number.isFinite(sim)) {
+    _animateNumber(metricSim, Math.max(0, Math.round(sim)), 400);
+  }
+
+  const assessment = document.getElementById('assessmentBlock');
+  const assessmentLines = [];
+  assessmentLines.push('ANALYSIS SNAPSHOT');
+  if (caseId) assessmentLines.push(`Case ID: ${escHtml(caseId)}`);
+  assessmentLines.push(`Timestamp: ${escHtml(isoTs)}`);
+  assessmentLines.push(`<span class="risk-line">Risk level: ${escHtml(risk)} [${escHtml(riskScore)}]</span>`);
+  assessmentLines.push(`Verdict: ${escHtml(verdict)}`);
+  assessmentLines.push(`Category: ${escHtml(scamType)}`);
+  if (Number.isFinite(conf)) assessmentLines.push(`Confidence: ${escHtml(String(Math.round(conf)))}%`);
+  if (Number.isFinite(sim)) {
+    const parts = [];
+    if (Number.isFinite(corpus) && corpus > 0) parts.push(`corpus=${Math.round(corpus)}`);
+    if (Number.isFinite(typeCount) && typeCount > 0) parts.push(`type=${Math.round(typeCount)}`);
+    if (intelType) parts.push(`class=${escHtml(intelType)}`);
+    assessmentLines.push(`Similar cases: ${escHtml(String(Math.round(sim)))}${parts.length ? ' (' + parts.join(' ') + ')' : ''}`);
+  }
+  if (summary) {
+    assessmentLines.push('');
+    assessmentLines.push('Summary:');
+    assessmentLines.push(escHtml(summary));
+  }
+  assessment.innerHTML = assessmentLines.join('\n');
+
+  // Evidence (ranked by row order)
+  const evidenceBody = document.getElementById('evidenceBody');
+  const evidenceRows = [];
+  const modelEvidence = Array.isArray(d.evidence) ? d.evidence : [];
+  for (const ev of modelEvidence.slice(0, 20)) {
+    if (!ev || typeof ev !== 'object') continue;
+    const label = String(ev.label || ev.indicator || '').trim();
+    const detail = String(ev.detail || ev.reason || '').trim();
+    if (!label) continue;
+    const confidenceRaw = Number(ev.confidence);
+    const weightRaw = Number(ev.weight);
+    const conf01 = Number.isFinite(confidenceRaw)
+      ? (confidenceRaw > 1 ? (Math.max(0, Math.min(confidenceRaw, 100)) / 100).toFixed(2) : Math.max(0, Math.min(confidenceRaw, 1)).toFixed(2))
+      : '—';
+    const weight = Number.isFinite(weightRaw) ? String(Math.round(weightRaw)) : '—';
+    evidenceRows.push({ indicator: detail ? `${label} — ${detail}` : label, confidence: conf01, weight });
+  }
+  const matches = Array.isArray(d.pattern_matches) ? d.pattern_matches : [];
+  if (!evidenceRows.length) {
+    for (const m of matches.slice(0, 5)) {
+      const label = String(m.scam_type || m.sub_type || 'Pattern match').trim() || 'Pattern match';
+      const score = Number(m.score);
+      const conf01 = Number.isFinite(score) ? (Math.max(0, Math.min(score, 100)) / 100).toFixed(2) : '—';
+      const weight = Number.isFinite(score) ? String(Math.round(score)) : '—';
+      evidenceRows.push({ indicator: `PATTERN: ${label}`, confidence: conf01, weight });
+    }
+  }
+  const flags = dedup([].concat(d.signals_found || [], (d.osint && d.osint.red_flags) ? d.osint.red_flags : []));
+  if (!evidenceRows.length) {
+    for (const f of flags.slice(0, 8)) {
+      evidenceRows.push({ indicator: String(f), confidence: '—', weight: '—' });
+    }
+  }
+  if (!evidenceRows.length) {
+    evidenceRows.push({ indicator: 'No evidence rows returned.', confidence: '—', weight: '—' });
+  }
+  evidenceBody.innerHTML = evidenceRows
+    .map(r => `
+      <tr>
+        <td>${escHtml(r.indicator)}</td>
+        <td class="muted">${escHtml(r.confidence)}</td>
+        <td class="muted">${escHtml(r.weight)}</td>
+      </tr>`)
+    .join('');
+
+  // Action steps
+  const responseSections = (d.response_sections && typeof d.response_sections === 'object') ? d.response_sections : {};
+  const actions = dedup([].concat(d.action_steps || [], d.recommended_actions || [], responseSections.next_steps || []))
+    .map(a => String(a || '').replace(/^STANDBY:\s*/i, '').replace(/^ACTIVE:\s*/i, '').trim())
+    .filter(Boolean);
+  const actionsList = document.getElementById('actionsList');
+  const reportingQuickLinks = document.getElementById('reportingQuickLinks');
+  if (actions.length) {
+    actionsList.innerHTML = actions.map(a => `<li>${escHtml(a)}</li>`).join('');
+  } else {
+    actionsList.innerHTML = '<li>No action steps returned by the model.</li>';
+  }
+  if (reportingQuickLinks) reportingQuickLinks.classList.toggle('hidden', !requiresReporting);
+
+  // OSINT
+  const osint = (d.osint && typeof d.osint === 'object') ? d.osint : {};
+  const entities = (d.entities && typeof d.entities === 'object') ? d.entities : {};
+  const osintSummary = String(osint.threat_summary || '').trim();
+  const hasOsint = osintSummary || (entities.domains && entities.domains.length) || (entities.urls && entities.urls.length) || (entities.phone_numbers && entities.phone_numbers.length);
+  if (hasOsint) {
+    document.getElementById('sectionOsint').classList.add('open');
+    document.getElementById('osintSummary').textContent = osintSummary || 'Infrastructure analysis complete.';
+    const grid = document.getElementById('osintGrid');
+    const gridItems = [];
+    if (entities.domains && entities.domains.length) gridItems.push({k:'Domains',v:entities.domains.join(', '),cls:''});
+    if (entities.urls && entities.urls.length) gridItems.push({k:'URLs',v:entities.urls[0],cls:''});
+    if (entities.phone_numbers && entities.phone_numbers.length) gridItems.push({k:'Phone',v:entities.phone_numbers[0],cls:''});
+    const score = Number(osint.overall_threat_score || 0);
+    if (Number.isFinite(score) && score > 0) gridItems.push({k:'Threat Score',v:Math.round(score) + '/100',cls:''});
+    grid.innerHTML = gridItems.map(({k,v,cls}) =>
+      `<div class="osint-item"><div class="osint-key">${escHtml(k)}</div><div class="osint-val ${cls}">${escHtml(v)}</div></div>`
+    ).join('');
+  } else {
+    document.getElementById('sectionOsint').classList.remove('open');
+  }
+
+  // FIR
+  let fir = '';
+  if (requiresReporting && d.complaint_draft && typeof d.complaint_draft === 'object') {
+    fir = String(d.complaint_draft.body || '').trim();
+  } else if (requiresReporting && typeof d.complaint_draft === 'string') {
+    fir = String(d.complaint_draft || '').trim();
+  }
+
+  firContent = fir;
+  const firBox = document.getElementById('firBox');
+  const firSection = document.getElementById('sectionFir');
+  if (requiresReporting && fir && fir.length > 30) {
+    firBox.textContent = fir;
+    if (firSection) firSection.classList.add('open');
+  } else if (requiresReporting) {
+    firBox.textContent = 'Complaint draft was not returned by the model.';
+    if (firSection) firSection.classList.add('open');
+  } else {
+    firBox.textContent = 'Reporting draft not required for this case.';
+  }
+
+  const emergencyFooter = document.querySelector('.emergency-footer');
+  if (firSection) firSection.classList.toggle('hidden', !requiresReporting);
+  if (emergencyFooter) emergencyFooter.classList.toggle('hidden', !requiresEmergency);
+
+  const done = document.getElementById('analysisCompleteLine');
+  const ms = (typeof analysisStartMs === 'number') ? (Date.now() - analysisStartMs) : null;
+  done.textContent = (ms && ms > 0) ? `ANALYSIS COMPLETE · ${ms} ms` : 'ANALYSIS COMPLETE';
+}
+
+function _animateNumber(el, target, durationMs) {
+  const end = Math.max(0, Number(target || 0));
+  const duration = Math.max(100, Number(durationMs || 400));
+  const started = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - started) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = String(Math.round(end * eased));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function _startGoldenHourTicker(isActive, startForWindow, statusLine) {
+  _clearGoldenHourTicker();
+  const reportEl = document.getElementById('reportWindowLine');
+  const bar = document.getElementById('goldenHourBar');
+  const reportWindow = document.querySelector('.report-window');
+  if (!reportEl || !bar || !reportWindow) return;
+
+  const startedAt = (startForWindow instanceof Date && !Number.isNaN(startForWindow.getTime())) ? startForWindow : new Date();
+  const expiry = new Date(startedAt.getTime() + 60 * 60 * 1000);
+
+  const renderTick = () => {
+    const now = Date.now();
+    const remainingMs = expiry.getTime() - now;
+    const remainingMin = Math.max(0, Math.ceil(remainingMs / 60000));
+    const pct = Math.max(0, Math.min(100, (remainingMs / (60 * 60 * 1000)) * 100));
+    bar.style.width = `${pct}%`;
+
+    let expiresLabel = '';
+    try {
+      const t = expiry.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+      expiresLabel = `${t} IST`;
+    } catch (_e) {
+      expiresLabel = expiry.toISOString();
+    }
+
+    reportWindow.classList.toggle('gh-critical', isActive && remainingMin > 0 && remainingMin < 10);
+
+    if (isActive && remainingMin > 0) {
+      const base = String(statusLine || 'Emergency response window active.').trim();
+      reportEl.textContent = `${base} (${remainingMin} min left, expires ${expiresLabel})`;
+    } else if (isActive) {
+      reportEl.textContent = String(statusLine || 'Emergency response window expired.').trim();
+    } else {
+      reportEl.textContent = String(statusLine || 'Response window inactive.').trim();
+    }
+  };
+
+  renderTick();
+  goldenHourInterval = setInterval(renderTick, 1000);
+}
+
+// ── SECTION TOGGLE ──
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── FIR ACTIONS ──
+function copyFir() {
+  navigator.clipboard.writeText(firContent).then(() => {
+    const btn = document.querySelector('.fir-btn.primary');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+function downloadFir() {
+  const b = new Blob([firContent], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = 'satark-ncrp-complaint.txt';
+  a.click();
+}
+
+// ── UTILS ──
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function dedup(arr) {
+  const out = new Map();
+  for (const raw of Array.isArray(arr) ? arr : []) {
+    const x = String(raw || '');
+    const k = x.replace(/^(STANDBY|ACTIVE):\s*/i,'').toLowerCase().trim();
+    if (!k) continue;
+    if (!out.has(k)) out.set(k, x);
+  }
+  return [...out.values()];
+}
+
+// ── INIT ──
+(async () => {
+  getSessionId();
+  await checkAuth();
+  loadRecentCases();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('google') === 'connected') {
+    window.history.replaceState({}, '', '/ui');
+    await checkAuth();
+    loadRecentCases();
+  }
+})();
 </script>
 </body>
 </html>
