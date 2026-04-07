@@ -1082,6 +1082,44 @@ def _sanitize_actions_for_no_reporting(actions: list[str]) -> list[str]:
     return cleaned[:6]
 
 
+def _infer_exposure_from_text(text: str) -> dict[str, bool]:
+    source = str(text or "").strip().lower()
+    if not source:
+        return {
+            "money_lost": False,
+            "shared_sensitive": False,
+            "clicked_link": False,
+        }
+
+    money_lost = bool(
+        re.search(
+            r"\b(lost|loss|debited|transferred|sent|paid|payment\s+failed\s+after\s+debit|money\s+gone|amount\s+gone|scammed\s+for|upi\s+transfer|wire\s+transfer)\b",
+            source,
+            re.IGNORECASE,
+        )
+    )
+    shared_sensitive = bool(
+        re.search(
+            r"\b(shared|gave|provided|told)\b.{0,40}\b(otp|pin|password|cvv|card\s+number|bank\s+detail|net\s+banking|login\s+detail|credential)\b",
+            source,
+            re.IGNORECASE,
+        )
+    )
+    clicked_link = bool(
+        re.search(
+            r"\b(clicked|opened|visited|tap(?:ped)?)\b.{0,30}\b(link|url|website|site)\b",
+            source,
+            re.IGNORECASE,
+        )
+    )
+
+    return {
+        "money_lost": money_lost,
+        "shared_sensitive": shared_sensitive,
+        "clicked_link": clicked_link,
+    }
+
+
 def _extract_stage(pipeline_result: dict, stage_name: str) -> dict:
     stages = pipeline_result.get("pipeline_stages")
     if isinstance(stages, dict):
@@ -1232,27 +1270,39 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
             signals_found = []
         reporting_raw = payload.get("reporting_recommendation") if isinstance(payload.get("reporting_recommendation"), dict) else {}
         reporting_reason = str(reporting_raw.get("reason") or "").strip()
-        persisted_requires_reporting = bool(payload.get("requires_reporting", False)) and bool(reporting_reason)
-        if not persisted_requires_reporting:
-            reporting_reason = (
-                "No money loss, no link click, and no sensitive data sharing were recorded for this case, "
-                "so immediate reporting is not required."
-            )
-            summary = (
-                "This looks like a scam lure, but your recorded answers do not indicate direct compromise yet. "
-                "Follow preventive safety steps."
-            )
+        persisted_requires_reporting = bool(
+            payload.get("requires_reporting", False)
+            or reporting_raw.get("should_report_now", False)
+        )
+        if persisted_requires_reporting and not reporting_reason:
+            reporting_reason = "Reporting was marked as required for this case."
+        if not persisted_requires_reporting and not reporting_reason:
+            reporting_reason = "No immediate reporting guidance was returned for this case."
         reporting_recommendation = {
-            "should_report_now": bool(reporting_raw.get("should_report_now", False) and persisted_requires_reporting),
+            "should_report_now": bool(reporting_raw.get("should_report_now", False) or persisted_requires_reporting),
             "reason": reporting_reason,
         }
-        recommended = _sanitize_actions_for_no_reporting([
-            "Do not interact with the suspicious sender.",
-            "Preserve evidence and monitor for account impact.",
-        ])
+        recommended = _as_string_list(payload.get("recommended_actions"))
+        if not recommended:
+            recommended = _normalize_recommended_actions(payload)
         persisted_verdict = str(payload.get("verdict") or "").strip()
         if _is_generic_verdict_text(persisted_verdict):
-            persisted_verdict = "Likely scam attempt with no confirmed compromise from your answers."
+            persisted_verdict = "Analysis complete"
+        presentation_payload = payload.get("presentation") if isinstance(payload.get("presentation"), dict) else {}
+        debug_payload = payload.get("debug") if isinstance(payload.get("debug"), dict) else {}
+        presentation = {
+            "headline": str(presentation_payload.get("headline") or persisted_verdict).strip() or persisted_verdict,
+            "summary_paragraph": str(presentation_payload.get("summary_paragraph") or summary).strip() or summary,
+            "evidence_bullets": _as_string_list(presentation_payload.get("evidence_bullets") or signals_found)[:6],
+            "actions": _as_string_list(presentation_payload.get("actions") or recommended)[:4],
+            "reporting_note": reporting_reason,
+        }
+        debug = {
+            "risk_level": str(debug_payload.get("risk_level") or risk_level),
+            "confidence": int(debug_payload.get("confidence") or confidence),
+            "similar_cases": int(debug_payload.get("similar_cases") or similar_cases),
+            "patterns": debug_payload.get("patterns") if isinstance(debug_payload.get("patterns"), list) else [],
+        }
         return {
             "run_id": run_id,
             "case_id": run_id,
@@ -1285,6 +1335,18 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
                 "next_steps": recommended,
                 "reporting_guidance": reporting_reason,
             },
+            "presentation": presentation,
+            "debug": debug,
+            "presentation_markdown": str(payload.get("presentation_markdown") or "").strip() or (
+                "## What this looks like\n"
+                f"{presentation['summary_paragraph']}\n\n"
+                "## Why I'm saying that\n"
+                + "\n".join([f"- {x}" for x in presentation["evidence_bullets"]])
+                + "\n\n## What to do now\n"
+                + "\n".join([f"{idx + 1}. {x}" for idx, x in enumerate(presentation["actions"])])
+                + "\n\n## Reporting\n"
+                + f"{presentation['reporting_note']}"
+            ),
             "signals_found": _as_string_list(signals_found),
             "similar_cases": similar_cases,
             "golden_hour_active": bool(payload.get("golden_hour_active", False)),
@@ -1440,7 +1502,49 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         if isinstance(pipeline_result.get("reporting_recommendation"), dict)
         else {}
     )
+    request_payload = run_ctx.get("request") if isinstance(run_ctx.get("request"), dict) else {}
+    request_options = request_payload.get("options") if isinstance(request_payload.get("options"), dict) else {}
+    recovery_answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
+    request_user_input = request_payload.get("user_input") if isinstance(request_payload.get("user_input"), dict) else {}
+    text_exposure = _infer_exposure_from_text(str(request_user_input.get("text") or ""))
+    reported_money_loss = bool(recovery_answers.get("did_lose_money_or_share_bank_details"))
+    try:
+        reported_money_loss = reported_money_loss or float(request_options.get("fraud_amount") or 0) > 0
+    except Exception:
+        pass
+    reported_sensitive_share = bool(
+        recovery_answers.get("shared_sensitive_data")
+        or recovery_answers.get("shared_otp_or_pin")
+        or recovery_answers.get("shared_bank_details")
+    )
+    reported_clicked_link = bool(recovery_answers.get("clicked_link"))
+
     reporting_reason = str(reporting_recommendation_raw.get("reason") or "").strip()
+    inferred_compromise = bool(
+        reported_money_loss
+        or reported_sensitive_share
+        or reported_clicked_link
+        or text_exposure.get("money_lost")
+        or text_exposure.get("shared_sensitive")
+    )
+    if not reporting_reason and inferred_compromise:
+        reasons: list[str] = []
+        if reported_money_loss or text_exposure.get("money_lost"):
+            reasons.append("possible money loss")
+        if reported_sensitive_share or text_exposure.get("shared_sensitive"):
+            reasons.append("possible sharing of OTP/PIN or banking credentials")
+        if reported_clicked_link or text_exposure.get("clicked_link"):
+            reasons.append("possible malicious link interaction")
+        requires_reporting = True
+        requires_emergency = requires_emergency or bool(reported_money_loss or text_exposure.get("money_lost"))
+        requires_financial_blocking = requires_financial_blocking or bool(
+            reported_money_loss
+            or reported_sensitive_share
+            or text_exposure.get("money_lost")
+            or text_exposure.get("shared_sensitive")
+        )
+        reporting_reason = "Potential compromise detected (" + ", ".join(reasons[:3]) + "). Report now and begin immediate protective actions."
+
     if not reporting_reason:
         requires_reporting = False
     no_reporting_mode = not requires_reporting and not reporting_reason
@@ -1452,7 +1556,7 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         requires_emergency = False
         requires_financial_blocking = False
     reporting_recommendation = {
-        "should_report_now": bool(reporting_recommendation_raw.get("should_report_now", False) and requires_reporting and bool(reporting_reason)),
+        "should_report_now": bool((reporting_recommendation_raw.get("should_report_now", False) or requires_reporting) and requires_reporting and bool(reporting_reason)),
         "reason": reporting_reason,
     }
 
@@ -1529,6 +1633,56 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         why_this_decision = [str(row.get("label") or "").strip() for row in evidence_rows if str(row.get("label") or "").strip()][:6]
     if not why_this_decision:
         why_this_decision = evidence_summary[:6]
+
+    presentation_raw = pipeline_result.get("presentation") if isinstance(pipeline_result.get("presentation"), dict) else {}
+    presentation_actions = _as_string_list(presentation_raw.get("actions") or recommended_actions)
+    if not presentation_actions:
+        presentation_actions = recommended_actions
+    presentation_actions = presentation_actions[:4]
+    if len(presentation_actions) < 4:
+        for item in recommended_actions:
+            text = str(item or "").strip()
+            if not text:
+                continue
+            if text.casefold() in {x.casefold() for x in presentation_actions}:
+                continue
+            presentation_actions.append(text)
+            if len(presentation_actions) >= 4:
+                break
+    recommended_actions = presentation_actions[:4]
+
+    presentation_evidence = _as_string_list(presentation_raw.get("evidence_bullets") or why_this_decision)[:6]
+    if not presentation_evidence:
+        presentation_evidence = why_this_decision[:6]
+
+    presentation = {
+        "headline": str(presentation_raw.get("headline") or verdict).strip() or verdict,
+        "summary_paragraph": str(presentation_raw.get("summary_paragraph") or summary_text).strip() or summary_text,
+        "evidence_bullets": presentation_evidence,
+        "actions": recommended_actions,
+        "reporting_note": str(presentation_raw.get("reporting_note") or reporting_reason).strip() or reporting_reason,
+    }
+
+    debug_raw = pipeline_result.get("debug") if isinstance(pipeline_result.get("debug"), dict) else {}
+    debug = {
+        "risk_level": str(debug_raw.get("risk_level") or risk_level),
+        "confidence": float(debug_raw.get("confidence") if isinstance(debug_raw.get("confidence"), (int, float)) else confidence),
+        "similar_cases": int(debug_raw.get("similar_cases") if isinstance(debug_raw.get("similar_cases"), (int, float)) else 0),
+        "patterns": debug_raw.get("patterns") if isinstance(debug_raw.get("patterns"), list) else [],
+    }
+
+    presentation_markdown = str(pipeline_result.get("presentation_markdown") or "").strip()
+    if not presentation_markdown:
+        presentation_markdown = (
+            "## What this looks like\n"
+            f"{presentation['summary_paragraph']}\n\n"
+            "## Why I'm saying that\n"
+            + "\n".join([f"- {item}" for item in presentation["evidence_bullets"]])
+            + "\n\n## What to do now\n"
+            + "\n".join([f"{idx + 1}. {item}" for idx, item in enumerate(presentation["actions"])])
+            + "\n\n## Reporting\n"
+            + f"{presentation['reporting_note']}"
+        )
 
     def _normalize_intel_type(value: str) -> str:
         raw = str(value or "").strip()
@@ -1613,6 +1767,9 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     if retrieved_count <= 0:
         retrieved_count = len(pattern_matches)
     similar_cases = max(0, retrieved_count)
+    if not isinstance(debug.get("patterns"), list) or not debug.get("patterns"):
+        debug["patterns"] = pattern_matches
+    debug["similar_cases"] = int(similar_cases)
 
     calendar_event = pipeline_result.get("calendar_event") if isinstance(pipeline_result.get("calendar_event"), dict) else {}
     tasks_payload = pipeline_result.get("google_tasks") if isinstance(pipeline_result.get("google_tasks"), dict) else {}
@@ -1659,10 +1816,10 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         }
 
     response_sections = {
-        "overview": summary_text,
-        "why_flagged": why_this_decision[:6],
-        "next_steps": recommended_actions[:8],
-        "reporting_guidance": reporting_recommendation.get("reason") or "",
+        "overview": presentation["summary_paragraph"],
+        "why_flagged": presentation["evidence_bullets"],
+        "next_steps": presentation["actions"],
+        "reporting_guidance": presentation["reporting_note"],
     }
 
     modality_audio = None
@@ -1732,6 +1889,9 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         "why_this_decision": why_this_decision,
         "presentation_sections": presentation_sections,
         "response_sections": response_sections,
+        "presentation": presentation,
+        "debug": debug,
+        "presentation_markdown": presentation_markdown,
         "signals_found": _as_string_list(pipeline_result.get("signals_found") or pipeline_result.get("red_flags")),
         "similar_cases": similar_cases,
         "intel_corpus_size": intel_corpus_size,

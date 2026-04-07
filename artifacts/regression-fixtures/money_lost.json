@@ -1,0 +1,349 @@
+{
+  "scenario": "money_lost",
+  "run_id": "run_fad1a4b10522",
+  "captured_at": "2026-04-07T11:17:21Z",
+  "input_text": "I clicked the link, entered my bank details and OTP, and then Rs 25000 was debited from my account through UPI. Money is gone.",
+  "result": {
+    "run_id": "run_fad1a4b10522",
+    "case_id": "case_8fac1ed2d5e6",
+    "status": "completed",
+    "input_type": "text",
+    "verdict": "Analysis complete",
+    "summary": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+    "conversational_reply": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+    "scam_type": "OTP Theft",
+    "official_category": "OTP Theft",
+    "category": "OTP Theft",
+    "risk_level": "CRITICAL",
+    "confidence": 100,
+    "response_mode": "proactive_warning",
+    "requires_reporting": true,
+    "requires_emergency": true,
+    "requires_financial_blocking": true,
+    "requires_account_block": true,
+    "reporting_recommendation": {
+      "should_report_now": true,
+      "reason": "Potential compromise detected (possible money loss, possible malicious link interaction). Report now and begin immediate protective actions."
+    },
+    "requires_mcp": false,
+    "mcp_plan": {},
+    "why_this_decision": [
+      "Unauthorized debit after clicking link",
+      "Phishing for bank details",
+      "OTP interception",
+      "Immediate financial loss"
+    ],
+    "presentation_sections": {
+      "headline": "Analysis complete",
+      "status_line": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+      "primary_actions_title": "What to do now",
+      "actions_title": "What to do now",
+      "evidence_title": "Why this decision was made"
+    },
+    "response_sections": {
+      "overview": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+      "why_flagged": [
+        "Unauthorized debit after clicking link",
+        "Phishing for bank details",
+        "OTP interception",
+        "Immediate financial loss"
+      ],
+      "next_steps": [
+        "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+        "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+        "Change NetBanking passwords and UPI PINs immediately.",
+        "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account."
+      ],
+      "reporting_guidance": "Potential compromise detected (possible money loss, possible malicious link interaction). Report now and begin immediate protective actions."
+    },
+    "presentation": {
+      "headline": "Analysis complete",
+      "summary_paragraph": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+      "evidence_bullets": [
+        "Unauthorized debit after clicking link",
+        "Phishing for bank details",
+        "OTP interception",
+        "Immediate financial loss"
+      ],
+      "actions": [
+        "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+        "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+        "Change NetBanking passwords and UPI PINs immediately.",
+        "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account."
+      ],
+      "reporting_note": "Potential compromise detected (possible money loss, possible malicious link interaction). Report now and begin immediate protective actions."
+    },
+    "debug": {
+      "risk_level": "CRITICAL",
+      "confidence": 100.0,
+      "similar_cases": 3,
+      "patterns": [
+        {
+          "scam_type": "OTP Theft",
+          "sub_type": "OTP Theft",
+          "score": 93
+        },
+        {
+          "scam_type": "OTP Theft",
+          "sub_type": "OTP Theft",
+          "score": 91
+        },
+        {
+          "scam_type": "UPI Fraud",
+          "sub_type": "UPI Fraud",
+          "score": 90
+        }
+      ]
+    },
+    "presentation_markdown": "## What this looks like\nImmediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.\n\n## Why I'm saying that\n- Unauthorized debit after clicking link\n- Phishing for bank details\n- OTP interception\n- Immediate financial loss\n\n## What to do now\n1. Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.\n2. Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.\n3. Change NetBanking passwords and UPI PINs immediately.\n4. Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.\n\n## Reporting\nPotential compromise detected (possible money loss, possible malicious link interaction). Report now and begin immediate protective actions.",
+    "signals_found": [
+      "Unauthorized debit after clicking link",
+      "Phishing for bank details",
+      "OTP interception",
+      "Immediate financial loss"
+    ],
+    "similar_cases": 3,
+    "intel_corpus_size": 847,
+    "intel_type": "OTP Phishing",
+    "intel_type_count": 150,
+    "pattern_matches": [
+      {
+        "scam_type": "OTP Theft",
+        "sub_type": "OTP Theft",
+        "score": 93
+      },
+      {
+        "scam_type": "OTP Theft",
+        "sub_type": "OTP Theft",
+        "score": 91
+      },
+      {
+        "scam_type": "UPI Fraud",
+        "sub_type": "UPI Fraud",
+        "score": 90
+      }
+    ],
+    "golden_hour_active": false,
+    "golden_hour_status": "STANDBY",
+    "golden_hour_message": "Follow the manager-provided action plan.",
+    "entities": {
+      "phone_numbers": [],
+      "domains": [],
+      "urls": [],
+      "ips": [],
+      "banks_claimed": []
+    },
+    "osint": null,
+    "audio_analysis": null,
+    "apk_analysis": null,
+    "evidence_summary": [
+      "Unauthorized debit after clicking link",
+      "Phishing for bank details",
+      "OTP interception",
+      "Immediate financial loss"
+    ],
+    "action_steps": [
+      "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+      "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+      "Change NetBanking passwords and UPI PINs immediately.",
+      "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account."
+    ],
+    "recommended_actions": [
+      "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+      "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+      "Change NetBanking passwords and UPI PINs immediately.",
+      "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account."
+    ],
+    "complaint_draft": {
+      "title": "Cyber Fraud Complaint Draft",
+      "acknowledgment_id": "case_8fac1ed2d5e6",
+      "body": "The victim received a malicious link and was induced to enter bank credentials and an OTP. Subsequently, an unauthorized UPI transaction of Rs. 25,000 was debited from the victim's account. This is a clear case of phishing and financial fraud."
+    },
+    "follow_up_actions": {
+      "calendar_event_created": false,
+      "calendar_event_id": null,
+      "calendar_start_time": null,
+      "calendar_attempted": false,
+      "calendar_error": null,
+      "calendar_url": null,
+      "calendar_deep_link": null,
+      "task_created": false,
+      "task_url": null,
+      "task_deep_link": null,
+      "doc_created": false,
+      "doc_url": null,
+      "doc_deep_link": null,
+      "gmail_draft_created": false,
+      "gmail_draft_url": null,
+      "tgcsb_alert_sent": false
+    },
+    "calendar_deep_link": null,
+    "task_deep_link": null,
+    "gmail_draft_url": null,
+    "agent_results": {
+      "manager": {
+        "status": "done"
+      },
+      "scam_detector": {
+        "status": "done"
+      },
+      "audio_analyzer": {
+        "status": "skipped"
+      },
+      "apk_analyzer": {
+        "status": "skipped"
+      },
+      "osint": {
+        "status": "skipped"
+      },
+      "golden_hour": {
+        "status": "done"
+      }
+    },
+    "evidence": [],
+    "submitted_evidence": [],
+    "timestamps": {
+      "created_at": "2026-04-07T11:16:55.145017Z",
+      "completed_at": "2026-04-07T11:17:19.197286Z"
+    },
+    "raw": {
+      "acknowledgment_id": "SATARK-20260407-B914F633",
+      "timestamp": "2026-04-07T16:47:08.358368",
+      "pipeline_stages": {
+        "detection": {
+          "is_scam": true,
+          "confidence": 100,
+          "scam_type": "OTP Theft",
+          "risk_level": "CRITICAL",
+          "signals_found": [
+            "Unauthorized debit after clicking link",
+            "Phishing for bank details",
+            "OTP interception",
+            "Immediate financial loss"
+          ],
+          "extracted_entities": {
+            "phone_numbers": [],
+            "urls": [],
+            "amounts": [
+              "Rs 25000"
+            ],
+            "bank_names": [],
+            "government_agencies": []
+          },
+          "language_detected": "en",
+          "victim_advice": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+          "summary": "The victim fell prey to a phishing attack where sensitive banking credentials and an OTP were harvested via a malicious link. This resulted in an unauthorized UPI debit of Rs 25,000 from the victim's account."
+        },
+        "osint": {
+          "threat_summary": "Skipped (no indicators)",
+          "overall_threat_score": 0
+        },
+        "golden_hour": {
+          "golden_hour_active": true,
+          "minutes_to_act": 60,
+          "priority_actions": [
+            {
+              "step": 1,
+              "action": "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+              "whom_to_contact": "National Cyber Crime Reporting Portal (CFCFRMS)",
+              "contact_details": "1930",
+              "time_limit_minutes": 10,
+              "why_critical": "The CFCFRMS system allows for real-time freezing of funds in the fraudster's bank account before they are withdrawn."
+            },
+            {
+              "step": 2,
+              "action": "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+              "whom_to_contact": "Victim's Bank (Emergency Support)",
+              "contact_details": "Bank's official mobile app or toll-free number",
+              "time_limit_minutes": 20,
+              "why_critical": "Prevents further unauthorized debits and initiates the internal bank dispute process."
+            },
+            {
+              "step": 3,
+              "action": "Change NetBanking passwords and UPI PINs immediately.",
+              "whom_to_contact": "Self",
+              "contact_details": "Bank Mobile Application",
+              "time_limit_minutes": 30,
+              "why_critical": "The attacker has the victim's bank details and OTP access; the account remains vulnerable until credentials are changed."
+            }
+          ],
+          "fir_template": {
+            "section_ipc": [
+              "Section 66C IT Act (Identity Theft)",
+              "Section 66D IT Act (Cheating by personation using computer resource)",
+              "Section 420 IPC (Cheating and dishonestly inducing delivery of property)"
+            ],
+            "complaint_portal": "cybercrime.gov.in",
+            "case_summary": "The victim received a malicious link and was induced to enter bank credentials and an OTP. Subsequently, an unauthorized UPI transaction of Rs. 25,000 was debited from the victim's account. This is a clear case of phishing and financial fraud.",
+            "evidence_to_preserve": [
+              "Screenshot of the SMS/Link received",
+              "UPI Transaction ID (UTR Number)",
+              "Bank Account Statement showing the debit",
+              "Screenshot of the phishing webpage if still accessible"
+            ]
+          },
+          "bank_freeze_needed": true,
+          "immediate_helpline": "1930",
+          "recovery_probability": "HIGH"
+        }
+      },
+      "scam_type": "OTP Theft",
+      "confidence": 100,
+      "risk_level": "CRITICAL",
+      "is_scam": true,
+      "language": "en",
+      "victim_advice": "Immediately call 1930 or visit cybercrime.gov.in to report the transaction and contact your bank to freeze your account.",
+      "signals_found": [
+        "Unauthorized debit after clicking link",
+        "Phishing for bank details",
+        "OTP interception",
+        "Immediate financial loss"
+      ],
+      "immediate_helpline": "1930",
+      "complaint_portal": "cybercrime.gov.in",
+      "recovery_probability": "HIGH",
+      "priority_actions": [
+        {
+          "step": 1,
+          "action": "Call the National Cyber Crime Helpline to report the transaction and initiate a 'Lien' on the beneficiary account.",
+          "whom_to_contact": "National Cyber Crime Reporting Portal (CFCFRMS)",
+          "contact_details": "1930",
+          "time_limit_minutes": 10,
+          "why_critical": "The CFCFRMS system allows for real-time freezing of funds in the fraudster's bank account before they are withdrawn."
+        },
+        {
+          "step": 2,
+          "action": "Report the UPI transaction and request a block on the UPI ID/VPA used for the debit.",
+          "whom_to_contact": "Victim's Bank (Emergency Support)",
+          "contact_details": "Bank's official mobile app or toll-free number",
+          "time_limit_minutes": 20,
+          "why_critical": "Prevents further unauthorized debits and initiates the internal bank dispute process."
+        },
+        {
+          "step": 3,
+          "action": "Change NetBanking passwords and UPI PINs immediately.",
+          "whom_to_contact": "Self",
+          "contact_details": "Bank Mobile Application",
+          "time_limit_minutes": 30,
+          "why_critical": "The attacker has the victim's bank details and OTP access; the account remains vulnerable until credentials are changed."
+        }
+      ],
+      "fir_template": {
+        "section_ipc": [
+          "Section 66C IT Act (Identity Theft)",
+          "Section 66D IT Act (Cheating by personation using computer resource)",
+          "Section 420 IPC (Cheating and dishonestly inducing delivery of property)"
+        ],
+        "complaint_portal": "cybercrime.gov.in",
+        "case_summary": "The victim received a malicious link and was induced to enter bank credentials and an OTP. Subsequently, an unauthorized UPI transaction of Rs. 25,000 was debited from the victim's account. This is a clear case of phishing and financial fraud.",
+        "evidence_to_preserve": [
+          "Screenshot of the SMS/Link received",
+          "UPI Transaction ID (UTR Number)",
+          "Bank Account Statement showing the debit",
+          "Screenshot of the phishing webpage if still accessible"
+        ]
+      },
+      "case_id": "case_8fac1ed2d5e6"
+    }
+  }
+}

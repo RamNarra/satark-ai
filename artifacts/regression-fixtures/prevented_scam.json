@@ -1,0 +1,376 @@
+{
+  "scenario": "prevented_scam",
+  "run_id": "run_5c5d8d2b67e8",
+  "captured_at": "2026-04-07T11:16:55Z",
+  "input_text": "Your account just received Rs 3,000 as a special VIP gift. Click this short link now to verify. I did not click and I did not share OTP, PIN, or bank details.",
+  "result": {
+    "run_id": "run_5c5d8d2b67e8",
+    "case_id": "case_8db208b3c156",
+    "status": "completed",
+    "input_type": "text",
+    "verdict": "Likely scam attempt with no confirmed compromise from your answers.",
+    "summary": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+    "conversational_reply": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+    "scam_type": "UPI Fraud",
+    "official_category": "UPI Fraud",
+    "category": "UPI Fraud",
+    "risk_level": "HIGH",
+    "confidence": 98,
+    "response_mode": "proactive_warning",
+    "requires_reporting": false,
+    "requires_emergency": false,
+    "requires_financial_blocking": false,
+    "requires_account_block": false,
+    "reporting_recommendation": {
+      "should_report_now": false,
+      "reason": "No money loss, no link click, and no sensitive data sharing were detected from your answers, so immediate reporting is not required."
+    },
+    "requires_mcp": false,
+    "mcp_plan": {},
+    "why_this_decision": [
+      "Unsolicited monetary gift",
+      "Sense of urgency",
+      "Suspicious short link for verification",
+      "VIP/Reward baiting"
+    ],
+    "presentation_sections": {
+      "headline": "Likely scam attempt with no confirmed compromise from your answers.",
+      "status_line": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+      "primary_actions_title": "What to do now",
+      "actions_title": "What to do now",
+      "evidence_title": "Why this decision was made"
+    },
+    "response_sections": {
+      "overview": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+      "why_flagged": [
+        "Unsolicited monetary gift",
+        "Sense of urgency",
+        "Suspicious short link for verification",
+        "VIP/Reward baiting"
+      ],
+      "next_steps": [
+        "Verify bank statement via official app (DO NOT use the link)",
+        "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+        "Do not click the link or reply to the message.",
+        "Block the sender and mark the SMS as spam in your messaging app."
+      ],
+      "reporting_guidance": "No money loss, no link click, and no sensitive data sharing were detected from your answers, so immediate reporting is not required."
+    },
+    "presentation": {
+      "headline": "Likely scam attempt with no confirmed compromise from your answers.",
+      "summary_paragraph": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+      "evidence_bullets": [
+        "Unsolicited monetary gift",
+        "Sense of urgency",
+        "Suspicious short link for verification",
+        "VIP/Reward baiting"
+      ],
+      "actions": [
+        "Verify bank statement via official app (DO NOT use the link)",
+        "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+        "Do not click the link or reply to the message.",
+        "Block the sender and mark the SMS as spam in your messaging app."
+      ],
+      "reporting_note": "No money loss, no link click, and no sensitive data sharing were detected from your answers, so immediate reporting is not required."
+    },
+    "debug": {
+      "risk_level": "HIGH",
+      "confidence": 98.0,
+      "similar_cases": 3,
+      "patterns": [
+        {
+          "scam_type": "UPI Fraud",
+          "sub_type": "UPI Fraud",
+          "score": 100
+        },
+        {
+          "scam_type": "Phishing",
+          "sub_type": "Phishing",
+          "score": 89
+        },
+        {
+          "scam_type": "Investment Fraud",
+          "sub_type": "Investment Fraud",
+          "score": 87
+        }
+      ]
+    },
+    "presentation_markdown": "## What this looks like\nThis looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.\n\n## Why I'm saying that\n- Unsolicited monetary gift\n- Sense of urgency\n- Suspicious short link for verification\n- VIP/Reward baiting\n\n## What to do now\n1. Verify bank statement via official app (DO NOT use the link)\n2. Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.\n3. Do not click the link or reply to the message.\n4. Block the sender and mark the SMS as spam in your messaging app.\n\n## Reporting\nNo money loss, no link click, and no sensitive data sharing were detected from your answers, so immediate reporting is not required.",
+    "signals_found": [
+      "Unsolicited monetary gift",
+      "Sense of urgency",
+      "Suspicious short link for verification",
+      "VIP/Reward baiting"
+    ],
+    "similar_cases": 3,
+    "intel_corpus_size": 847,
+    "intel_type": "UPI Impersonation",
+    "intel_type_count": 191,
+    "pattern_matches": [
+      {
+        "scam_type": "UPI Fraud",
+        "sub_type": "UPI Fraud",
+        "score": 100
+      },
+      {
+        "scam_type": "Phishing",
+        "sub_type": "Phishing",
+        "score": 89
+      },
+      {
+        "scam_type": "Investment Fraud",
+        "sub_type": "Investment Fraud",
+        "score": 87
+      }
+    ],
+    "golden_hour_active": false,
+    "golden_hour_status": "STANDBY",
+    "golden_hour_message": "Follow the manager-provided action plan.",
+    "entities": {
+      "phone_numbers": [],
+      "domains": [],
+      "urls": [],
+      "ips": [],
+      "banks_claimed": []
+    },
+    "osint": null,
+    "audio_analysis": null,
+    "apk_analysis": null,
+    "evidence_summary": [
+      "Unsolicited monetary gift",
+      "Sense of urgency",
+      "Suspicious short link for verification",
+      "VIP/Reward baiting"
+    ],
+    "action_steps": [
+      "Verify bank statement via official app (DO NOT use the link)",
+      "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+      "Do not click the link or reply to the message.",
+      "Block the sender and mark the SMS as spam in your messaging app."
+    ],
+    "recommended_actions": [
+      "Verify bank statement via official app (DO NOT use the link)",
+      "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+      "Do not click the link or reply to the message.",
+      "Block the sender and mark the SMS as spam in your messaging app."
+    ],
+    "complaint_draft": null,
+    "follow_up_actions": {
+      "calendar_event_created": false,
+      "calendar_event_id": null,
+      "calendar_start_time": null,
+      "calendar_attempted": false,
+      "calendar_error": null,
+      "calendar_url": null,
+      "calendar_deep_link": null,
+      "task_created": false,
+      "task_url": null,
+      "task_deep_link": null,
+      "doc_created": false,
+      "doc_url": null,
+      "doc_deep_link": null,
+      "gmail_draft_created": false,
+      "gmail_draft_url": null,
+      "tgcsb_alert_sent": false
+    },
+    "calendar_deep_link": null,
+    "task_deep_link": null,
+    "gmail_draft_url": null,
+    "agent_results": {
+      "manager": {
+        "status": "done"
+      },
+      "scam_detector": {
+        "status": "done"
+      },
+      "audio_analyzer": {
+        "status": "skipped"
+      },
+      "apk_analyzer": {
+        "status": "skipped"
+      },
+      "osint": {
+        "status": "skipped"
+      },
+      "golden_hour": {
+        "status": "done"
+      }
+    },
+    "evidence": [],
+    "submitted_evidence": [],
+    "timestamps": {
+      "created_at": "2026-04-07T11:16:18.769495Z",
+      "completed_at": "2026-04-07T11:16:53.289276Z"
+    },
+    "raw": {
+      "acknowledgment_id": "SATARK-20260407-EA107F14",
+      "timestamp": "2026-04-07T16:46:19.485657",
+      "pipeline_stages": {
+        "detection": {
+          "is_scam": true,
+          "confidence": 98,
+          "scam_type": "UPI Fraud",
+          "risk_level": "HIGH",
+          "signals_found": [
+            "Unsolicited monetary gift",
+            "Sense of urgency",
+            "Suspicious short link for verification",
+            "VIP/Reward baiting"
+          ],
+          "extracted_entities": {
+            "phone_numbers": [],
+            "urls": [
+              "short link"
+            ],
+            "amounts": [
+              "Rs 3,000"
+            ],
+            "bank_names": [],
+            "government_agencies": []
+          },
+          "language_detected": "en",
+          "victim_advice": "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+          "summary": "This is a classic phishing attempt using a 'VIP gift' as bait to lure the user into clicking a malicious link. The link likely leads to a fake UPI payment gateway designed to harvest credentials or initiate an unauthorized debit."
+        },
+        "osint": {
+          "domains": {
+            "short link": {
+              "whois": {
+                "domain": "short link",
+                "registrar": "unknown",
+                "created": "unknown",
+                "age_days": null,
+                "country": "unknown",
+                "is_new_domain": false
+              },
+              "crt_sh": {
+                "domain": "short link",
+                "error": "HTTPSConnectionPool(host='crt.sh', port=443): Read timed out. (read timeout=10)"
+              },
+              "web_risk": {
+                "url": "short link",
+                "threats_found": [],
+                "is_malicious": false,
+                "source": "Google Web Risk API"
+              }
+            }
+          },
+          "ips": {},
+          "urls": {
+            "short link": {
+              "url": "short link",
+              "threats_found": [],
+              "is_malicious": false,
+              "source": "Google Web Risk API"
+            }
+          },
+          "threat_summary": "The identified indicator, \"short link,\" refers to a generic URL shortening mechanism frequently exploited by threat actors to obfuscate malicious landing pages and bypass automated security filters. These links are often part of a broader fraud infrastructure hosted on bulletproof services, which are designed to resist takedown requests and law enforcement intervention by operating in uncooperative jurisdictions. While the specific domain age and hosting location for this instance are currently unverified, similar infrastructure typically utilizes newly registered domains (NRDs) to maximize the window of opportunity before blacklisting occurs. Law enforcement should treat such links as high-risk vectors for phishing, malware delivery, or credential harvesting, particularly when distributed via unsolicited SMS or email campaigns.",
+          "overall_threat_score": 0
+        },
+        "golden_hour": {
+          "golden_hour_active": true,
+          "minutes_to_act": 60,
+          "priority_actions": [
+            {
+              "step": 1,
+              "action": "Report the fraudulent SMS and the suspect phone number",
+              "whom_to_contact": "National Cyber Crime Reporting Portal",
+              "contact_details": "cybercrime.gov.in",
+              "time_limit_minutes": 15,
+              "why_critical": "Reporting the short link and sender number immediately allows authorities to blacklist the domain and prevent other victims from falling for the scam."
+            },
+            {
+              "step": 2,
+              "action": "Block the sender and report as spam on the messaging app/SMS organizer",
+              "whom_to_contact": "Service Provider / Google Messages / WhatsApp",
+              "contact_details": "In-app 'Report Spam' feature",
+              "time_limit_minutes": 5,
+              "why_critical": "Stops further phishing attempts from the same source and triggers automated spam filters for other users."
+            },
+            {
+              "step": 3,
+              "action": "Verify bank statement via official app (DO NOT use the link)",
+              "whom_to_contact": "User's Bank",
+              "contact_details": "Official Banking App",
+              "time_limit_minutes": 10,
+              "why_critical": "Confirms that no unauthorized debit has occurred despite the 'gift' claim, which is a common social engineering tactic."
+            }
+          ],
+          "fir_template": {
+            "section_ipc": [
+              "Section 66D IT Act (Cheating by personation using computer resource)",
+              "Section 419 IPC (Punishment for cheating by personation)",
+              "Section 511 IPC (Attempting to commit offences)"
+            ],
+            "complaint_portal": "cybercrime.gov.in",
+            "case_summary": "I received a fraudulent SMS from an unknown number claiming a 'VIP gift' of Rs. 3,000. The message contained a malicious short link intended to phish for UPI credentials or install malware. No financial loss has occurred as I did not click the link or share any PII/OTP. This is a report of an attempted cyber fraud and phishing campaign.",
+            "evidence_to_preserve": [
+              "Screenshot of the SMS with sender ID/number",
+              "The full URL of the short link (without clicking)",
+              "Timestamp of the message"
+            ]
+          },
+          "bank_freeze_needed": false,
+          "immediate_helpline": "1930",
+          "recovery_probability": "HIGH"
+        }
+      },
+      "scam_type": "UPI Fraud",
+      "confidence": 98,
+      "risk_level": "HIGH",
+      "is_scam": true,
+      "language": "en",
+      "victim_advice": "Do not click the link and block the sender immediately; legitimate bank credits do not require clicking links to 'verify' receipt.",
+      "signals_found": [
+        "Unsolicited monetary gift",
+        "Sense of urgency",
+        "Suspicious short link for verification",
+        "VIP/Reward baiting"
+      ],
+      "immediate_helpline": "1930",
+      "complaint_portal": "cybercrime.gov.in",
+      "recovery_probability": "HIGH",
+      "priority_actions": [
+        {
+          "step": 1,
+          "action": "Report the fraudulent SMS and the suspect phone number",
+          "whom_to_contact": "National Cyber Crime Reporting Portal",
+          "contact_details": "cybercrime.gov.in",
+          "time_limit_minutes": 15,
+          "why_critical": "Reporting the short link and sender number immediately allows authorities to blacklist the domain and prevent other victims from falling for the scam."
+        },
+        {
+          "step": 2,
+          "action": "Block the sender and report as spam on the messaging app/SMS organizer",
+          "whom_to_contact": "Service Provider / Google Messages / WhatsApp",
+          "contact_details": "In-app 'Report Spam' feature",
+          "time_limit_minutes": 5,
+          "why_critical": "Stops further phishing attempts from the same source and triggers automated spam filters for other users."
+        },
+        {
+          "step": 3,
+          "action": "Verify bank statement via official app (DO NOT use the link)",
+          "whom_to_contact": "User's Bank",
+          "contact_details": "Official Banking App",
+          "time_limit_minutes": 10,
+          "why_critical": "Confirms that no unauthorized debit has occurred despite the 'gift' claim, which is a common social engineering tactic."
+        }
+      ],
+      "fir_template": {
+        "section_ipc": [
+          "Section 66D IT Act (Cheating by personation using computer resource)",
+          "Section 419 IPC (Punishment for cheating by personation)",
+          "Section 511 IPC (Attempting to commit offences)"
+        ],
+        "complaint_portal": "cybercrime.gov.in",
+        "case_summary": "I received a fraudulent SMS from an unknown number claiming a 'VIP gift' of Rs. 3,000. The message contained a malicious short link intended to phish for UPI credentials or install malware. No financial loss has occurred as I did not click the link or share any PII/OTP. This is a report of an attempted cyber fraud and phishing campaign.",
+        "evidence_to_preserve": [
+          "Screenshot of the SMS with sender ID/number",
+          "The full URL of the short link (without clicking)",
+          "Timestamp of the message"
+        ]
+      },
+      "case_id": "case_8db208b3c156"
+    }
+  }
+}

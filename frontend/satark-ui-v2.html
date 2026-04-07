@@ -1,2567 +1,1449 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SATARK AI — Cyber Fraud Intelligence</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#05070f;
-  --surface:#0a0d1a;
-  --surface-2:#0f1423;
-  --surface-3:#141929;
-  --border:#1a2035;
-  --border-glow:#00d4aa30;
-  --teal:#00d4aa;
-  --accent:#00d4aa;
-  --teal-dim:#00a882;
-  --teal-glow:#00d4aa20;
-  --red:#ff3b3b;
-  --orange:#ff8c00;
-  --yellow:#ffd600;
-  --green:#00d4aa;
-  --text:#e2e8f4;
-  --text-muted:#6b7a99;
-  --text-faint:#3a4460;
-  --mono:'JetBrains Mono',monospace;
-  --sans:'Inter',sans-serif;
-  --display:'Space Grotesk',sans-serif;
-  --ease-out:cubic-bezier(0.16,1,0.3,1);
-  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
-}
-html{height:100%;-webkit-font-smoothing:antialiased}
-body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;overflow-x:hidden}
-
-/* GRID BACKGROUND */
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:
-    linear-gradient(var(--border) 1px,transparent 1px),
-    linear-gradient(90deg,var(--border) 1px,transparent 1px);
-  background-size:40px 40px;
-  opacity:0.3;pointer-events:none;z-index:0;
-  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 40%,transparent 100%);
-}
-
-/* SCANLINE EFFECT */
-body::after{
-  content:'';position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,170,0.01) 2px,rgba(0,212,170,0.01) 4px);
-  pointer-events:none;z-index:0;
-}
-
-/* TOP BAR */
-.topbar{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 24px;height:56px;
-  background:rgba(5,7,15,0.85);
-  border-bottom:1px solid var(--border);
-  backdrop-filter:blur(12px);
-}
-.topbar-logo{
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--display);font-size:16px;font-weight:700;
-  letter-spacing:0.08em;color:var(--teal);
-  text-decoration:none;
-}
-.topbar-logo svg{width:22px;height:22px}
-.logo-dot{
-  width:7px;height:7px;border-radius:50%;background:var(--teal);
-  box-shadow:0 0 8px var(--teal);
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--teal)}50%{opacity:0.5;box-shadow:0 0 3px var(--teal)}}
-
-.topbar-right{display:flex;align-items:center;gap:12px}
-#authBadge{
-  display:flex;align-items:center;gap:8px;
-  padding:5px 12px;border-radius:6px;
-  background:var(--surface-2);border:1px solid var(--border);
-  font-size:12px;color:var(--text-muted);cursor:pointer;
-  transition:all 0.2s;text-decoration:none;
-}
-#authBadge:hover{border-color:var(--text-faint);color:var(--text)}
-
-.badge-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--text-faint);flex-shrink:0;
-}
-
-#authBadge.connected{border-color:rgba(0,212,170,0.35);color:var(--teal)}
-#authBadge.connected .badge-dot{background:var(--teal);box-shadow:0 0 6px rgba(0,212,170,0.6)}
-
-.ops-link{
-  padding:5px 12px;border-radius:6px;
-  border:1px solid var(--border);
-  background:transparent;color:var(--text-muted);
-  font-size:12px;text-decoration:none;font-family:var(--sans);
-  transition:all 0.2s;
-}
-.ops-link:hover{border-color:var(--border-glow);color:var(--text)}
-
-#logoutBtn{
-  padding:5px 10px;border-radius:6px;
-  border:1px solid var(--border);
-  background:transparent;color:var(--text-muted);
-  font-size:11px;font-family:var(--sans);cursor:pointer;
-  transition:all 0.2s;display:none;
-}
-#logoutBtn:hover{border-color:rgba(255,59,59,0.25);color:var(--red)}
-#logoutBtn.visible{display:block}
-
-.main{
-  position:relative;
-  z-index:1;
-  min-height:100vh;
-  padding-top:56px;
-  display:flex;
-  flex-direction:column;
-}
-
-#inputView{
-  width:100%;
-  max-width:860px;
-  margin:0 auto;
-  padding:24px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-.hero-eyebrow{
-  font-family:var(--mono);font-size:11px;letter-spacing:0.12em;
-  color:var(--teal);text-transform:uppercase;
-}
-
-.hero-title{
-  font-family:var(--display);font-size:clamp(1.8rem,4vw,3rem);
-  line-height:1.1;font-weight:700;color:var(--text);
-}
-
-.hero-sub{
-  color:var(--text-muted);font-size:13px;max-width:640px;
-}
-
-.input-card{
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:var(--surface);
-  overflow:hidden;
-}
-
-.input-label{
-  display:block;
-  padding:10px 14px;
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:var(--text-muted);
-  border-bottom:1px solid var(--border);
-}
-
-#inputText{
-  width:100%;
-  min-height:160px;
-  resize:vertical;
-  border:none;
-  outline:none;
-  background:transparent;
-  color:var(--text);
-  font-family:var(--sans);
-  font-size:14px;
-  line-height:1.6;
-  padding:12px 14px;
-  caret-color:var(--teal);
-}
-#inputText::placeholder{color:var(--text-faint)}
-
-.input-actions{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:12px 14px;
-  border-top:1px solid var(--border);
-}
-
-.primary-btn{
-  padding:9px 14px;
-  border-radius:8px;
-  background:var(--teal);
-  border:none;
-  color:#00130d;
-  font-family:var(--display);
-  font-size:13px;
-  font-weight:600;
-}
-
-.secondary-btn{
-  padding:8px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--surface-2);
-  color:var(--text-muted);
-  font-family:var(--sans);
-  font-size:12px;
-}
-
-.submit-row{display:flex;gap:10px;margin-top:14px}
-
-#submitBtn{
-  flex:1;padding:12px 18px;border-radius:10px;
-  border:1px solid transparent;background:var(--teal);color:#02140f;
-  font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.06em;
-  cursor:pointer;transition:all 0.2s;
-}
-#submitBtn:hover{background:#00e4b8;box-shadow:0 0 18px rgba(0,212,170,0.28)}
-#submitBtn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
-
-#analyzingView{
-  display:none;
-  flex:1;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  padding:48px 24px;
-}
-#analyzingView.visible{display:flex}
-
-.analyzing-header{text-align:center;margin-bottom:48px}
-.analyzing-title{
-  font-family:var(--sans);font-size:22px;font-weight:600;
-  color:var(--text);letter-spacing:0.04em;margin-bottom:8px;
-}
-.analyzing-sub{
-  font-family:var(--mono);font-size:12px;color:var(--text-muted);
-  letter-spacing:0.1em;
-}
-.typing-cursor{
-  display:none;
-}
-
-.agents-grid{
-  display:flex;flex-direction:column;gap:8px;
-  width:100%;max-width:520px;
-}
-.agent-row{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;border-radius:10px;
-  background:var(--surface);border:1px solid var(--border);
-  transition:all 0.2s;opacity:0.6;
-}
-.agent-row.active{opacity:1;border-color:var(--text-faint);background:var(--surface-2)}
-.agent-row.done{opacity:1;border-color:var(--border)}
-.agent-row.skipped{opacity:1;border-style:dashed}
-.agent-row.failed{opacity:1;border-color:var(--text-faint)}
-.agent-icon{
-  width:32px;height:32px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--surface-2);border:1px solid var(--border);
-  flex-shrink:0;transition:all 0.3s;
-  font-size:14px;
-}
-.agent-row.active .agent-icon,.agent-row.done .agent-icon{
-  background:var(--surface-3);border-color:var(--border);
-}
-.agent-row.active .agent-status{color:var(--text-muted)}
-.agent-indicator{
-  width:8px;height:8px;border-radius:50%;background:var(--text-faint);flex-shrink:0;transition:all 0.3s;
-}
-.agent-row.active .agent-indicator{
-  background:var(--text);
-}
-
-/* ============ RESULTS VIEW ============ */
-#resultsView{
-  display:none;
-  flex:1;
-  flex-direction:column;
-  width:100%;
-  max-width:860px;
-  margin:0 auto;
-  padding:24px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  min-width:0;
-}
-#resultsView.visible{display:flex}
-
-#resultsView > *{width:100%;min-width:0}
-
-.report-window{
-  margin-bottom:12px;
-  padding:10px 14px;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:var(--surface-2);
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text-muted);
-}
-#reportWindowLine{word-break:break-word}
-
-.results-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:24px;flex-wrap:wrap;gap:12px;
-}
-.results-back{
-  display:flex;align-items:center;gap:6px;
-  font-size:12px;color:var(--text-muted);cursor:pointer;
-  transition:color 0.2s;background:none;border:none;font-family:var(--sans);
-  padding:0;
-}
-.results-back:hover{color:var(--text)}
-.results-back svg{width:14px;height:14px}
-.case-id{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
-.case-meta{display:flex;flex-direction:column;gap:2px}
-.case-ts{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
-
-/* ASSESSMENT */
-.assessment-card{
-  border-radius:12px;
-  padding:18px;
-  margin-bottom:12px;
-  background:var(--surface);
-  border:1px solid var(--border);
-}
-.assessment-pre{
-  font-family:var(--mono);
-  font-size:12px;
-  line-height:1.7;
-  color:var(--text);
-  white-space:pre-wrap;
-}
-.risk-line{color:var(--accent)}
-
-/* SECTION CARDS */
-.section-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:12px;
-  margin-bottom:12px;overflow:hidden;
-}
-.section-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 18px;cursor:pointer;
-  transition:background 0.2s;user-select:none;
-}
-.section-header:hover{background:rgba(0,0,0,0.02)}
-.section-title-row{display:flex;align-items:center;gap:8px}
-.section-icon{width:16px;height:16px;color:var(--text-faint);flex-shrink:0}
-.section-title{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.06em;text-transform:uppercase}
-.section-toggle{
-  width:16px;height:16px;color:var(--text-faint);
-  transition:transform 0.2s;
-}
-.section-card.open .section-toggle{transform:rotate(180deg)}
-.section-body{
-  padding:0 18px 16px;display:none;
-  border-top:1px solid var(--border);padding-top:16px;
-}
-.section-card.open .section-body{display:block}
-.section-content{
-  padding:0 18px 16px;display:none;
-  border-top:1px solid var(--border);padding-top:16px;
-}
-.section-card.open .section-content{display:block}
-
-/* RED FLAGS */
-.flags-list{display:none}
-
-#inputText::-webkit-scrollbar-track{background:transparent}
-#inputText::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-
-.input-divider{
-  display:flex;align-items:center;gap:12px;margin:16px 0;
-}
-.input-divider::before,.input-divider::after{
-  content:'';flex:1;height:1px;background:var(--border);
-}
-.input-divider span{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
-
-/* DROPZONE */
-#dropzone{
-  border:1px dashed var(--border);border-radius:10px;
-  padding:20px;text-align:center;cursor:pointer;
-  transition:all 0.2s;position:relative;overflow:hidden;
-  background:var(--surface-2);
-}
-#dropzone:hover,#dropzone.drag-over{border-color:var(--text-faint);background:var(--surface-3)}
-#dropzone.has-file{border-color:var(--text-faint);border-style:solid;background:var(--surface-3)}
-#fileInput{display:none}
-.drop-icon{
-  width:32px;height:32px;margin:0 auto 8px;
-  color:var(--text-faint);
-}
-#dropzone.has-file .drop-icon{color:var(--text)}
-
-.drop-text{font-size:13px;color:var(--text-muted)}
-.drop-subtext{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:3px}
-
-#fileName{font-size:12px;color:var(--text);font-family:var(--mono);margin-top:6px;word-break:break-all}
-
-.input-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-
-.tag{
-  display:flex;align-items:center;gap:5px;
-  padding:4px 10px;border-radius:20px;
-  background:var(--surface-2);border:1px solid var(--border);
-  color:var(--text-muted);font-size:11px;font-family:var(--mono);
-}
-.tag svg{width:12px;height:12px;color:var(--text-faint)}
-
-/* FIR */
-.gov-pre{
-  background:var(--surface-2);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:14px;
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text);
-  line-height:1.8;
-  white-space:pre-wrap;
-  max-height:320px;
-  overflow-y:auto;
-  word-break:break-word;
-}
-.gov-pre::-webkit-scrollbar{width:4px}
-.gov-pre::-webkit-scrollbar-track{background:transparent}
-.gov-pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.fir-actions{display:flex;gap:8px;margin-top:12px}
-.fir-btn{
-  padding:7px 14px;border-radius:7px;
-  font-size:12px;font-family:var(--sans);cursor:pointer;
-  transition:all 0.2s;border:1px solid var(--border);
-  background:var(--surface-2);color:var(--text-muted);
-  display:flex;align-items:center;gap:5px;
-}
-.fir-btn:hover{border-color:var(--text-faint);color:var(--text)}
-.fir-btn.primary{background:var(--surface-2);border-color:var(--border);color:var(--text)}
-.fir-btn.primary:hover{border-color:var(--text-faint)}
-
-/* PATTERN MATCHES */
-.evidence-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
-.evidence-table th,.evidence-table td{border-top:1px solid var(--border);padding:10px 0;text-align:left;vertical-align:top}
-.evidence-table th{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)}
-.evidence-table td{color:var(--text)}
-.evidence-table td.muted{color:var(--text-muted)}
-
-/* EMERGENCY FOOTER */
-.emergency-footer{
-  margin-top:16px;padding:14px 18px;border-radius:12px;
-  background:var(--surface);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
-}
-.emergency-text{font-size:13px;color:var(--text-muted)}
-.emergency-text strong{color:var(--text)}
-.emergency-links{display:flex;gap:8px;flex-wrap:wrap}
-.emergency-link{
-  padding:6px 12px;border-radius:6px;font-size:12px;
-  border:1px solid var(--border);color:var(--text);
-  text-decoration:none;background:var(--surface-2);
-  transition:all 0.2s;font-family:var(--mono);
-}
-.emergency-link:hover{border-color:var(--text-faint)}
-
-.analysis-complete{
-  margin-top:10px;
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text-muted);
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-}
-
-/* ERROR STATE */
-#errorView{
-  display:none;flex:1;align-items:center;justify-content:center;
-  flex-direction:column;gap:16px;padding:48px 24px;text-align:center;
-}
-#errorView.visible{display:flex}
-.error-icon{font-size:48px;margin-bottom:8px}
-.error-title{font-family:var(--sans);font-size:18px;font-weight:600;color:var(--text)}
-.error-msg{font-size:13px;color:var(--text-muted);max-width:400px}
-.retry-btn{
-  padding:10px 24px;border-radius:8px;background:var(--surface);
-  border:1px solid var(--border);color:var(--text);cursor:pointer;
-  font-family:var(--sans);font-size:13px;transition:all 0.2s;margin-top:8px;
-}
-.retry-btn:hover{border-color:var(--text-faint);color:var(--text)}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
-
-/* UTIL */
-.hidden{display:none!important}
-a{color:var(--text);text-decoration:underline;text-decoration-color:var(--border)}
-a:hover{text-decoration-color:var(--text-faint)}
-
-/* RECENT CASES */
-.recent-cases{display:flex;flex-direction:column;gap:8px}
-.case-item{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-  padding:10px 12px;border-radius:10px;
-  background:var(--surface-2);border:1px solid var(--border);
-}
-.case-item button{
-  background:none;border:none;color:var(--text);text-decoration:underline;
-  text-decoration-color:var(--border);
-  font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;text-align:left;
-}
-.case-item button:hover{text-decoration-color:var(--text-faint)}
-.case-item .case-time{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap}
-
-/* ANALYZING VIEW ENHANCEMENTS */
-.agent-info{flex:1;min-width:0}
-.agent-name{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text)}
-.agent-status{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:2px;letter-spacing:0.06em}
-
-.agent-row{
-  opacity:0;
-  transform:translateY(8px);
-  transition:opacity 250ms ease, transform 250ms ease, background 200ms ease, border-color 200ms ease;
-}
-.agent-row.entered{opacity:0.6;transform:translateY(0)}
-.agent-row.active,.agent-row.done,.agent-row.skipped,.agent-row.failed{opacity:1}
-
-@keyframes agentPulse{
-  0%{transform:scale(1)}
-  50%{transform:scale(1.45)}
-  100%{transform:scale(1)}
-}
-.agent-row.active .agent-indicator{animation:agentPulse 900ms ease-in-out infinite}
-.agent-row.done .agent-indicator,
-.agent-row.skipped .agent-indicator,
-.agent-row.failed .agent-indicator{animation:none}
-.agent-indicator svg{display:block;width:8px;height:8px}
-
-#elapsedTimer{
-  margin-left:8px;
-  font-family:var(--mono);
-  color:var(--accent);
-  font-size:11px;
-  letter-spacing:0.04em;
-}
-
-.progress-bar-wrap{
-  width:100%;max-width:520px;
-  background:var(--surface-2);
-  border-radius:4px;
-  height:3px;
-  overflow:hidden;
-  border:1px solid var(--border);
-}
-.progress-bar{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,var(--teal-dim),var(--accent));
-  transition:width 300ms ease;
-}
-
-/* TGCSB FEED ENTRY ANIMATION */
-#intelFeed{font-family:var(--mono);font-size:12px;line-height:1.5}
-.feed-line{
-  position:relative;
-  margin:0 0 6px 0;
-  padding:2px 0 2px 8px;
-  white-space:pre-wrap;
-  word-break:break-word;
-  animation:feedSlideIn 200ms ease-out;
-}
-.feed-line::before{
-  content:'';
-  position:absolute;
-  left:0;
-  top:2px;
-  bottom:2px;
-  width:2px;
-  background:var(--accent);
-  animation:feedFlash 800ms ease-out forwards;
-}
-@keyframes feedSlideIn{
-  from{opacity:0;transform:translateX(-12px)}
-  to{opacity:1;transform:translateX(0)}
-}
-@keyframes feedFlash{
-  from{opacity:1}
-  to{opacity:0}
-}
-
-/* RESULTS TRANSITION + CARD STAGGER */
-#analyzingView{opacity:1;transform:translateY(0);transition:opacity 300ms ease, transform 300ms ease}
-#analyzingView.exiting{opacity:0;transform:translateY(-20px)}
-
-#resultsView{opacity:1;transform:translateY(0)}
-#resultsView.results-enter-prep{opacity:0;transform:translateY(20px)}
-#resultsView.results-enter-active{opacity:1;transform:translateY(0);transition:opacity 300ms ease-out, transform 300ms ease-out}
-
-.result-card-enter{
-  opacity:0;
-  transform:translateY(10px);
-  animation:resultCardIn 300ms ease-out forwards;
-}
-@keyframes resultCardIn{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-/* RESULT METRICS */
-.result-metrics{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.metric-chip{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:4px 10px;border-radius:999px;
-  border:1px solid var(--border);
-  background:var(--surface-2);
-  font-family:var(--mono);font-size:11px;color:var(--text-muted);
-}
-.metric-chip strong{color:var(--accent);font-weight:700}
-
-/* REPORT WINDOW COUNTDOWN */
-.report-window{
-  margin-bottom:12px;
-  padding:10px 14px;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:var(--surface-2);
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text-muted);
-}
-#reportWindowLine{word-break:break-word}
-.gh-bar-track{
-  margin-top:8px;
-  width:100%;
-  height:4px;
-  background:var(--surface-3);
-  border:1px solid var(--border);
-  border-radius:999px;
-  overflow:hidden;
-}
-.gh-bar{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,var(--teal-dim),var(--accent));
-  transition:width 1000ms linear;
-}
-@keyframes ghGlow{
-  0%{box-shadow:0 0 8px rgba(0,212,170,0.4)}
-  50%{box-shadow:0 0 8px rgba(0,212,170,1)}
-  100%{box-shadow:0 0 8px rgba(0,212,170,0.4)}
-}
-.report-window.gh-critical .gh-bar{animation:ghGlow 2s ease-in-out infinite}
-
-.conversation-card{
-  margin-bottom:12px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:linear-gradient(145deg, rgba(15,20,35,0.95), rgba(10,13,26,0.95));
-  padding:14px 16px;
-}
-.conversation-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:8px;
-}
-.tone-chip{
-  display:inline-flex;
-  align-items:center;
-  padding:4px 10px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  font-family:var(--mono);
-  font-size:10px;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:var(--text-muted);
-  background:var(--surface-2);
-}
-.tone-chip.alert{
-  border-color:rgba(255,59,59,0.45);
-  color:#ffb7b7;
-  background:rgba(255,59,59,0.12);
-}
-.tone-chip.safe{
-  border-color:rgba(0,212,170,0.4);
-  color:#98ffe5;
-  background:rgba(0,212,170,0.12);
-}
-.conversation-meta{
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text-faint);
-}
-.conversation-reply{
-  color:var(--text);
-  line-height:1.7;
-  font-size:14px;
-  letter-spacing:0.01em;
-}
-
-/* OSINT + ACTIONS */
-.osint-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (max-width:520px){.osint-grid{grid-template-columns:1fr}}
-.osint-item{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
-.osint-key{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
-.osint-val{font-size:13px;color:var(--text);font-family:var(--mono)}
-.osint-summary{font-size:13px;color:var(--text-muted);line-height:1.6}
-
-.actions-ol{display:flex;flex-direction:column;gap:8px;padding-left:18px}
-.actions-ol li{color:var(--text);line-height:1.6}
-
-/* RECOVERY FLOW */
-.recovery-flow{
-  margin-top:14px;
-  padding:14px 16px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:var(--surface);
-}
-.recovery-title{
-  font-family:var(--sans);
-  font-size:13px;
-  font-weight:600;
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-  color:var(--text);
-  margin-bottom:10px;
-}
-.recovery-body{font-size:13px;color:var(--text);line-height:1.6}
-.recovery-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.recovery-btn{
-  padding:8px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--surface-2);
-  color:var(--text);
-  font-family:var(--sans);
-  font-size:12px;
-  cursor:pointer;
-}
-.recovery-btn.primary{background:var(--accent);border-color:var(--accent);color:#04110d}
-.recovery-btn.link{text-decoration:none;display:inline-flex;align-items:center}
-.recovery-field{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
-.recovery-field input{
-  min-width:180px;
-  padding:8px 10px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--surface-2);
-  color:var(--text);
-  font-family:var(--mono);
-  font-size:12px;
-}
-.recovery-note{margin-top:8px;color:var(--text-muted);font-size:12px}
-
-body.modal-open{overflow:hidden}
-.recovery-modal{
-  position:fixed;
-  inset:0;
-  z-index:300;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  background:rgba(2,4,10,0.78);
-  backdrop-filter:blur(3px);
-}
-.recovery-modal-card{
-  width:100%;
-  max-width:540px;
-  border:1px solid var(--border);
-  background:var(--surface);
-  border-radius:14px;
-  padding:18px;
-  box-shadow:0 18px 60px rgba(0,0,0,0.45);
-}
-.recovery-modal-title{
-  font-family:var(--display);
-  font-size:18px;
-  font-weight:600;
-  color:var(--text);
-}
-.recovery-modal-sub{
-  margin-top:6px;
-  margin-bottom:12px;
-  font-size:12px;
-  color:var(--text-muted);
-  font-family:var(--mono);
-}
-.recovery-modal .recovery-actions{margin-top:14px}
-
-.intake-progress{
-  margin-bottom:10px;
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--text-faint);
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-}
-.intake-question{
-  font-size:14px;
-  color:var(--text);
-  line-height:1.55;
-}
-.intake-option-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:12px;
-}
-.intake-option{
-  border:1px solid var(--border);
-  background:var(--surface-2);
-  color:var(--text);
-  border-radius:9px;
-  padding:9px 14px;
-  cursor:pointer;
-  font-family:var(--sans);
-  font-size:12px;
-}
-.intake-option.selected{
-  border-color:var(--accent);
-  background:rgba(0,212,170,0.14);
-  color:#c9fff1;
-}
-.intake-actions{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  margin-top:14px;
-}
-.intake-actions .recovery-btn{min-width:120px}
-
-@media (max-width:768px){
-  #resultsView{padding:16px}
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SATARK AI Chat</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+    :root {
+      --bg-deep: #061426;
+      --bg-mid: #0b1f36;
+      --panel: rgba(9, 21, 40, 0.9);
+      --panel-soft: rgba(10, 25, 45, 0.72);
+      --border: rgba(120, 180, 220, 0.22);
+      --text: #e5f0ff;
+      --text-muted: #9bb4d1;
+      --brand: #20e3c2;
+      --brand-deep: #1cb0a4;
+      --user-bubble: #1c3a64;
+      --bot-bubble: #0f2d4e;
+      --chip-run: #4cc9f0;
+      --chip-done: #3ddc97;
+      --chip-failed: #ff6b6b;
+      --warn: #ffb347;
+      --danger: #ff5c5c;
+      --radius: 18px;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.26);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 10% -20%, rgba(39, 118, 202, 0.28), transparent),
+        radial-gradient(900px 700px at 85% -10%, rgba(38, 170, 150, 0.20), transparent),
+        linear-gradient(140deg, var(--bg-deep), var(--bg-mid));
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, rgba(10, 25, 48, 0.96), rgba(8, 18, 35, 0.93));
+      border-right: 1px solid var(--border);
+      padding: 18px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(12px);
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel-soft);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    .brand small {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .new-chat {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      color: #012330;
+      background: linear-gradient(90deg, var(--brand), #7fffd4);
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+
+    .new-chat:hover {
+      transform: translateY(-1px);
+    }
+
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(7, 19, 36, 0.8);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .history {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .chat-item {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: rgba(9, 20, 39, 0.66);
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+    }
+
+    .chat-item:hover {
+      border-color: var(--border);
+    }
+
+    .chat-item.active {
+      border-color: rgba(70, 214, 191, 0.5);
+      background: rgba(18, 48, 69, 0.72);
+    }
+
+    .chat-item .title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-item .meta {
+      margin: 4px 0 0;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .chat-item .snippet {
+      margin: 6px 0 0;
+      font-size: 11px;
+      color: #c5d8ef;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .profile {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--panel-soft);
+    }
+
+    .profile-name {
+      margin: 0;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .profile-email {
+      margin: 2px 0 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-btn,
+    .profile-actions button,
+    .profile-actions a {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(9, 21, 40, 0.88);
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 11px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6, 15, 30, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .menu-btn {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(9, 21, 40, 0.88);
+      color: var(--text);
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .mode-pill {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .thread-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+      padding: 20px 12px 12px;
+    }
+
+    .thread {
+      width: min(1060px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-bottom: 24px;
+    }
+
+    .starter {
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      background: rgba(9, 24, 47, 0.55);
+      padding: 20px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      animation: popIn .22s ease;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: translateY(5px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .msg.user {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: min(860px, 92%);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .bubble-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 14px;
+      font-size: 11px;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bubble.user {
+      background: linear-gradient(160deg, rgba(30, 62, 99, 0.95), var(--user-bubble));
+    }
+
+    .bubble.bot {
+      background: linear-gradient(160deg, rgba(12, 37, 66, 0.93), var(--bot-bubble));
+    }
+
+    .bubble-body {
+      padding: 14px 16px;
+      line-height: 1.62;
+      font-size: 16px;
+    }
+
+    .bubble-body p {
+      margin: 0 0 10px;
+    }
+
+    .bubble-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .assistant-steps {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+      font-size: 14px;
+      color: #d6e9ff;
+    }
+
+    .assistant-flags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .flag {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .flag.warn {
+      background: rgba(255, 183, 71, 0.16);
+      border-color: rgba(255, 183, 71, 0.35);
+      color: #ffdca0;
+    }
+
+    .flag.danger {
+      background: rgba(255, 92, 92, 0.14);
+      border-color: rgba(255, 92, 92, 0.35);
+      color: #ffb6b6;
+    }
+
+    .agent-strip {
+      width: min(1060px, 100%);
+      margin: 0 auto;
+      padding: 0 12px;
+    }
+
+    .agent-strip-inner {
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(8, 22, 43, 0.82);
+      padding: 10px;
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .agent-chip {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(10, 23, 43, 0.8);
+    }
+
+    .agent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #587392;
+    }
+
+    .agent-chip.running .agent-dot {
+      background: var(--chip-run);
+      box-shadow: 0 0 12px rgba(76, 201, 240, 0.75);
+    }
+
+    .agent-chip.done .agent-dot {
+      background: var(--chip-done);
+    }
+
+    .agent-chip.failed .agent-dot {
+      background: var(--chip-failed);
+    }
+
+    .composer-wrap {
+      border-top: 1px solid var(--border);
+      background: rgba(6, 14, 27, 0.84);
+      backdrop-filter: blur(8px);
+      padding: 12px;
+    }
+
+    .composer {
+      width: min(1060px, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(7, 20, 39, 0.95);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .composer textarea {
+      border: 0;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      min-height: 68px;
+      max-height: 180px;
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .icon-btn,
+    .send-btn {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(8, 22, 42, 0.9);
+      color: var(--text);
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .icon-btn.active {
+      border-color: rgba(76, 201, 240, 0.9);
+      color: #d8f6ff;
+      box-shadow: 0 0 14px rgba(76, 201, 240, 0.42);
+    }
+
+    .send-btn {
+      background: linear-gradient(90deg, var(--brand), #52f6e4);
+      color: #082233;
+      border: 0;
+      min-width: 76px;
+    }
+
+    .composer-meta {
+      width: min(1060px, 100%);
+      margin: 8px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .attachment-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: rgba(10, 24, 44, 0.9);
+      max-width: 100%;
+    }
+
+    .attachment-pill span {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attachment-pill button {
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+    }
+
+    .drawer-toggle {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(8, 22, 42, 0.9);
+      color: var(--text-muted);
+      padding: 7px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .drawer {
+      position: fixed;
+      right: 12px;
+      top: 70px;
+      width: min(390px, calc(100vw - 24px));
+      max-height: calc(100vh - 84px);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(5, 15, 31, 0.96);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      z-index: 40;
+      display: none;
+    }
+
+    .drawer.visible {
+      display: block;
+    }
+
+    .drawer h3 {
+      margin: 0 0 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+    }
+
+    .drawer pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #bfd5ef;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 8, 16, 0.58);
+      z-index: 15;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: min(86vw, 340px);
+        transform: translateX(-110%);
+        transition: transform .2s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .menu-btn {
+        display: inline-flex;
+      }
+
+      .overlay.visible {
+        display: block;
+      }
+
+      .bubble {
+        max-width: 96%;
+      }
+
+      .composer {
+        grid-template-columns: 1fr;
+      }
+
+      .composer-actions {
+        justify-content: flex-end;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="overlay" id="overlay"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div>
+          <small>TGCSB-Inspired Citizen Assist</small>
+          <h1>SATARK AI</h1>
+        </div>
+        <span class="mode-pill" id="leftModePill">Citizen</span>
+      </div>
 
-<!-- TOP BAR -->
-<header class="topbar">
-  <a class="topbar-logo" href="/ui">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-      <path d="M2 17l10 5 10-5"/>
-      <path d="M2 12l10 5 10-5"/>
-    </svg>
-    <span>SATARK AI</span>
-    <div class="logo-dot"></div>
-  </a>
-  <div class="topbar-right">
-    <a href="/ops" class="ops-link">OPS BOARD</a>
-    <div id="authBadge">
-      <div class="badge-dot"></div>
-      <span id="authLabel">Sign in with Google</span>
-    </div>
-    <button id="logoutBtn">Sign out</button>
+      <button class="new-chat" id="newChatBtn" type="button">+ New Chat</button>
+
+      <div class="search-wrap">
+        <input id="chatSearch" type="search" placeholder="Search chats" />
+      </div>
+
+      <div class="history" id="historyList"></div>
+
+      <div class="profile">
+        <p class="profile-name" id="profileName">Guest</p>
+        <p class="profile-email" id="profileEmail">Not signed in</p>
+        <div class="profile-actions">
+          <button type="button" id="signInBtn">Sign in with Google</button>
+          <a href="/auth/google/logout" id="logoutBtn" style="display:none">Logout</a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="top-left">
+          <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+          <span>SATARK Conversation</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center">
+          <span class="mode-pill" id="modePill">Citizen View</span>
+          <button class="drawer-toggle" id="drawerToggle" type="button">Analyst Drawer</button>
+        </div>
+      </header>
+
+      <section class="thread-wrap" id="threadWrap">
+        <div class="thread" id="thread"></div>
+      </section>
+
+      <section class="agent-strip">
+        <div class="agent-strip-inner" id="agentStrip"></div>
+      </section>
+
+      <section class="composer-wrap">
+        <input id="fileInput" type="file" hidden />
+        <div class="composer">
+          <textarea id="composerInput" placeholder="Paste a suspicious message, explain the call, or ask SATARK for guidance."></textarea>
+          <div class="composer-actions">
+            <button class="icon-btn" id="uploadBtn" type="button">Upload</button>
+            <button class="icon-btn" id="micBtn" type="button">Mic</button>
+            <button class="sendBtn send-btn" id="sendBtn" type="button">Send</button>
+          </div>
+        </div>
+        <div class="composer-meta">
+          <div id="attachmentSlot"></div>
+          <div id="composerHint">Enter to send, Shift+Enter for new line</div>
+        </div>
+      </section>
+    </main>
   </div>
-</header>
 
-<main class="main">
+  <aside class="drawer" id="analystDrawer">
+    <h3>Latest Analyst Trace</h3>
+    <pre id="analystJson">No run yet.</pre>
+  </aside>
 
-  <!-- INPUT VIEW -->
-  <section id="inputView">
-    <div class="hero-eyebrow">TGCSB-Inspired Citizen Assist</div>
-    <h1 class="hero-title">SATARK AI</h1>
-    <p class="hero-sub">Paste a suspicious message, upload evidence, or submit an APK. Get a full fraud intelligence report in under 60 seconds.</p>
+  <script>
+    const SESSION_STORAGE_KEY = 'satark_session_id';
+    const ANALYST_MODE_KEY = 'satark_view_mode';
 
-    <div class="input-card">
-      <div class="input-label">// SUSPICIOUS CONTENT</div>
-      <textarea id="inputText" placeholder="Paste a WhatsApp message, email, SMS, or describe the call you received...&#10;&#10;Example: &quot;Your SBI account will be blocked. Share OTP to verify.&quot;" rows="5"></textarea>
-
-      <div class="input-divider"><span>OR UPLOAD EVIDENCE</span></div>
-
-      <div id="dropzone">
-        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,audio/*,.apk,.pdf,.mp3,.wav,.ogg">
-        <div class="drop-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-        </div>
-        <div class="drop-text">Drop image, audio, APK, or PDF here</div>
-        <div class="drop-subtext">or click to browse · max 50MB · Ctrl+V to paste</div>
-        <button type="button" id="pasteScreenshotBtn">Paste Screenshot</button>
-        <div id="fileName"></div>
-      </div>
-
-      <div class="submit-row">
-        <button id="submitBtn">ANALYZE</button>
-      </div>
-
-      <div class="input-tags">
-        <span class="tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Private
-        </span>
-        <span class="tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          &lt;60s analysis
-        </span>
-        <span class="tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          Golden Hour
-        </span>
-        <span class="tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Calendar Alert
-        </span>
-      </div>
-    </div>
-
-    <div class="section-card open" id="sectionRecentCases" style="margin-top:14px">
-      <div class="section-header" style="cursor:default">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v5l3 2"/></svg>
-          <span class="section-title">Recent Cases</span>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="recent-cases" id="recentCasesList">
-          <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Loading…</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ANALYZING VIEW -->
-  <section id="analyzingView">
-    <div class="analyzing-header">
-      <div class="analyzing-title">INITIALIZING<span class="typing-cursor"></span></div>
-      <div class="analyzing-sub" id="analyzingStatus">SATARK INTELLIGENCE NETWORK ONLINE <span id="elapsedTimer">0.0s</span></div>
-    </div>
-
-    <div class="agents-grid">
-      <div class="agent-row" id="agent-manager">
-        <div class="agent-icon">MG</div>
-        <div class="agent-info">
-          <div class="agent-name">Manager Agent</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row" id="agent-scam_detector">
-        <div class="agent-icon">SD</div>
-        <div class="agent-info">
-          <div class="agent-name">Scam Detector</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row" id="agent-osint">
-        <div class="agent-icon">OS</div>
-        <div class="agent-info">
-          <div class="agent-name">OSINT Intelligence</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row" id="agent-audio_analyzer">
-        <div class="agent-icon">AU</div>
-        <div class="agent-info">
-          <div class="agent-name">Audio Analyzer</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row" id="agent-golden_hour">
-        <div class="agent-icon">GH</div>
-        <div class="agent-info">
-          <div class="agent-name">Golden Hour Response</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-
-      <div class="agent-row hidden" id="agent-google_calendar">
-        <div class="agent-icon">GC</div>
-        <div class="agent-info">
-          <div class="agent-name">Google Calendar</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row hidden" id="agent-google_tasks">
-        <div class="agent-icon">GT</div>
-        <div class="agent-info">
-          <div class="agent-name">Google Tasks</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row hidden" id="agent-google_gmail">
-        <div class="agent-icon">GM</div>
-        <div class="agent-info">
-          <div class="agent-name">Gmail Draft</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-      <div class="agent-row hidden" id="agent-google_docs">
-        <div class="agent-icon">GD</div>
-        <div class="agent-info">
-          <div class="agent-name">Google Docs</div>
-          <div class="agent-status">STANDBY</div>
-        </div>
-        <div class="agent-indicator"></div>
-      </div>
-    </div>
-
-    <div class="progress-bar-wrap" style="margin-top:24px">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-
-    <div class="section-card open" style="margin-top:18px">
-      <div class="section-header" style="cursor:default">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
-          <span class="section-title">TGCSB / A2A Feed</span>
-        </div>
-      </div>
-      <div class="section-content" style="padding-top:0">
-        <div id="intelFeed" style="font-family:var(--mono); font-size:12px; line-height:1.5; color:var(--text); max-height:180px; overflow:auto; padding:10px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2)"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ERROR VIEW -->
-  <section id="errorView">
-    <div class="error-icon">!</div>
-    <div class="error-title">Analysis Failed</div>
-    <div class="error-msg" id="errorMsg">Could not complete the threat analysis. Please try again.</div>
-    <button class="retry-btn" onclick="resetToInput()">Try Again</button>
-  </section>
-
-  <!-- RESULTS VIEW -->
-  <section id="resultsView">
-    <div class="results-header">
-      <div class="case-meta">
-        <span class="case-id" id="resultCaseId"></span>
-        <span class="case-ts" id="resultTimestamp"></span>
-      </div>
-      <div class="result-metrics">
-        <span class="metric-chip">CONF <strong id="metricConfidence">0</strong>%</span>
-        <span class="metric-chip">SIM <strong id="metricSimilar">0</strong></span>
-      </div>
-      <button class="results-back" onclick="resetToInput()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        New Analysis
-      </button>
-    </div>
-
-    <div class="report-window">
-      <div id="reportWindowLine">STATUS: —</div>
-      <div class="gh-bar-track"><div id="goldenHourBar" class="gh-bar"></div></div>
-    </div>
-
-    <div class="conversation-card" id="conversationCard">
-      <div class="conversation-head">
-        <span class="tone-chip" id="toneChip">ANALYSIS</span>
-        <span class="conversation-meta" id="conversationMeta">Manager response</span>
-      </div>
-      <div class="conversation-reply" id="conversationReply">Analysis complete.</div>
-    </div>
-
-    <div class="section-card hidden" id="sectionIntegrations">
-      <div class="section-header" onclick="toggleSection('sectionIntegrations')">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9"/><path d="M14 17H4"/><path d="M20 17h-5"/><path d="M7 7H4"/><path d="M6 7v10"/></svg>
-          <span class="section-title">Links</span>
-        </div>
-        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="section-body">
-        <div class="fir-actions" style="justify-content:flex-start;gap:10px">
-          <a class="fir-btn hidden" id="linkCalendar" href="#" target="_blank">Open Calendar</a>
-          <a class="fir-btn hidden" id="linkTasks" href="#" target="_blank">Open Tasks</a>
-          <a class="fir-btn hidden" id="linkGmail" href="#" target="_blank">Open Gmail Draft</a>
-          <a class="fir-btn hidden" id="linkDoc" href="#" target="_blank">Open Case Report</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="assessment-card">
-      <div class="assessment-pre" id="assessmentBlock"></div>
-    </div>
-
-    <div class="section-card open" id="sectionEvidence">
-      <div class="section-header" style="cursor:default">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
-          <span class="section-title" id="evidenceSectionTitle">Evidence</span>
-        </div>
-      </div>
-      <div class="section-body">
-        <table class="evidence-table">
-          <thead>
-            <tr>
-              <th>INDICATOR</th>
-              <th>CONFIDENCE</th>
-              <th>WEIGHT</th>
-            </tr>
-          </thead>
-          <tbody id="evidenceBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="section-card open" id="sectionActions">
-      <div class="section-header" style="cursor:default">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
-          <span class="section-title" id="primaryActionsTitle">Action Steps</span>
-        </div>
-      </div>
-      <div class="section-body">
-        <ol class="actions-ol" id="actionsList"></ol>
-        <div id="reportingQuickLinks" style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-muted)">
-          FILE: <a href="https://cybercrime.gov.in" target="_blank">cybercrime.gov.in</a> · HELPLINE: <a href="tel:1930">1930</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- OSINT -->
-    <div class="section-card" id="sectionOsint">
-      <div class="section-header" onclick="toggleSection('sectionOsint')">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span class="section-title">Infrastructure Intelligence</span>
-        </div>
-        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="section-body" id="osintBody">
-        <div class="osint-summary" id="osintSummary"></div>
-        <div class="osint-grid" id="osintGrid" style="margin-top:12px"></div>
-      </div>
-    </div>
-
-    <!-- FIR TEMPLATE -->
-    <div class="section-card open" id="sectionFir">
-      <div class="section-header" onclick="toggleSection('sectionFir')">
-        <div class="section-title-row">
-          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span class="section-title">NCRP Complaint Draft</span>
-        </div>
-        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="section-body">
-        <pre class="gov-pre" id="firBox"></pre>
-        <div class="fir-actions">
-          <button class="fir-btn primary" onclick="copyFir()">Copy Complaint</button>
-          <button class="fir-btn" onclick="downloadFir()">Download .txt</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- EMERGENCY FOOTER -->
-    <div class="emergency-footer">
-      <div class="emergency-text">Cybercrime Helpline: <strong>1930</strong> · Available 24/7</div>
-      <div class="emergency-links">
-        <a href="tel:1930" class="emergency-link">Call 1930</a>
-        <a href="https://cybercrime.gov.in" target="_blank" class="emergency-link">NCRP Portal</a>
-      </div>
-    </div>
-
-    <div class="analysis-complete" id="analysisCompleteLine"></div>
-
-  </section>
-</main>
-
-<div class="recovery-modal hidden" id="recoveryModal" role="dialog" aria-modal="true" aria-labelledby="recoveryModalTitle">
-  <div class="recovery-modal-card">
-    <div class="recovery-modal-title" id="recoveryModalTitle">Quick Recovery Intake</div>
-    <div class="recovery-modal-sub" id="recoveryModalSub">Answer these to tailor the final action plan.</div>
-    <div id="recoveryModalContent"></div>
-  </div>
-</div>
-
-<script>
-// ── STATE ──
-let sessionId = null;
-let selectedFile = null;
-let currentRunId = null;
-let pollInterval = null;
-let firContent = '';
-let googleConnected = false;
-let analysisStartMs = null;
-let elapsedTimerInterval = null;
-let goldenHourInterval = null;
-let lastSubmittedText = '';
-let lastResultData = null;
-let pendingIntakeSubmission = null;
-let activePreprocessPromise = null;
-let activePreprocessToken = 0;
-let intakeTokenCounter = 0;
-let integrationLinks = {
-  google_calendar: '',
-  google_tasks: '',
-  google_gmail: '',
-  google_docs: '',
-};
-
-const SESSION_STORAGE_KEY = 'satark_session_id';
-
-// ── SESSION ID ──
-function getSessionId() {
-  if (!sessionId) {
-    const existing = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (existing && existing.length >= 6) {
-      sessionId = existing;
-    } else {
-      let created = null;
-      try {
-        const bytes = crypto.getRandomValues(new Uint8Array(16));
-        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
-        created = `sess_${hex}`;
-      } catch (_e) {
-        created = 'sess_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      }
-      sessionId = created;
-      localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-    }
-  }
-  return sessionId;
-}
-
-// ── AUTH ──
-async function checkAuth() {
-  try {
-    const r = await fetch('/api/auth/status');
-    const d = await r.json();
-    const badge = document.getElementById('authBadge');
-    const label = document.getElementById('authLabel');
-    const logout = document.getElementById('logoutBtn');
-    if (d.connected) {
-      googleConnected = true;
-      badge.classList.add('connected');
-      label.textContent = d.email || 'Google connected';
-      badge.onclick = null;
-      badge.style.cursor = 'default';
-      logout.classList.add('visible');
-    } else {
-      googleConnected = false;
-      badge.classList.remove('connected');
-      label.textContent = 'Sign in with Google (Calendar)';
-      badge.onclick = startAuth;
-      badge.style.cursor = 'pointer';
-      logout.classList.remove('visible');
-    }
-  } catch(e) {}
-}
-
-function _formatElapsed(ms) {
-  const v = Math.max(0, Number(ms || 0)) / 1000;
-  return `${v.toFixed(1)}s`;
-}
-
-function _startElapsedTimer() {
-  const el = document.getElementById('elapsedTimer');
-  if (!el) return;
-  if (elapsedTimerInterval) clearInterval(elapsedTimerInterval);
-  el.textContent = '0.0s';
-  const started = Number(analysisStartMs || Date.now());
-  elapsedTimerInterval = setInterval(() => {
-    el.textContent = _formatElapsed(Date.now() - started);
-  }, 100);
-}
-
-function _freezeElapsedTimer() {
-  const el = document.getElementById('elapsedTimer');
-  if (elapsedTimerInterval) {
-    clearInterval(elapsedTimerInterval);
-    elapsedTimerInterval = null;
-  }
-  if (el && typeof analysisStartMs === 'number') {
-    el.textContent = _formatElapsed(Date.now() - analysisStartMs);
-  }
-}
-
-function _clearGoldenHourTicker() {
-  if (goldenHourInterval) {
-    clearInterval(goldenHourInterval);
-    goldenHourInterval = null;
-  }
-}
-
-function _animateResultCards() {
-  const cards = Array.from(document.querySelectorAll('#resultsView .report-window, #resultsView .conversation-card, #resultsView .assessment-card, #resultsView .section-card, #resultsView .emergency-footer, #resultsView .analysis-complete'));
-  for (const card of cards) {
-    card.classList.remove('result-card-enter');
-    card.style.animationDelay = '0ms';
-  }
-  cards.forEach((card, idx) => {
-    card.classList.add('result-card-enter');
-    card.style.animationDelay = `${idx * 80}ms`;
-  });
-}
-
-function _setIndicatorDone(row, status) {
-  const indicator = row ? row.querySelector('.agent-indicator') : null;
-  if (!indicator) return;
-  indicator.innerHTML = '';
-  if (status === 'done') {
-    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3 3L13 4.5"/></svg>';
-    indicator.style.color = '#22c55e';
-  } else if (status === 'failed') {
-    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
-    indicator.style.color = '#ef4444';
-  } else if (status === 'skipped') {
-    indicator.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10"/></svg>';
-    indicator.style.color = '#94a3b8';
-  } else {
-    indicator.style.color = '';
-  }
-}
-
-function startAuth() {
-  const sid = getSessionId();
-  window.location.href = `/auth/google/start?session_id=${sid}&next=/ui`;
-}
-
-document.getElementById('logoutBtn').onclick = () => {
-  window.location.href = '/auth/google/logout';
-};
-
-// ── FILE HANDLING ──
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const pasteScreenshotBtn = document.getElementById('pasteScreenshotBtn');
-
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f) setFile(f);
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) setFile(fileInput.files[0]);
-});
-
-function _setPastedImageFile(blob, mimeType) {
-  const type = mimeType || blob.type || 'image/png';
-  const ext = type.includes('webp') ? 'webp' : (type.includes('jpeg') || type.includes('jpg')) ? 'jpg' : 'png';
-  const file = new File([blob], `pasted-screenshot.${ext}`, { type });
-  setFile(file);
-}
-
-async function pasteScreenshot() {
-  // Prefer Clipboard API when available (button click), fallback to Ctrl+V paste handler.
-  if (navigator.clipboard && navigator.clipboard.read) {
-    try {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        for (const type of item.types) {
-          if (type && type.startsWith('image/')) {
-            const blob = await item.getType(type);
-            _setPastedImageFile(blob, type);
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore and rely on Ctrl+V event.
-    }
-  }
-}
-
-if (pasteScreenshotBtn) {
-  pasteScreenshotBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    pasteScreenshot();
-  });
-}
-
-document.addEventListener('paste', (e) => {
-  try {
-    const cd = e.clipboardData;
-    if (!cd || !cd.items) return;
-    for (const item of cd.items) {
-      if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) setFile(file);
-        return;
-      }
-    }
-  } catch (err) {}
-});
-
-function setFile(f) {
-  selectedFile = f;
-  dropzone.classList.add('has-file');
-  document.getElementById('fileName').textContent = f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
-}
-
-function toDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function _ensureEncodedFileData(submission) {
-  if (!submission || !submission.file) return null;
-  if (typeof submission._cachedDataUrl === 'string' && submission._cachedDataUrl) {
-    return submission._cachedDataUrl;
-  }
-  if (!submission._encodingPromise) {
-    submission._encodingPromise = toDataUrl(submission.file)
-      .then((dataUrl) => {
-        submission._cachedDataUrl = String(dataUrl || '');
-        return submission._cachedDataUrl;
-      })
-      .catch(() => null);
-  }
-  return await submission._encodingPromise;
-}
-
-async function _buildSubmissionInput(submission) {
-  const files = [];
-  if (submission && submission.file) {
-    const dataUrl = await _ensureEncodedFileData(submission);
-    if (dataUrl) {
-      files.push({
-        file_name: submission.file.name,
-        file_type: submission.file.type || 'application/octet-stream',
-        content_base64: dataUrl,
-      });
-    }
-  }
-  return {
-    text: (submission && submission.text) ? String(submission.text) : '',
-    files,
-  };
-}
-
-function _startBackgroundPreprocess(submission, intakeToken) {
-  activePreprocessToken = intakeToken;
-  activePreprocessPromise = (async () => {
-    try {
-      const sid = getSessionId();
-      const user_input = await _buildSubmissionInput(submission);
-      const r = await fetch('/api/analyze/preprocess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sid, user_input }),
-      });
-      if (!r.ok) return {};
-      const d = await r.json();
-      if (!d || typeof d !== 'object') return {};
-      return (d.context && typeof d.context === 'object') ? d.context : {};
-    } catch (_err) {
-      return {};
-    }
-  })();
-  return activePreprocessPromise;
-}
-
-async function _awaitBackgroundPreprocess(intakeToken) {
-  if (!activePreprocessPromise || activePreprocessToken !== intakeToken) return {};
-  try {
-    const ctx = await activePreprocessPromise;
-    return (ctx && typeof ctx === 'object') ? ctx : {};
-  } catch (_err) {
-    return {};
-  }
-}
-
-// ── SUBMIT ──
-document.getElementById('submitBtn').addEventListener('click', runAnalysis);
-document.getElementById('inputText').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.ctrlKey) runAnalysis();
-});
-
-async function runAnalysis() {
-  const text = document.getElementById('inputText').value.trim();
-  if (!text && !selectedFile) {
-    document.getElementById('inputText').focus();
-    return;
-  }
-  lastSubmittedText = text || '';
-  const submission = { text: text || '', file: selectedFile };
-  const intakeToken = ++intakeTokenCounter;
-  _startBackgroundPreprocess(submission, intakeToken);
-  openRecoveryIntakeModal(submission, intakeToken);
-}
-
-async function _startAnalyzeRequest(submission, recoveryAnswers, intakeToken) {
-  analysisStartMs = Date.now();
-  showAnalyzing();
-  try {
-    const sid = getSessionId();
-    const user_input = await _buildSubmissionInput(submission);
-    const preprocessedContext = await _awaitBackgroundPreprocess(intakeToken);
-    activePreprocessPromise = null;
-    activePreprocessToken = 0;
-
-    const payload = {
-      session_id: sid,
-      user_input,
-      user_context: { channel: 'web-ui', locale: navigator.language || 'en-IN' },
-      options: {
-        stream: true,
-        generate_report: true,
-        trigger_mcp_actions: false,
-        recovery_answers: recoveryAnswers || {},
-        preprocessed_context: preprocessedContext || {},
+    const state = {
+      sessionId: null,
+      profile: {
+        connected: false,
+        email: null,
+        name: 'Guest',
       },
+      chats: [],
+      activeChatId: null,
+      selectedFile: null,
+      search: '',
+      isProcessing: false,
+      currentRunId: null,
+      evtSource: null,
+      pollTimer: null,
+      agentStatus: {},
+      analystMode: false,
+      drawerOpen: false,
+      latestPayload: null,
+      speechRec: null,
+      recording: false,
+      mediaRecorder: null,
+      mediaChunks: [],
     };
 
-    const r = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!r.ok) throw new Error('API error ' + r.status);
-    const d = await r.json();
-    currentRunId = d.run_id;
-    startStreaming(d.run_id);
-    startPolling(d.run_id);
-  } catch(e) {
-    showError('Could not start analysis. Is the server running?');
-  }
-}
+    const AGENT_ORDER = ['manager', 'scam_detector', 'osint', 'audio_analyzer', 'apk_analyzer', 'golden_hour', 'google_calendar', 'google_tasks', 'google_gmail', 'google_docs'];
 
-// ── STREAMING (named SSE events) ──
-let evtSource = null;
-let agentsDone = new Set();
-let agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
-
-let feedLines = [];
-const FEED_MAX = 28;
-
-function _feedReset() {
-  feedLines = [];
-  const el = document.getElementById('intelFeed');
-  if (el) el.innerHTML = '';
-}
-
-function _feedAdd(text) {
-  const el = document.getElementById('intelFeed');
-  if (!el) return;
-  const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const line = `[${ts}] ${String(text || '').trim()}`;
-  if (!line.trim()) return;
-  const div = document.createElement('div');
-  div.className = 'feed-line';
-  div.textContent = line;
-  el.appendChild(div);
-  feedLines.push(line);
-  while (feedLines.length > FEED_MAX) {
-    feedLines.shift();
-    if (el.firstChild) el.removeChild(el.firstChild);
-  }
-  el.scrollTop = el.scrollHeight;
-}
-
-function _agentRow(agent) {
-  const key = String(agent || '').trim();
-  if (!key) return null;
-  return document.getElementById('agent-' + key) || null;
-}
-
-function _markAgentState(agent, stateText, cls) {
-  const row = _agentRow(agent);
-  if (!row) return;
-  const st = row.querySelector('.agent-status');
-  row.classList.remove('active', 'done', 'skipped', 'failed');
-  if (cls) row.classList.add(cls);
-  if (st) st.textContent = stateText;
-  if (cls === 'done') _setIndicatorDone(row, 'done');
-  else if (cls === 'failed') _setIndicatorDone(row, 'failed');
-  else if (cls === 'skipped') _setIndicatorDone(row, 'skipped');
-  else _setIndicatorDone(row, 'active');
-}
-
-function updateProgress() {
-  const total = Math.max(1, agentsPlanned.size);
-  let done = 0;
-  for (const a of agentsDone) {
-    if (agentsPlanned.has(a)) done++;
-  }
-  document.getElementById('progressBar').style.width = (done / total * 100) + '%';
-}
-
-function _upsertIntegrationLink(agent, url) {
-  const clean = String(url || '').trim();
-  if (!clean) return;
-  integrationLinks[agent] = clean;
-  const integrations = document.getElementById('sectionIntegrations');
-  const map = {
-    google_calendar: document.getElementById('linkCalendar'),
-    google_tasks: document.getElementById('linkTasks'),
-    google_gmail: document.getElementById('linkGmail'),
-    google_docs: document.getElementById('linkDoc'),
-  };
-  const link = map[agent];
-  if (link) {
-    link.href = clean;
-    link.classList.remove('hidden');
-  }
-  if (integrations) {
-    integrations.classList.remove('hidden');
-    integrations.classList.add('open');
-  }
-}
-
-function startStreaming(runId) {
-  if (evtSource) evtSource.close();
-  evtSource = new EventSource(`/api/stream/${runId}`);
-
-  evtSource.addEventListener('run.classified', (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const selected = Array.isArray(d.selected_agents) ? d.selected_agents : [];
-      const skipped = Array.isArray(d.skipped_agents) ? d.skipped_agents : [];
-      const planned = new Set();
-      planned.add('manager');
-      for (const a of selected) {
-        const agent = String(a || '').trim();
-        if (_agentRow(agent)) planned.add(agent);
+    function getSessionId() {
+      if (state.sessionId) return state.sessionId;
+      const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (existing && existing.length > 8) {
+        state.sessionId = existing;
+        return existing;
       }
+      const random = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      state.sessionId = 'sess_' + random;
+      localStorage.setItem(SESSION_STORAGE_KEY, state.sessionId);
+      return state.sessionId;
+    }
 
-      for (const s of skipped) {
-        const agent = (s && typeof s === 'object') ? String(s.agent || '').trim() : String(s || '').trim();
-        if (agent && _agentRow(agent)) planned.add(agent);
+    function isAnalystMode() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const explicit = String(params.get('view') || params.get('mode') || '').trim().toLowerCase();
+        if (explicit === 'analyst' || explicit === 'debug') return true;
+      } catch (_e) {}
+      try {
+        return String(localStorage.getItem(ANALYST_MODE_KEY) || '').trim().toLowerCase() === 'analyst';
+      } catch (_e) {
+        return false;
       }
+    }
 
-      if (googleConnected) {
-        for (const agent of ['google_calendar', 'google_tasks', 'google_gmail', 'google_docs']) {
-          if (_agentRow(agent)) planned.add(agent);
-        }
+    function toFriendlyName(email) {
+      const text = String(email || '').trim();
+      if (!text) return 'Guest';
+      const local = text.split('@')[0] || text;
+      return local
+        .split(/[._-]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ') || 'User';
+    }
+
+    function storageKey() {
+      const id = (state.profile.email || 'guest').toLowerCase();
+      return 'satark_chat_history_' + encodeURIComponent(id);
+    }
+
+    function saveChats() {
+      try {
+        localStorage.setItem(storageKey(), JSON.stringify(state.chats));
+      } catch (_e) {}
+    }
+
+    function loadChats() {
+      try {
+        const raw = localStorage.getItem(storageKey());
+        state.chats = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(state.chats)) state.chats = [];
+      } catch (_e) {
+        state.chats = [];
       }
-      agentsPlanned = planned;
-      updateProgress();
-    } catch (_err) {}
-  });
-
-  const onAgentStarted = (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const agent = String(d.agent || d.agent_id || '').trim();
-      if (agent) {
-        _markAgentState(agent, 'ANALYZING...', 'active');
-        const statusEl = document.getElementById('analyzingStatus');
-        if (statusEl) statusEl.textContent = `${agent.replaceAll('_', ' ').toUpperCase()} ONLINE`;
-        const label = String(d.label || d.agent_label || '').trim();
-        _feedAdd(`A2A: ${label || agent} started`);
+      if (!state.chats.length) {
+        const starter = createChat('New SATARK chat');
+        state.chats = [starter];
+        state.activeChatId = starter.id;
+        saveChats();
       }
-    } catch (_err) {}
-  };
-  evtSource.addEventListener('agent.started', onAgentStarted);
-  evtSource.addEventListener('agent_start', onAgentStarted);
-
-  evtSource.addEventListener('agent.progress', (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const agent = String(d.agent || '').trim();
-      if (agent) _markAgentState(agent, 'ANALYZING...', 'active');
-      const msg = String(d.message || '').trim();
-      const statusEl = document.getElementById('analyzingStatus');
-      if (statusEl && msg) statusEl.textContent = msg.toUpperCase();
-      if (msg) _feedAdd(`TGCSB: ${msg}`);
-    } catch (_err) {}
-  });
-
-  const onAgentCompleted = (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const agent = String(d.agent || d.agent_id || '').trim();
-      if (agent) {
-        const status = String(d.status || d.state || '').trim().toLowerCase();
-        if (status === 'skipped') _markAgentState(agent, 'SKIPPED', 'skipped');
-        else if (status === 'failed') _markAgentState(agent, 'FAILED', 'failed');
-        else _markAgentState(agent, 'COMPLETE', 'done');
-        agentsDone.add(agent);
-        updateProgress();
-
-        const output = d.output && typeof d.output === 'object' ? d.output : {};
-        const summary = String(output.summary || d.summary || '').trim();
-        const deepLink = String(output.deep_link || output.url || d.deep_link || d.url || '').trim();
-        if (agent === 'google_calendar' || agent === 'google_tasks' || agent === 'google_gmail' || agent === 'google_docs') {
-          _upsertIntegrationLink(agent, deepLink);
-        }
-
-        const verb = status === 'skipped' ? 'skipped' : (status === 'failed' ? 'failed' : 'completed');
-        _feedAdd(`A2A: ${agent} ${verb}${summary ? ' — ' + summary : ''}`);
+      if (!state.activeChatId || !state.chats.some((c) => c.id === state.activeChatId)) {
+        state.activeChatId = state.chats[0].id;
       }
-    } catch (_err) {}
-  };
-  evtSource.addEventListener('agent.completed', onAgentCompleted);
-  evtSource.addEventListener('agent_done', onAgentCompleted);
-
-  evtSource.addEventListener('tool.called', (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const tool = String(d.tool || '').trim();
-      const msg = String(d.message || '').trim();
-      if (tool || msg) _feedAdd(`TOOL: ${tool}${msg ? ' — ' + msg : ''}`);
-    } catch (_err) {}
-  });
-
-  evtSource.addEventListener('tool.result', (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const tool = String(d.tool || '').trim();
-      const status = String(d.status || '').trim();
-      const matches = (typeof d.matches === 'number') ? ` matches=${d.matches}` : '';
-      if (tool || status) _feedAdd(`RESULT: ${tool}${status ? ' [' + status + ']' : ''}${matches}`);
-    } catch (_err) {}
-  });
-
-  evtSource.addEventListener('run.completed', () => {
-    const statusEl = document.getElementById('analyzingStatus');
-    if (statusEl) statusEl.textContent = 'FINALIZING REPORT…';
-  });
-
-  evtSource.addEventListener('run.failed', (e) => {
-    try {
-      const d = JSON.parse(e.data || '{}');
-      const err = String(d.error || 'Unknown error');
-      showError(err);
-    } catch (_err) {
-      showError('Analysis failed.');
-    }
-  });
-
-  evtSource.onerror = () => {
-    _freezeElapsedTimer();
-    try { evtSource.close(); } catch(_e) {}
-  };
-}
-
-// ── POLLING ──
-function startPolling(runId) {
-  if (pollInterval) clearInterval(pollInterval);
-  let attempts = 0;
-  const maxAttempts = 60;
-  pollInterval = setInterval(async () => {
-    attempts++;
-    if (attempts > maxAttempts) {
-      clearInterval(pollInterval);
-      showError('Analysis timed out. Server may be busy — please try again.');
-      return;
-    }
-    try {
-      const r = await fetch(`/api/result/${runId}`);
-      if (r.status === 202) return;
-      if (!r.ok) { clearInterval(pollInterval); showError('Analysis failed.'); return; }
-      const d = await r.json();
-      clearInterval(pollInterval);
-      if (evtSource) evtSource.close();
-      showResults(d);
-    } catch(e) {}
-  }, 2000);
-}
-
-// ── VIEWS ──
-function showAnalyzing() {
-  closeRecoveryIntakeModal();
-  agentsDone.clear();
-  agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
-  integrationLinks = { google_calendar: '', google_tasks: '', google_gmail: '', google_docs: '' };
-  _clearGoldenHourTicker();
-  for (const agent of ['google_calendar', 'google_tasks', 'google_gmail', 'google_docs']) {
-    const row = _agentRow(agent);
-    if (row) row.classList.toggle('hidden', !googleConnected);
-    if (googleConnected) agentsPlanned.add(agent);
-  }
-  const integrations = document.getElementById('sectionIntegrations');
-  if (integrations) {
-    integrations.classList.add('hidden');
-    integrations.classList.remove('open');
-  }
-  for (const id of ['linkCalendar', 'linkTasks', 'linkGmail', 'linkDoc']) {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
-  }
-  document.getElementById('progressBar').style.width = '0%';
-  document.querySelectorAll('.agent-row').forEach(r => {
-    r.classList.remove('active','done','skipped','failed','entered');
-    const ind = r.querySelector('.agent-indicator');
-    if (ind) ind.innerHTML = '';
-    r.querySelector('.agent-status').textContent = 'STANDBY';
-  });
-  document.getElementById('inputView').classList.add('hidden');
-  document.getElementById('analyzingView').classList.remove('exiting');
-  document.getElementById('analyzingView').classList.add('visible');
-  const resultsView = document.getElementById('resultsView');
-  document.getElementById('resultsView').classList.remove('visible');
-  resultsView.classList.remove('results-enter-prep', 'results-enter-active');
-  document.getElementById('errorView').classList.remove('visible');
-  document.getElementById('analyzingStatus').textContent = 'SATARK INTELLIGENCE NETWORK ONLINE';
-  _startElapsedTimer();
-
-  const rows = Array.from(document.querySelectorAll('.agent-row')).filter((r) => !r.classList.contains('hidden'));
-  rows.forEach((row, idx) => {
-    setTimeout(() => row.classList.add('entered'), idx * 200);
-  });
-
-  _feedReset();
-  _feedAdd('TGCSB: Listening for intel updates…');
-}
-
-function showError(msg) {
-  _freezeElapsedTimer();
-  _clearGoldenHourTicker();
-  closeRecoveryIntakeModal();
-  activePreprocessPromise = null;
-  activePreprocessToken = 0;
-  document.getElementById('analyzingView').classList.remove('visible');
-  document.getElementById('analyzingView').classList.remove('exiting');
-  document.getElementById('errorView').classList.add('visible');
-  document.getElementById('errorMsg').textContent = msg;
-}
-
-async function loadRecentCases() {
-  const list = document.getElementById('recentCasesList');
-  if (!list) return;
-  try {
-    const r = await fetch('/api/cases');
-    if (!r.ok) throw new Error('failed');
-    const items = await r.json();
-    if (!Array.isArray(items) || items.length === 0) {
-      list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">No cases yet.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    for (const item of items) {
-      const caseId = String(item.case_id || item.run_id || item.id || '').trim();
-      const ts = String(item.timestamp || item.created_at || '').trim();
-      const row = document.createElement('div');
-      row.className = 'case-item';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = caseId || '(unknown)';
-      btn.onclick = () => loadCaseResult(caseId);
-      const time = document.createElement('div');
-      time.className = 'case-time';
-      time.textContent = ts ? new Date(ts).toLocaleString() : '';
-      row.appendChild(btn);
-      row.appendChild(time);
-      list.appendChild(row);
-    }
-  } catch (_e) {
-    list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Could not load cases.</div>';
-  }
-}
-
-async function loadCaseResult(caseId) {
-  const id = String(caseId || '').trim();
-  if (!id) return;
-  try {
-    const r = await fetch(`/api/result/${encodeURIComponent(id)}`);
-    if (!r.ok) throw new Error('not found');
-    const d = await r.json();
-    if (evtSource) { try { evtSource.close(); } catch(_e) {} }
-    if (pollInterval) clearInterval(pollInterval);
-    showResults(d);
-  } catch (_e) {
-    showError('Could not load case result.');
-  }
-}
-
-function resetToInput() {
-  if (pollInterval) clearInterval(pollInterval);
-  if (evtSource) evtSource.close();
-  _freezeElapsedTimer();
-  _clearGoldenHourTicker();
-  closeRecoveryIntakeModal();
-  pendingIntakeSubmission = null;
-  activePreprocessPromise = null;
-  activePreprocessToken = 0;
-  document.getElementById('inputView').classList.remove('hidden');
-  document.getElementById('analyzingView').classList.remove('visible');
-  document.getElementById('analyzingView').classList.remove('exiting');
-  document.getElementById('resultsView').classList.remove('visible');
-  document.getElementById('resultsView').classList.remove('results-enter-prep', 'results-enter-active');
-  document.getElementById('errorView').classList.remove('visible');
-  document.getElementById('inputText').value = '';
-  selectedFile = null;
-  analysisStartMs = null;
-  dropzone.classList.remove('has-file');
-  document.getElementById('fileName').textContent = '';
-  loadRecentCases();
-}
-
-function closeRecoveryIntakeModal() {
-  const modal = document.getElementById('recoveryModal');
-  if (modal) modal.classList.add('hidden');
-  document.body.classList.remove('modal-open');
-}
-
-function _isApkSubmission(submission) {
-  const file = submission && submission.file ? submission.file : null;
-  if (!file) return false;
-  const name = String(file.name || '').toLowerCase();
-  const type = String(file.type || '').toLowerCase();
-  return name.endsWith('.apk') || type === 'application/vnd.android.package-archive';
-}
-
-function _parseAmount(value) {
-  const clean = String(value || '').replace(/[^0-9.]/g, '');
-  const amount = Number(clean);
-  if (!Number.isFinite(amount) || amount < 0) return 0;
-  return amount;
-}
-
-function openRecoveryIntakeModal(submission, intakeToken) {
-  const modal = document.getElementById('recoveryModal');
-  const content = document.getElementById('recoveryModalContent');
-  const sub = document.getElementById('recoveryModalSub');
-  if (!modal || !content) return;
-
-  pendingIntakeSubmission = submission;
-  modal.classList.remove('hidden');
-  document.body.classList.add('modal-open');
-
-  if (sub) sub.textContent = 'Answer a few quick questions while background analysis warms up.';
-
-  const isApk = _isApkSubmission(submission);
-
-  const state = {
-    loseMoney: null,
-    sharedBankDetails: null,
-    installedApk: null,
-    amountLost: 0,
-    timeBucket: 'hours',
-  };
-
-  const allSteps = [
-    {
-      id: 'loseMoney',
-      question: 'Did you lose money in this incident?',
-      type: 'choice',
-      key: 'loseMoney',
-      hint: 'This helps decide whether to trigger emergency reporting mode.',
-      options: [
-        { value: true, label: 'Yes, money was lost' },
-        { value: false, label: 'No financial loss' },
-      ],
-    },
-    {
-      id: 'sharedBankDetails',
-      question: 'Did you share OTP, UPI PIN, card details, or bank credentials?',
-      type: 'choice',
-      key: 'sharedBankDetails',
-      hint: 'Credential exposure changes urgency even without direct financial loss.',
-      options: [
-        { value: true, label: 'Yes, details were shared' },
-        { value: false, label: 'No credentials shared' },
-      ],
-    },
-    {
-      id: 'installedApk',
-      question: 'Did you install the APK on your phone?',
-      type: 'choice',
-      key: 'installedApk',
-      when: () => isApk,
-      hint: 'Installed APKs can escalate risk quickly.',
-      options: [
-        { value: true, label: 'Yes, installed' },
-        { value: false, label: 'No, not installed' },
-      ],
-    },
-    {
-      id: 'amountLost',
-      question: 'How much was lost (INR)?',
-      type: 'amount',
-      key: 'amountLost',
-      when: (s) => s.loseMoney === true,
-      hint: 'Approximate amount is enough.',
-    },
-    {
-      id: 'timeBucket',
-      question: 'When did this happen?',
-      type: 'choice',
-      key: 'timeBucket',
-      when: (s) => Boolean(s.loseMoney || s.sharedBankDetails || s.installedApk),
-      hint: 'Earlier reporting usually improves recovery odds.',
-      options: [
-        { value: 'minutes', label: 'Within minutes' },
-        { value: 'hours', label: 'Within hours' },
-        { value: 'days', label: 'More than a day ago' },
-      ],
-    },
-  ];
-
-  let stepIndex = 0;
-
-  const activeSteps = () => allSteps.filter((step) => !step.when || step.when(state));
-
-  const isValidForStep = (step) => {
-    if (!step) return false;
-    if (step.type === 'choice') {
-      return state[step.key] !== null && state[step.key] !== undefined && state[step.key] !== '';
-    }
-    if (step.type === 'amount') {
-      return Number.isFinite(Number(state.amountLost)) && Number(state.amountLost) >= 0;
-    }
-    return true;
-  };
-
-  const renderCurrentStep = () => {
-    const steps = activeSteps();
-    if (!steps.length) return;
-    if (stepIndex < 0) stepIndex = 0;
-    if (stepIndex >= steps.length) stepIndex = steps.length - 1;
-
-    const step = steps[stepIndex];
-    if (sub) sub.textContent = step.hint || 'Answer this to tailor your final response.';
-
-    let stepBody = '';
-    if (step.type === 'choice') {
-      stepBody = `<div class="intake-option-grid">${(step.options || []).map((opt) => {
-        const selected = state[step.key] === opt.value;
-        return `<button type="button" class="intake-option${selected ? ' selected' : ''}" data-role="option" data-value="${String(opt.value)}">${opt.label}</button>`;
-      }).join('')}</div>`;
-    } else if (step.type === 'amount') {
-      stepBody = `
-        <div class="recovery-field" style="margin-top:12px">
-          <input id="rmAmountSingle" type="text" inputmode="decimal" placeholder="e.g. 25000" value="${state.amountLost ? String(state.amountLost) : ''}">
-        </div>
-      `;
     }
 
-    const finalStep = stepIndex === steps.length - 1;
-    content.innerHTML = `
-      <div class="intake-progress">Question ${stepIndex + 1} of ${steps.length}</div>
-      <div class="intake-question">${step.question}</div>
-      ${stepBody}
-      <div class="intake-actions">
-        <button class="recovery-btn" id="rmCancel">Cancel</button>
-        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-          ${stepIndex > 0 ? '<button class="recovery-btn" id="rmBack">Back</button>' : ''}
-          <button class="recovery-btn primary" id="rmNext">${finalStep ? 'Start Analysis' : 'Next'}</button>
-        </div>
-      </div>
-    `;
-
-    const cancelBtn = document.getElementById('rmCancel');
-    if (cancelBtn) {
-      cancelBtn.onclick = () => {
-        pendingIntakeSubmission = null;
-        if (activePreprocessToken === intakeToken) {
-          activePreprocessPromise = null;
-          activePreprocessToken = 0;
-        }
-        closeRecoveryIntakeModal();
+    function createChat(title) {
+      const now = new Date().toISOString();
+      return {
+        id: 'chat_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+        title: title || 'New chat',
+        createdAt: now,
+        updatedAt: now,
+        messages: [],
       };
     }
 
-    const backBtn = document.getElementById('rmBack');
-    if (backBtn) {
-      backBtn.onclick = () => {
-        stepIndex = Math.max(0, stepIndex - 1);
-        renderCurrentStep();
-      };
+    function getActiveChat() {
+      return state.chats.find((c) => c.id === state.activeChatId) || null;
     }
 
-    if (step.type === 'choice') {
-      content.querySelectorAll('[data-role="option"]').forEach((btn) => {
+    function updateChat(chat) {
+      const idx = state.chats.findIndex((c) => c.id === chat.id);
+      if (idx >= 0) state.chats[idx] = chat;
+      chat.updatedAt = new Date().toISOString();
+      state.chats.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      saveChats();
+    }
+
+    function formatTime(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (_e) {
+        return '';
+      }
+    }
+
+    function textPreview(text, maxLen = 90) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (clean.length <= maxLen) return clean;
+      return clean.slice(0, maxLen - 1) + '...';
+    }
+
+    function makeTitleFromText(text) {
+      const src = String(text || '').toLowerCase();
+      if (src.includes('kyc')) return 'Suspicious KYC SMS';
+      if (src.includes('otp') && (src.includes('lost') || src.includes('debited'))) return 'OTP shared and money lost';
+      if (src.includes('upi') && src.includes('lost')) return 'UPI money lost case';
+      if (src.includes('lottery') || src.includes('prize')) return 'Lottery message check';
+      if (src.includes('bank')) return 'Bank message check';
+      const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 5).join(' ');
+      return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'New SATARK chat';
+    }
+
+    function sanitizeCitizenText(text) {
+      let out = String(text || '').trim();
+      if (!out) return out;
+      out = out.replace(/from your answers,?/ig, '').replace(/\s{2,}/g, ' ').trim();
+      out = out.replace(/\buser should\b/ig, 'you should');
+      return out;
+    }
+
+    function renderHistory() {
+      const host = document.getElementById('historyList');
+      host.innerHTML = '';
+      const query = state.search.toLowerCase().trim();
+      const items = state.chats.filter((chat) => {
+        if (!query) return true;
+        const blob = [chat.title, ...(chat.messages || []).map((m) => m.text || '')].join(' ').toLowerCase();
+        return blob.includes(query);
+      });
+
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'chat-item';
+        empty.innerHTML = '<p class="title">No chats found</p><p class="meta">Try another keyword.</p>';
+        host.appendChild(empty);
+        return;
+      }
+
+      for (const chat of items) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chat-item' + (chat.id === state.activeChatId ? ' active' : '');
+        const last = (chat.messages || []).slice(-1)[0];
+        btn.innerHTML = `
+          <p class="title">${escapeHtml(chat.title || 'Untitled')}</p>
+          <p class="meta">${escapeHtml(formatTime(chat.updatedAt || chat.createdAt))}</p>
+          <p class="snippet">${escapeHtml(textPreview(last ? last.text : 'No messages yet'))}</p>
+        `;
         btn.addEventListener('click', () => {
-          const raw = String(btn.getAttribute('data-value') || '');
-          let parsed = raw;
-          if (raw === 'true') parsed = true;
-          else if (raw === 'false') parsed = false;
-          state[step.key] = parsed;
-          renderCurrentStep();
+          state.activeChatId = chat.id;
+          closeSidebarOnMobile();
+          render();
         });
+        host.appendChild(btn);
+      }
+    }
+
+    function renderThread() {
+      const thread = document.getElementById('thread');
+      const chat = getActiveChat();
+      thread.innerHTML = '';
+      if (!chat || !chat.messages.length) {
+        const starter = document.createElement('div');
+        starter.className = 'starter';
+        starter.innerHTML = [
+          '<strong>Chat with SATARK AI</strong>',
+          'Paste suspicious text, attach evidence, or dictate by mic.',
+          'You will get one clear response with simple explanation and practical steps.',
+        ].join('<br>');
+        thread.appendChild(starter);
+        return;
+      }
+
+      for (const msg of chat.messages) {
+        const row = document.createElement('div');
+        row.className = 'msg ' + (msg.role === 'user' ? 'user' : 'bot');
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (msg.role === 'user' ? 'user' : 'bot');
+
+        const head = document.createElement('div');
+        head.className = 'bubble-head';
+        const label = msg.role === 'user' ? state.profile.name : 'SATARK AI';
+        head.innerHTML = `<span>${escapeHtml(label)}</span><span>${escapeHtml(formatTime(msg.ts))}</span>`;
+
+        const body = document.createElement('div');
+        body.className = 'bubble-body';
+        const text = sanitizeCitizenText(msg.text || '');
+        body.innerHTML = text ? `<p>${escapeHtml(text)}</p>` : '<p>(No text)</p>';
+
+        if (msg.role === 'assistant' && Array.isArray(msg.steps) && msg.steps.length) {
+          const list = document.createElement('ol');
+          list.className = 'assistant-steps';
+          for (const step of msg.steps.slice(0, 4)) {
+            const li = document.createElement('li');
+            li.textContent = sanitizeCitizenText(step);
+            list.appendChild(li);
+          }
+          body.appendChild(list);
+        }
+
+        if (msg.role === 'assistant' && Array.isArray(msg.flags) && msg.flags.length) {
+          const flags = document.createElement('div');
+          flags.className = 'assistant-flags';
+          for (const f of msg.flags) {
+            const item = document.createElement('span');
+            item.className = 'flag ' + (f.level || 'warn');
+            item.textContent = f.text;
+            flags.appendChild(item);
+          }
+          body.appendChild(flags);
+        }
+
+        bubble.appendChild(head);
+        bubble.appendChild(body);
+        row.appendChild(bubble);
+        thread.appendChild(row);
+      }
+
+      requestAnimationFrame(() => {
+        const wrap = document.getElementById('threadWrap');
+        wrap.scrollTop = wrap.scrollHeight;
       });
     }
 
-    if (step.type === 'amount') {
-      const amountInput = document.getElementById('rmAmountSingle');
-      if (amountInput) {
-        amountInput.addEventListener('input', () => {
-          state.amountLost = _parseAmount(amountInput.value || '');
-        });
+    function renderAgentStrip() {
+      const strip = document.getElementById('agentStrip');
+      strip.innerHTML = '';
+      const keys = Object.keys(state.agentStatus);
+      if (!state.isProcessing || !keys.length) {
+        strip.style.display = 'none';
+        return;
+      }
+
+      strip.style.display = 'flex';
+      for (const name of AGENT_ORDER) {
+        if (!state.agentStatus[name]) continue;
+        const s = state.agentStatus[name];
+        const chip = document.createElement('div');
+        chip.className = 'agent-chip ' + (s.state || 'idle');
+        const label = name.replaceAll('_', ' ');
+        chip.innerHTML = `<span class="agent-dot"></span><span>${escapeHtml(label)}: ${escapeHtml(s.label || s.state)}</span>`;
+        strip.appendChild(chip);
       }
     }
 
-    const nextBtn = document.getElementById('rmNext');
-    if (nextBtn) {
-      nextBtn.disabled = !isValidForStep(step);
-      nextBtn.onclick = async () => {
-        if (!isValidForStep(step)) return;
-        const freshSteps = activeSteps();
-        const isLast = stepIndex >= freshSteps.length - 1;
-        if (!isLast) {
-          stepIndex += 1;
-          renderCurrentStep();
-          return;
-        }
+    function renderProfile() {
+      document.getElementById('profileName').textContent = state.profile.name;
+      document.getElementById('profileEmail').textContent = state.profile.email || 'Not signed in';
+      document.getElementById('signInBtn').style.display = state.profile.connected ? 'none' : 'inline-block';
+      document.getElementById('logoutBtn').style.display = state.profile.connected ? 'inline-block' : 'none';
+    }
 
-        const recoveryAnswers = {
-          did_lose_money: Boolean(state.loseMoney),
-          shared_bank_details: Boolean(state.sharedBankDetails),
-          installed_apk: Boolean(state.installedApk),
-          amount_lost: Number(state.amountLost || 0),
-          time_bucket: state.timeBucket || 'hours',
-          explicit_report_request: Boolean(state.loseMoney || state.sharedBankDetails || state.installedApk),
-        };
+    function renderAttachment() {
+      const slot = document.getElementById('attachmentSlot');
+      slot.innerHTML = '';
+      if (!state.selectedFile) return;
+      const pill = document.createElement('div');
+      pill.className = 'attachment-pill';
+      pill.innerHTML = `<span>${escapeHtml(state.selectedFile.name)} (${Math.round(state.selectedFile.size / 1024)} KB)</span>`;
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.textContent = 'Remove';
+      clear.addEventListener('click', () => {
+        state.selectedFile = null;
+        renderAttachment();
+      });
+      pill.appendChild(clear);
+      slot.appendChild(pill);
+    }
 
-        const requestPayload = pendingIntakeSubmission;
-        pendingIntakeSubmission = null;
-        closeRecoveryIntakeModal();
+    function renderMode() {
+      const text = state.analystMode ? 'Analyst View' : 'Citizen View';
+      document.getElementById('modePill').textContent = text;
+      document.getElementById('leftModePill').textContent = state.analystMode ? 'Analyst' : 'Citizen';
+      const drawerToggle = document.getElementById('drawerToggle');
+      drawerToggle.style.display = state.analystMode ? 'inline-block' : 'none';
+      if (!state.analystMode) {
+        document.getElementById('analystDrawer').classList.remove('visible');
+        state.drawerOpen = false;
+      }
+    }
 
-        if (!requestPayload) return;
-        await _startAnalyzeRequest(requestPayload, recoveryAnswers, intakeToken);
+    function renderAnalystDrawer() {
+      if (!state.analystMode) return;
+      const el = document.getElementById('analystJson');
+      el.textContent = state.latestPayload ? JSON.stringify(state.latestPayload, null, 2) : 'No run yet.';
+    }
+
+    function render() {
+      renderProfile();
+      renderMode();
+      renderHistory();
+      renderThread();
+      renderAgentStrip();
+      renderAttachment();
+      renderAnalystDrawer();
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setAgentState(agent, stateName, label) {
+      if (!agent) return;
+      state.agentStatus[agent] = {
+        state: stateName,
+        label: label || stateName,
+      };
+      renderAgentStrip();
+    }
+
+    function addMessage(role, text, extra = {}) {
+      const chat = getActiveChat();
+      if (!chat) return;
+      chat.messages.push({
+        role,
+        text: sanitizeCitizenText(text),
+        ts: new Date().toISOString(),
+        steps: extra.steps || null,
+        flags: extra.flags || null,
+        runId: extra.runId || null,
+      });
+      if (chat.messages.length === 1 && role === 'user') {
+        chat.title = makeTitleFromText(text);
+      }
+      updateChat(chat);
+      render();
+    }
+
+    async function fileToDataUrl(file) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function closeStreamAndPoll() {
+      if (state.evtSource) {
+        try { state.evtSource.close(); } catch (_e) {}
+        state.evtSource = null;
+      }
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+    }
+
+    function buildAssistantPayload(result) {
+      const cleanSummary = sanitizeCitizenText(result.summary || result.conversational_reply || 'Analysis complete.');
+      const cleanReply = sanitizeCitizenText(result.conversational_reply || result.summary || 'Please review the action steps below.');
+      const recommended = Array.isArray(result.recommended_actions) ? result.recommended_actions : [];
+      const steps = recommended.map((x) => sanitizeCitizenText(String(x || '').trim())).filter(Boolean).slice(0, 4);
+
+      const flags = [];
+      if (result.requires_emergency) flags.push({ text: 'Act now', level: 'danger' });
+      if (result.requires_reporting) flags.push({ text: 'Report guidance', level: 'warn' });
+      if (result.requires_financial_blocking || result.requires_account_block) flags.push({ text: 'Protect accounts', level: 'warn' });
+
+      const reason = result.reporting_recommendation && result.reporting_recommendation.reason
+        ? sanitizeCitizenText(result.reporting_recommendation.reason)
+        : '';
+
+      let text = cleanSummary;
+      if (cleanReply && cleanReply !== cleanSummary) {
+        text += '\n\n' + cleanReply;
+      }
+      if (reason && result.requires_reporting) {
+        text += '\n\n' + reason;
+      }
+
+      return { text, steps, flags };
+    }
+
+    function startStream(runId) {
+      closeStreamAndPoll();
+      state.agentStatus = {};
+      renderAgentStrip();
+
+      const src = new EventSource('/api/stream/' + encodeURIComponent(runId));
+      state.evtSource = src;
+
+      src.addEventListener('run.classified', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const selected = Array.isArray(data.selected_agents) ? data.selected_agents : [];
+          setAgentState('manager', 'running', 'starting');
+          for (const name of selected) setAgentState(String(name || ''), 'running', 'queued');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('agent.started', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const agent = String(data.agent || '').trim();
+          if (agent) setAgentState(agent, 'running', 'running');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('agent.completed', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const agent = String(data.agent || '').trim();
+          if (!agent) return;
+          const status = String(data.status || 'done').toLowerCase();
+          if (status === 'failed') setAgentState(agent, 'failed', 'failed');
+          else if (status === 'skipped') setAgentState(agent, 'done', 'skipped');
+          else setAgentState(agent, 'done', 'done');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('run.failed', () => {
+        state.isProcessing = false;
+        render();
+        closeStreamAndPoll();
+      });
+
+      src.onerror = () => {
+        try { src.close(); } catch (_e) {}
       };
     }
-  };
 
-  renderCurrentStep();
-}
+    async function waitForResult(runId) {
+      return await new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 90;
+        state.pollTimer = setInterval(async () => {
+          attempts += 1;
+          if (attempts > maxAttempts) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            reject(new Error('Analysis timed out'));
+            return;
+          }
 
-// ── RENDER RESULTS ──
-function showResults(data) {
-  _freezeElapsedTimer();
-  const analyzingView = document.getElementById('analyzingView');
-  const resultsView = document.getElementById('resultsView');
-
-  const revealResults = () => {
-    resultsView.classList.add('visible', 'results-enter-prep');
-    renderResults(data);
-    requestAnimationFrame(() => {
-      resultsView.classList.add('results-enter-active');
-    });
-    _animateResultCards();
-  };
-
-  if (analyzingView.classList.contains('visible')) {
-    analyzingView.classList.add('exiting');
-    setTimeout(() => {
-      analyzingView.classList.remove('visible', 'exiting');
-      revealResults();
-    }, 300);
-  } else {
-    revealResults();
-  }
-}
-
-function renderResults(d) {
-  lastResultData = d;
-  const follow = (d.follow_up_actions && typeof d.follow_up_actions === 'object') ? d.follow_up_actions : {};
-  const rawCal = (d.raw && typeof d.raw === 'object' && d.raw.calendar_event && typeof d.raw.calendar_event === 'object') ? d.raw.calendar_event : {};
-
-  const caseId = String(d.case_id || d.acknowledgment_id || '').trim();
-  document.getElementById('resultCaseId').textContent = caseId ? `CASE ID: ${caseId}` : '';
-
-  const ts = (d.timestamps && typeof d.timestamps === 'object') ? d.timestamps : {};
-  const completedAt = ts.completed_at ? new Date(String(ts.completed_at)) : null;
-  const createdAt = ts.created_at ? new Date(String(ts.created_at)) : null;
-  const baseTs = (completedAt && !Number.isNaN(completedAt.getTime())) ? completedAt : ((createdAt && !Number.isNaN(createdAt.getTime())) ? createdAt : new Date());
-  const isoTs = baseTs.toISOString();
-  document.getElementById('resultTimestamp').textContent = `TIMESTAMP: ${isoTs}`;
-
-  const responseMode = String(d.response_mode || '').trim().toLowerCase();
-  const reportingRecommendation = (d.reporting_recommendation && typeof d.reporting_recommendation === 'object') ? d.reporting_recommendation : {};
-  const reportingReason = String(reportingRecommendation.reason || '').trim();
-  const hasReportingRationale = reportingReason.length > 0;
-  const requiresReporting = d.requires_reporting === true && hasReportingRationale;
-  const shouldReportNow = requiresReporting && reportingRecommendation.should_report_now === true;
-  const requiresEmergency = d.requires_emergency === true;
-  const presentationSections = (d.presentation_sections && typeof d.presentation_sections === 'object') ? d.presentation_sections : {};
-  const statusLine = String(presentationSections.status_line || d.golden_hour_message || 'Status updated.').trim();
-  const evidenceSectionTitle = document.getElementById('evidenceSectionTitle');
-  const primaryActionsTitle = document.getElementById('primaryActionsTitle');
-  if (evidenceSectionTitle) evidenceSectionTitle.textContent = String(presentationSections.evidence_title || 'Evidence');
-  if (primaryActionsTitle) primaryActionsTitle.textContent = String(presentationSections.actions_title || presentationSections.primary_actions_title || 'Action Steps');
-
-  // Golden Hour (ticker)
-  const ghActive = (String(d.golden_hour_status || '').toUpperCase() === 'ACTIVE') || d.golden_hour_active === true;
-  const startForWindow = (createdAt && !Number.isNaN(createdAt.getTime())) ? createdAt : new Date();
-  const reportLine = document.getElementById('reportWindowLine');
-  const bar = document.getElementById('goldenHourBar');
-  const ghTrack = document.querySelector('.gh-bar-track');
-
-  if (!requiresEmergency || !ghActive) {
-    _clearGoldenHourTicker();
-    if (reportLine) {
-      reportLine.textContent = statusLine;
-    }
-    if (bar) bar.style.width = '0%';
-    if (ghTrack) ghTrack.classList.add('hidden');
-  } else {
-    if (ghTrack) ghTrack.classList.remove('hidden');
-    _startGoldenHourTicker(ghActive, startForWindow, statusLine);
-  }
-
-  // Integrations (Calendar/Tasks/Docs links)
-  const integrations = document.getElementById('sectionIntegrations');
-  const linkCalendar = document.getElementById('linkCalendar');
-  const linkTasks = document.getElementById('linkTasks');
-  const linkGmail = document.getElementById('linkGmail');
-  const linkDoc = document.getElementById('linkDoc');
-
-  const raw = (d.raw && typeof d.raw === 'object') ? d.raw : {};
-  const calCreated = follow.calendar_event_created === true || rawCal.created === true;
-  const calUrl = String(
-    follow.calendar_deep_link
-    || follow.calendar_url
-    || rawCal.deep_link
-    || rawCal.event_url
-    || rawCal.html_link
-    || rawCal.url
-    || integrationLinks.google_calendar
-    || ''
-  ).trim();
-
-  const rawTasks = (raw.google_tasks && typeof raw.google_tasks === 'object') ? raw.google_tasks : {};
-  const rawDoc = (raw.case_report_doc && typeof raw.case_report_doc === 'object') ? raw.case_report_doc : {};
-  const rawGmail = (raw.gmail_draft && typeof raw.gmail_draft === 'object') ? raw.gmail_draft : {};
-
-  const tasksCreated = follow.task_created === true || rawTasks.created === true;
-  const taskUrl = String(follow.task_deep_link || follow.task_url || rawTasks.task_url || rawTasks.deep_link || rawTasks.url || integrationLinks.google_tasks || '').trim();
-  const docCreated = follow.doc_created === true || rawDoc.created === true;
-  const docUrl = String(follow.doc_deep_link || follow.doc_url || rawDoc.doc_url || rawDoc.deep_link || rawDoc.url || integrationLinks.google_docs || '').trim();
-  const gmailCreated = follow.gmail_draft_created === true || rawGmail.created === true;
-  const gmailUrl = String(follow.gmail_draft_url || rawGmail.draft_url || rawGmail.deep_link || rawGmail.url || integrationLinks.google_gmail || '').trim();
-
-  const isRealUrl = (u) => /^https?:\/\//i.test(String(u || '').trim());
-
-  if (calUrl) _upsertIntegrationLink('google_calendar', calUrl);
-  if (taskUrl) _upsertIntegrationLink('google_tasks', taskUrl);
-  if (gmailUrl) _upsertIntegrationLink('google_gmail', gmailUrl);
-  if (docUrl) _upsertIntegrationLink('google_docs', docUrl);
-
-  let any = false;
-  if (linkCalendar) {
-    if (isRealUrl(calUrl)) linkCalendar.href = calUrl;
-    if (calCreated && isRealUrl(calUrl)) { linkCalendar.classList.remove('hidden'); any = true; }
-    else linkCalendar.classList.add('hidden');
-  }
-  if (linkTasks) {
-    if (isRealUrl(taskUrl)) linkTasks.href = taskUrl;
-    if (tasksCreated && isRealUrl(taskUrl)) { linkTasks.classList.remove('hidden'); any = true; }
-    else linkTasks.classList.add('hidden');
-  }
-  if (linkGmail) {
-    if (isRealUrl(gmailUrl)) linkGmail.href = gmailUrl;
-    if (gmailCreated && isRealUrl(gmailUrl)) { linkGmail.classList.remove('hidden'); any = true; }
-    else linkGmail.classList.add('hidden');
-  }
-  if (linkDoc) {
-    if (docCreated && isRealUrl(docUrl)) {
-      linkDoc.href = docUrl;
-      linkDoc.classList.remove('hidden');
-      any = true;
-    } else {
-      linkDoc.classList.add('hidden');
-    }
-  }
-
-  if (integrations) {
-    integrations.classList.toggle('open', any);
-    integrations.classList.toggle('hidden', !any);
-  }
-
-  // ASSESSMENT
-  const riskRaw = String(d.risk_level || 'UNKNOWN').toUpperCase();
-  const risk = riskRaw === 'SAFE' ? 'LOW' : riskRaw;
-  const scamType = String(d.category || d.scam_type || 'Unknown').trim() || 'Unknown';
-  const verdict = String(d.verdict || '').trim() || '—';
-  const summary = String(d.summary || '').trim();
-  const conf = Number(d.confidence);
-  const riskScore = Number.isFinite(conf) ? (Math.max(0, Math.min(conf, 100)) / 100).toFixed(2) : '—';
-  const sim = Number(d.similar_cases);
-  const corpus = Number(d.intel_corpus_size);
-  const typeCount = Number(d.intel_type_count);
-  const intelType = String(d.intel_type || '').trim();
-
-  const conversationReply = String(
-    d.conversational_reply
-    || ((d.response_sections && typeof d.response_sections === 'object') ? d.response_sections.overview : '')
-    || d.summary
-    || ''
-  ).trim() || 'Analysis complete.';
-  const toneChip = document.getElementById('toneChip');
-  const conversationMeta = document.getElementById('conversationMeta');
-  const conversationReplyEl = document.getElementById('conversationReply');
-  if (toneChip) {
-    toneChip.classList.remove('alert', 'safe');
-    if (requiresEmergency) {
-      toneChip.textContent = 'URGENT';
-      toneChip.classList.add('alert');
-    } else if (shouldReportNow) {
-      toneChip.textContent = 'ACTION';
-    } else {
-      toneChip.textContent = 'GUIDE';
-      toneChip.classList.add('safe');
-    }
-  }
-  if (conversationMeta) {
-    const confLabel = Number.isFinite(conf) ? `${Math.round(conf)}% confidence` : 'confidence unavailable';
-    conversationMeta.textContent = `${scamType} • ${confLabel}`;
-  }
-  if (conversationReplyEl) conversationReplyEl.textContent = conversationReply;
-
-  const metricConf = document.getElementById('metricConfidence');
-  const metricSim = document.getElementById('metricSimilar');
-  if (metricConf) metricConf.textContent = '0';
-  if (metricSim) metricSim.textContent = '0';
-  if (metricConf && Number.isFinite(conf)) {
-    _animateNumber(metricConf, Math.round(Math.max(0, Math.min(conf, 100))), 600);
-  }
-  if (metricSim && Number.isFinite(sim)) {
-    _animateNumber(metricSim, Math.max(0, Math.round(sim)), 400);
-  }
-
-  const assessment = document.getElementById('assessmentBlock');
-  const assessmentLines = [];
-  assessmentLines.push('ANALYSIS SNAPSHOT');
-  if (caseId) assessmentLines.push(`Case ID: ${escHtml(caseId)}`);
-  assessmentLines.push(`Timestamp: ${escHtml(isoTs)}`);
-  assessmentLines.push(`<span class="risk-line">Risk level: ${escHtml(risk)} [${escHtml(riskScore)}]</span>`);
-  assessmentLines.push(`Verdict: ${escHtml(verdict)}`);
-  assessmentLines.push(`Category: ${escHtml(scamType)}`);
-  if (Number.isFinite(conf)) assessmentLines.push(`Confidence: ${escHtml(String(Math.round(conf)))}%`);
-  if (Number.isFinite(sim)) {
-    const parts = [];
-    if (Number.isFinite(corpus) && corpus > 0) parts.push(`corpus=${Math.round(corpus)}`);
-    if (Number.isFinite(typeCount) && typeCount > 0) parts.push(`type=${Math.round(typeCount)}`);
-    if (intelType) parts.push(`class=${escHtml(intelType)}`);
-    assessmentLines.push(`Similar cases: ${escHtml(String(Math.round(sim)))}${parts.length ? ' (' + parts.join(' ') + ')' : ''}`);
-  }
-  if (summary) {
-    assessmentLines.push('');
-    assessmentLines.push('Summary:');
-    assessmentLines.push(escHtml(summary));
-  }
-  assessment.innerHTML = assessmentLines.join('\n');
-
-  // Evidence (ranked by row order)
-  const evidenceBody = document.getElementById('evidenceBody');
-  const evidenceRows = [];
-  const modelEvidence = Array.isArray(d.evidence) ? d.evidence : [];
-  for (const ev of modelEvidence.slice(0, 20)) {
-    if (!ev || typeof ev !== 'object') continue;
-    const label = String(ev.label || ev.indicator || '').trim();
-    const detail = String(ev.detail || ev.reason || '').trim();
-    if (!label) continue;
-    const confidenceRaw = Number(ev.confidence);
-    const weightRaw = Number(ev.weight);
-    const conf01 = Number.isFinite(confidenceRaw)
-      ? (confidenceRaw > 1 ? (Math.max(0, Math.min(confidenceRaw, 100)) / 100).toFixed(2) : Math.max(0, Math.min(confidenceRaw, 1)).toFixed(2))
-      : '—';
-    const weight = Number.isFinite(weightRaw) ? String(Math.round(weightRaw)) : '—';
-    evidenceRows.push({ indicator: detail ? `${label} — ${detail}` : label, confidence: conf01, weight });
-  }
-  const matches = Array.isArray(d.pattern_matches) ? d.pattern_matches : [];
-  if (!evidenceRows.length) {
-    for (const m of matches.slice(0, 5)) {
-      const label = String(m.scam_type || m.sub_type || 'Pattern match').trim() || 'Pattern match';
-      const score = Number(m.score);
-      const conf01 = Number.isFinite(score) ? (Math.max(0, Math.min(score, 100)) / 100).toFixed(2) : '—';
-      const weight = Number.isFinite(score) ? String(Math.round(score)) : '—';
-      evidenceRows.push({ indicator: `PATTERN: ${label}`, confidence: conf01, weight });
-    }
-  }
-  const flags = dedup([].concat(d.signals_found || [], (d.osint && d.osint.red_flags) ? d.osint.red_flags : []));
-  if (!evidenceRows.length) {
-    for (const f of flags.slice(0, 8)) {
-      evidenceRows.push({ indicator: String(f), confidence: '—', weight: '—' });
-    }
-  }
-  if (!evidenceRows.length) {
-    evidenceRows.push({ indicator: 'No evidence rows returned.', confidence: '—', weight: '—' });
-  }
-  evidenceBody.innerHTML = evidenceRows
-    .map(r => `
-      <tr>
-        <td>${escHtml(r.indicator)}</td>
-        <td class="muted">${escHtml(r.confidence)}</td>
-        <td class="muted">${escHtml(r.weight)}</td>
-      </tr>`)
-    .join('');
-
-  // Action steps
-  const responseSections = (d.response_sections && typeof d.response_sections === 'object') ? d.response_sections : {};
-  const actions = dedup([].concat(d.action_steps || [], d.recommended_actions || [], responseSections.next_steps || []))
-    .map(a => String(a || '').replace(/^STANDBY:\s*/i, '').replace(/^ACTIVE:\s*/i, '').trim())
-    .filter(Boolean);
-  const actionsList = document.getElementById('actionsList');
-  const reportingQuickLinks = document.getElementById('reportingQuickLinks');
-  if (actions.length) {
-    actionsList.innerHTML = actions.map(a => `<li>${escHtml(a)}</li>`).join('');
-  } else {
-    actionsList.innerHTML = '<li>No action steps returned by the model.</li>';
-  }
-  if (reportingQuickLinks) reportingQuickLinks.classList.toggle('hidden', !requiresReporting);
-
-  // OSINT
-  const osint = (d.osint && typeof d.osint === 'object') ? d.osint : {};
-  const entities = (d.entities && typeof d.entities === 'object') ? d.entities : {};
-  const osintSummary = String(osint.threat_summary || '').trim();
-  const hasOsint = osintSummary || (entities.domains && entities.domains.length) || (entities.urls && entities.urls.length) || (entities.phone_numbers && entities.phone_numbers.length);
-  if (hasOsint) {
-    document.getElementById('sectionOsint').classList.add('open');
-    document.getElementById('osintSummary').textContent = osintSummary || 'Infrastructure analysis complete.';
-    const grid = document.getElementById('osintGrid');
-    const gridItems = [];
-    if (entities.domains && entities.domains.length) gridItems.push({k:'Domains',v:entities.domains.join(', '),cls:''});
-    if (entities.urls && entities.urls.length) gridItems.push({k:'URLs',v:entities.urls[0],cls:''});
-    if (entities.phone_numbers && entities.phone_numbers.length) gridItems.push({k:'Phone',v:entities.phone_numbers[0],cls:''});
-    const score = Number(osint.overall_threat_score || 0);
-    if (Number.isFinite(score) && score > 0) gridItems.push({k:'Threat Score',v:Math.round(score) + '/100',cls:''});
-    grid.innerHTML = gridItems.map(({k,v,cls}) =>
-      `<div class="osint-item"><div class="osint-key">${escHtml(k)}</div><div class="osint-val ${cls}">${escHtml(v)}</div></div>`
-    ).join('');
-  } else {
-    document.getElementById('sectionOsint').classList.remove('open');
-  }
-
-  // FIR
-  let fir = '';
-  if (requiresReporting && d.complaint_draft && typeof d.complaint_draft === 'object') {
-    fir = String(d.complaint_draft.body || '').trim();
-  } else if (requiresReporting && typeof d.complaint_draft === 'string') {
-    fir = String(d.complaint_draft || '').trim();
-  }
-
-  firContent = fir;
-  const firBox = document.getElementById('firBox');
-  const firSection = document.getElementById('sectionFir');
-  if (requiresReporting && fir && fir.length > 30) {
-    firBox.textContent = fir;
-    if (firSection) firSection.classList.add('open');
-  } else if (requiresReporting) {
-    firBox.textContent = 'Complaint draft was not returned by the model.';
-    if (firSection) firSection.classList.add('open');
-  } else {
-    firBox.textContent = 'Reporting draft not required for this case.';
-  }
-
-  const emergencyFooter = document.querySelector('.emergency-footer');
-  if (firSection) firSection.classList.toggle('hidden', !requiresReporting);
-  if (emergencyFooter) emergencyFooter.classList.toggle('hidden', !requiresEmergency);
-
-  const done = document.getElementById('analysisCompleteLine');
-  const ms = (typeof analysisStartMs === 'number') ? (Date.now() - analysisStartMs) : null;
-  done.textContent = (ms && ms > 0) ? `ANALYSIS COMPLETE · ${ms} ms` : 'ANALYSIS COMPLETE';
-}
-
-function _animateNumber(el, target, durationMs) {
-  const end = Math.max(0, Number(target || 0));
-  const duration = Math.max(100, Number(durationMs || 400));
-  const started = performance.now();
-  const tick = (now) => {
-    const t = Math.min(1, (now - started) / duration);
-    const eased = 1 - Math.pow(1 - t, 3);
-    el.textContent = String(Math.round(end * eased));
-    if (t < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
-function _startGoldenHourTicker(isActive, startForWindow, statusLine) {
-  _clearGoldenHourTicker();
-  const reportEl = document.getElementById('reportWindowLine');
-  const bar = document.getElementById('goldenHourBar');
-  const reportWindow = document.querySelector('.report-window');
-  if (!reportEl || !bar || !reportWindow) return;
-
-  const startedAt = (startForWindow instanceof Date && !Number.isNaN(startForWindow.getTime())) ? startForWindow : new Date();
-  const expiry = new Date(startedAt.getTime() + 60 * 60 * 1000);
-
-  const renderTick = () => {
-    const now = Date.now();
-    const remainingMs = expiry.getTime() - now;
-    const remainingMin = Math.max(0, Math.ceil(remainingMs / 60000));
-    const pct = Math.max(0, Math.min(100, (remainingMs / (60 * 60 * 1000)) * 100));
-    bar.style.width = `${pct}%`;
-
-    let expiresLabel = '';
-    try {
-      const t = expiry.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-      expiresLabel = `${t} IST`;
-    } catch (_e) {
-      expiresLabel = expiry.toISOString();
+          try {
+            const res = await fetch('/api/result/' + encodeURIComponent(runId));
+            if (res.status === 202) return;
+            if (!res.ok) throw new Error('Could not fetch result');
+            const data = await res.json();
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            resolve(data);
+          } catch (err) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            reject(err);
+          }
+        }, 1800);
+      });
     }
 
-    reportWindow.classList.toggle('gh-critical', isActive && remainingMin > 0 && remainingMin < 10);
+    async function sendMessage() {
+      if (state.isProcessing) return;
+      const input = document.getElementById('composerInput');
+      const text = String(input.value || '').trim();
+      if (!text && !state.selectedFile) {
+        input.focus();
+        return;
+      }
 
-    if (isActive && remainingMin > 0) {
-      const base = String(statusLine || 'Emergency response window active.').trim();
-      reportEl.textContent = `${base} (${remainingMin} min left, expires ${expiresLabel})`;
-    } else if (isActive) {
-      reportEl.textContent = String(statusLine || 'Emergency response window expired.').trim();
-    } else {
-      reportEl.textContent = String(statusLine || 'Response window inactive.').trim();
+      if (!getActiveChat()) {
+        const chat = createChat('New SATARK chat');
+        state.chats.unshift(chat);
+        state.activeChatId = chat.id;
+      }
+
+      addMessage('user', text || '(Sent file evidence)');
+      input.value = '';
+      renderAttachment();
+      state.isProcessing = true;
+      document.getElementById('composerHint').textContent = 'SATARK is working...';
+      renderAgentStrip();
+
+      try {
+        const files = [];
+        if (state.selectedFile) {
+          const dataUrl = await fileToDataUrl(state.selectedFile);
+          files.push({
+            file_name: state.selectedFile.name,
+            file_type: state.selectedFile.type || 'application/octet-stream',
+            content_base64: dataUrl,
+          });
+        }
+
+        const payload = {
+          session_id: getSessionId(),
+          user_input: {
+            text,
+            files,
+          },
+          user_context: {
+            channel: 'web-ui',
+            locale: navigator.language || 'en-IN',
+          },
+          options: {
+            stream: true,
+            generate_report: true,
+            trigger_mcp_actions: false,
+          },
+        };
+
+        const analyzeRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!analyzeRes.ok) {
+          throw new Error('Could not start analysis');
+        }
+
+        const ack = await analyzeRes.json();
+        const runId = String(ack.run_id || '').trim();
+        if (!runId) throw new Error('Missing run id');
+        state.currentRunId = runId;
+        startStream(runId);
+
+        const result = await waitForResult(runId);
+        state.latestPayload = result;
+
+        const assistant = buildAssistantPayload(result || {});
+        addMessage('assistant', assistant.text, {
+          steps: assistant.steps,
+          flags: assistant.flags,
+          runId,
+        });
+
+        const chat = getActiveChat();
+        if (chat && chat.messages.length >= 2) {
+          const firstUser = chat.messages.find((m) => m.role === 'user');
+          if (firstUser) {
+            chat.title = makeTitleFromText(firstUser.text);
+            updateChat(chat);
+          }
+        }
+
+        state.selectedFile = null;
+      } catch (_err) {
+        addMessage('assistant', 'I could not finish this request right now. Please try again in a moment.');
+      } finally {
+        state.isProcessing = false;
+        document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        closeStreamAndPoll();
+        render();
+      }
     }
-  };
 
-  renderTick();
-  goldenHourInterval = setInterval(renderTick, 1000);
-}
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/status');
+        const data = await res.json();
+        state.profile.connected = !!data.connected;
+        state.profile.email = data.email || null;
+        state.profile.name = toFriendlyName(state.profile.email);
+      } catch (_e) {
+        state.profile.connected = false;
+        state.profile.email = null;
+        state.profile.name = 'Guest';
+      }
+    }
 
-// ── SECTION TOGGLE ──
-function toggleSection(id) {
-  document.getElementById(id).classList.toggle('open');
-}
+    function setupMic() {
+      const micBtn = document.getElementById('micBtn');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-// ── FIR ACTIONS ──
-function copyFir() {
-  navigator.clipboard.writeText(firContent).then(() => {
-    const btn = document.querySelector('.fir-btn.primary');
-    const orig = btn.textContent;
-    btn.textContent = 'Copied';
-    setTimeout(() => btn.textContent = orig, 2000);
-  });
-}
-function downloadFir() {
-  const b = new Blob([firContent], {type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = 'satark-ncrp-complaint.txt';
-  a.click();
-}
+      if (SpeechRecognition) {
+        const recog = new SpeechRecognition();
+        recog.lang = navigator.language || 'en-IN';
+        recog.interimResults = true;
+        recog.maxAlternatives = 1;
+        recog.continuous = false;
+        state.speechRec = recog;
 
-// ── UTILS ──
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function dedup(arr) {
-  const out = new Map();
-  for (const raw of Array.isArray(arr) ? arr : []) {
-    const x = String(raw || '');
-    const k = x.replace(/^(STANDBY|ACTIVE):\s*/i,'').toLowerCase().trim();
-    if (!k) continue;
-    if (!out.has(k)) out.set(k, x);
-  }
-  return [...out.values()];
-}
+        recog.onresult = (event) => {
+          const textarea = document.getElementById('composerInput');
+          let finalText = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            finalText += event.results[i][0].transcript;
+          }
+          textarea.value = (textarea.value + ' ' + finalText).replace(/\s+/g, ' ').trim();
+        };
 
-// ── INIT ──
-(async () => {
-  getSessionId();
-  await checkAuth();
-  loadRecentCases();
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('google') === 'connected') {
-    window.history.replaceState({}, '', '/ui');
-    await checkAuth();
-    loadRecentCases();
-  }
-})();
-</script>
+        recog.onstart = () => {
+          state.recording = true;
+          micBtn.classList.add('active');
+          document.getElementById('composerHint').textContent = 'Listening... Speak now';
+        };
+
+        recog.onend = () => {
+          state.recording = false;
+          micBtn.classList.remove('active');
+          document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        };
+
+        micBtn.addEventListener('click', () => {
+          if (state.recording) {
+            recog.stop();
+            return;
+          }
+          recog.start();
+        });
+        return;
+      }
+
+      // Backend-ready path for Google Cloud Speech streaming.
+      micBtn.addEventListener('click', async () => {
+        if (state.recording && state.mediaRecorder) {
+          state.mediaRecorder.stop();
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(stream);
+          state.mediaChunks = [];
+          state.mediaRecorder = recorder;
+          recorder.ondataavailable = (evt) => {
+            if (evt.data && evt.data.size > 0) state.mediaChunks.push(evt.data);
+          };
+          recorder.onstart = () => {
+            state.recording = true;
+            micBtn.classList.add('active');
+            document.getElementById('composerHint').textContent = 'Recording... click Mic to stop';
+          };
+          recorder.onstop = async () => {
+            state.recording = false;
+            micBtn.classList.remove('active');
+            document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+            const blob = new Blob(state.mediaChunks, { type: 'audio/webm' });
+            // Placeholder for server endpoint: POST blob to backend for Google Cloud STT.
+            console.info('Audio captured for backend STT path', blob.size);
+            stream.getTracks().forEach((t) => t.stop());
+          };
+          recorder.start();
+        } catch (_e) {
+          document.getElementById('composerHint').textContent = 'Mic access denied in this browser';
+        }
+      });
+    }
+
+    async function bootstrap() {
+      state.analystMode = isAnalystMode();
+      await checkAuth();
+      loadChats();
+      render();
+
+      const input = document.getElementById('composerInput');
+      input.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter' && !evt.shiftKey) {
+          evt.preventDefault();
+          sendMessage();
+        }
+      });
+
+      document.getElementById('sendBtn').addEventListener('click', sendMessage);
+      document.getElementById('newChatBtn').addEventListener('click', () => {
+        const chat = createChat('New SATARK chat');
+        state.chats.unshift(chat);
+        state.activeChatId = chat.id;
+        saveChats();
+        closeSidebarOnMobile();
+        render();
+      });
+
+      document.getElementById('chatSearch').addEventListener('input', (evt) => {
+        state.search = String(evt.target.value || '');
+        renderHistory();
+      });
+
+      document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+      });
+
+      document.getElementById('fileInput').addEventListener('change', (evt) => {
+        const file = evt.target.files && evt.target.files[0] ? evt.target.files[0] : null;
+        state.selectedFile = file;
+        renderAttachment();
+      });
+
+      document.getElementById('signInBtn').addEventListener('click', () => {
+        const sid = getSessionId();
+        window.location.href = '/auth/google/start?session_id=' + encodeURIComponent(sid) + '&next=/ui';
+      });
+
+      document.getElementById('drawerToggle').addEventListener('click', () => {
+        state.drawerOpen = !state.drawerOpen;
+        document.getElementById('analystDrawer').classList.toggle('visible', state.drawerOpen);
+      });
+
+      document.getElementById('menuBtn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('visible');
+      });
+
+      document.getElementById('overlay').addEventListener('click', closeSidebarOnMobile);
+
+      setupMic();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('google') === 'connected') {
+        window.history.replaceState({}, '', '/ui');
+      }
+    }
+
+    function closeSidebarOnMobile() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('visible');
+    }
+
+    bootstrap();
+  </script>
 </body>
 </html>

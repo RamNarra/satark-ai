@@ -144,6 +144,113 @@ The platform behavior maps to four operational intelligence buckets:
 - POST /analyze/apk
 - WS /stream
 
+## Regression Lock: Calm Vs Urgent
+
+Citizen behavior is now locked and treated as a regression gate.
+
+- Prevented scam case must stay calm:
+  - `requires_reporting = false`
+  - `requires_emergency = false`
+  - no report-now or emergency language
+- Money-lost case must stay urgent:
+  - `requires_reporting = true`
+  - `requires_emergency = true`
+  - clear report-now guidance
+
+Baseline artifacts:
+
+- `artifacts/ui-acceptance/prevented-scam.png`
+- `artifacts/ui-acceptance/money-lost.png`
+- `artifacts/ui-acceptance/prevented-vs-moneylost-side-by-side.png`
+
+Regression fixtures:
+
+- `artifacts/regression-fixtures/prevented_scam.json`
+- `artifacts/regression-fixtures/money_lost.json`
+
+Run the automated check:
+
+```bash
+python scripts/regression/check_calm_vs_urgent.py
+```
+
+If this script fails, treat it as a release blocker.
+
+### Google Sign-In (Calendar)
+
+To make the judge demo "real" (Calendar reminder lands in the judge's own account), SATARK includes a minimal OAuth flow:
+
+- GET `/auth/google/start?session_id=...&next=/ui` (redirects to Google consent)
+- GET `/auth/google/callback` (exchanges code for tokens and stores them in Firestore under that `session_id`)
+
+Required env vars:
+
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (OAuth Web client)
+- `SATARK_AUTH_STATE_SECRET` (HMAC secret to sign the OAuth `state`)
+- Optional: `SATARK_PUBLIC_BASE_URL` (recommended on Cloud Run so redirect URIs are stable)
+
+Troubleshooting: **"Access blocked" / `403: access_denied`**
+
+If Google shows a screen like "Access blocked: … has not completed the Google verification process", this is almost always **OAuth Consent Screen** configuration:
+
+1) In Google Cloud Console → **APIs & Services → OAuth consent screen**
+- Set **User type** to **External** (unless you are using a Google Workspace org and want Internal-only).
+- Keep **Publishing status** as **Testing** for hackathons.
+- Add the Google account(s) you will sign in with under **Test users** (include judges if you want them to sign in).
+
+2) In Google Cloud Console → **APIs & Services → Credentials → OAuth 2.0 Client IDs**
+- Client type must be **Web application**.
+- Add Authorized redirect URIs exactly (hostnames must match):
+  - `http://127.0.0.1:8080/auth/google/callback` (local)
+  - `https://YOUR_CLOUD_RUN_URL/auth/google/callback` (Cloud Run)
+
+Note: the app requests `https://www.googleapis.com/auth/calendar.events` (Calendar write). For broad public access in production you may need Google verification; for hackathon demos, **Testing + Test users** is the fastest path.
+
+## Minimal End-to-End Demo (Curl)
+
+This repo contains two demo-friendly flows:
+
+1) **Productivity workflow** (tasks + notes + proposed schedule) with optional MCP sync.
+2) **Fraud workflow** (scam detection + OSINT + golden-hour response) with Google Calendar MCP.
+
+### 1) Productivity workflow (tasks, notes, schedule)
+
+Run:
+
+```bash
+curl -s http://127.0.0.1:8080/workflow/run \
+  -H 'content-type: application/json' \
+  -d '{
+    "user_id": "demo_user",
+    "goal": "Plan next week: finish the hackathon deck, schedule a mentor call, and write a 1-page demo script.",
+    "context": {"timezone": "Asia/Kolkata"},
+    "options": {"auto_execute_tools": true, "stream": true}
+  }'
+```
+
+Then poll the `workflow_url` from the response until it returns `status: completed`.
+
+Notes:
+- Firestore persistence happens automatically.
+- If Google Calendar MCP credentials are configured, calendar blocks can be created via MCP.
+- Notes/tasks MCP sync is **optional** and can be enabled by setting `SATARK_NOTES_*` / `SATARK_TASKS_*` env vars.
+
+### 2) Fraud analysis (golden hour + calendar reminder)
+
+```bash
+curl -s http://127.0.0.1:8080/analyze/text \
+  -H 'content-type: application/json' \
+  -d '{
+    "text": "URGENT: Your KYC is pending. Click http://kyc-update-now.example to avoid account block. Share OTP to verify.",
+    "fraud_amount": 0,
+    "minutes_since_fraud": 20
+  }'
+```
+
+If MCP auth is configured, the Golden Hour agent may create a real Calendar reminder event.
+
+Tip: open `/ui`, click "Sign in with Google (Calendar)", then run an analysis that triggers `golden_hour_active=true`.
+
 ## Local Setup
 
 1. Create and activate a virtual environment.
@@ -163,6 +270,32 @@ python -m uvicorn api.main:app --reload --port 8080
 Open:
 
 - http://127.0.0.1:8080/ui
+
+## Docker / Cloud Run
+
+This repo includes a minimal Dockerfile that also installs Node/npm (required for MCP stdio servers invoked via `npx`).
+
+### Build + run locally
+
+```bash
+docker build -t satark-ai .
+docker run --rm -p 8080:8080 \
+  -e GOOGLE_CLOUD_PROJECT=YOUR_PROJECT \
+  -e GOOGLE_CLOUD_LOCATION=us-central1 \
+  -e GOOGLE_OAUTH_CREDENTIALS=/app/credentials/oauth.json \
+  satark-ai
+```
+
+### Deploy to Cloud Run (example)
+
+```bash
+gcloud run deploy satark-ai \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+Then set required environment variables in Cloud Run (Service → Edit & deploy new revision → Variables & secrets).
 
 ## Environment Variables
 
@@ -185,6 +318,18 @@ Alternative auth mode (if your MCP server supports refresh tokens):
 - GOOGLE_CLIENT_SECRET
 - GOOGLE_REFRESH_TOKEN
 
+Calendar MCP (optional overrides):
+
+- `SATARK_CALENDAR_MCP_COMMAND` (default: `npx`)
+- `SATARK_CALENDAR_MCP_ARGS` (default: `["-y", "@cocal/google-calendar-mcp"]`)
+- `SATARK_CALENDAR_MCP_TOOL_CREATE_EVENT` (force a specific MCP tool name)
+
+Optional MCP sync for productivity workflows:
+
+- `SATARK_NOTES_MCP_COMMAND` and `SATARK_NOTES_MCP_ARGS` (JSON list)
+- `SATARK_TASKS_MCP_COMMAND` and `SATARK_TASKS_MCP_ARGS` (JSON list)
+- Optional tool overrides: `SATARK_NOTES_MCP_TOOL`, `SATARK_TASKS_MCP_TOOL`
+
 Quick setup:
 
 ```bash
@@ -200,7 +345,7 @@ If you use refresh-token mode, ensure your one-time consent flow includes both s
 
 ## Firestore Vector Search Setup (Real)
 
-SATARK uses Firestore vector indexes against the fraud_patterns collection with embeddings generated from gemini-embedding-2-preview.
+SATARK uses Firestore vector indexes against the fraud_patterns collection with embeddings generated from text-embedding-005.
 
 1. Seed and backfill vectors:
 
