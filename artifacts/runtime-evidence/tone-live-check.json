@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-04-07T18:58:33Z",
+  "base_url": "http://127.0.0.1:8100",
+  "cases": {
+    "preventive_sms": {
+      "run_id": "run_3a62f0568700",
+      "chat_reply": "This is a classic phishing attempt designed to trick you into visiting a malicious website. Since you haven't clicked the link or shared any details, you are perfectly safe. You can simply ignore and delete this message to stay protected.",
+      "summary": "An unsolicited SMS promising a fake cash reward via a suspicious link.",
+      "conversational_reply": "You did the right thing by checking first. This is a scam attempt, but since you didn't interact with it, there is no risk to your account or data.",
+      "requires_reporting": false,
+      "requires_emergency": false,
+      "requires_financial_blocking": false,
+      "recommended_actions_count": 4
+    },
+    "informational_apk": {
+      "run_id": "run_1e583d5ac954",
+      "chat_reply": "The file you provided is corrupted or not a valid application, which often happens with broken or malicious downloads. Since you haven't installed it or shared any personal details, your device and data remain safe. You can simply delete the file and avoid downloading apps from unofficial sources in the future.",
+      "summary": "The user provided a corrupted APK file but did not install it or lose any data.",
+      "conversational_reply": "It looks like that file is broken and cannot be opened. Since you didn't install it or share any info, there is no risk to you right now. Just delete the file and stick to the official Play Store for your apps.",
+      "requires_reporting": false,
+      "requires_emergency": false,
+      "requires_financial_blocking": false,
+      "recommended_actions_count": 4
+    },
+    "real_compromise": {
+      "run_id": "run_47f6824e1f8e",
+      "chat_reply": "I am sorry to hear this has happened, but we need to act quickly to secure your remaining funds. Since money was debited and your bank details were shared, your account is currently at risk. Please follow the steps below immediately to block further unauthorized access.",
+      "summary": "User lost money after clicking a phishing link and sharing OTP and banking credentials.",
+      "conversational_reply": "I understand this is stressful, but since money has been debited, we must prioritize blocking your accounts right now. Please call the national helpline and your bank immediately to prevent any further loss.",
+      "requires_reporting": true,
+      "requires_emergency": true,
+      "requires_financial_blocking": true,
+      "recommended_actions_count": 4
+    }
+  },
+  "ui_chat_reply_first": {
+    "passed": true,
+    "bot_text": "This message looks like bait, but from what you shared there is no direct compromise right now. So don't panic and just block it.",
+    "chat_reply": "This message looks like bait, but from what you shared there is no direct compromise right now. So don't panic and just block it.",
+    "summary": "Likely scam lure with no confirmed compromise reported.",
+    "screenshot": "artifacts/runtime-evidence/tone-ui-chat-reply-source.png"
+  }
+}

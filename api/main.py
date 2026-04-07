@@ -447,6 +447,18 @@ def auth_google_callback(request: Request, code: str | None = None, state: str |
             email = str(data.get("email") or "").strip()
             if email:
                 oauth_payload["email"] = email
+            given_name = str(data.get("given_name") or "").strip()
+            family_name = str(data.get("family_name") or "").strip()
+            full_name = str(data.get("name") or "").strip()
+            picture = str(data.get("picture") or "").strip()
+            if given_name:
+                oauth_payload["given_name"] = given_name
+            if family_name:
+                oauth_payload["family_name"] = family_name
+            if full_name:
+                oauth_payload["name"] = full_name
+            if picture:
+                oauth_payload["picture"] = picture
     except Exception:
         pass
 
@@ -472,14 +484,39 @@ def auth_google_callback(request: Request, code: str | None = None, state: str |
 @app.get("/api/auth/status")
 def auth_status(session_id: str | None = Cookie(default=None)):
     if not session_id:
-        return {"connected": False, "email": None}
+        return {
+            "connected": False,
+            "email": None,
+            "given_name": None,
+            "family_name": None,
+            "name": None,
+            "picture": None,
+        }
     oauth = get_google_oauth(session_id)
     if not oauth:
-        return {"connected": False, "email": None}
+        return {
+            "connected": False,
+            "email": None,
+            "given_name": None,
+            "family_name": None,
+            "name": None,
+            "picture": None,
+        }
 
     has_tokens = bool(oauth.get("refresh_token") or oauth.get("access_token"))
     email = oauth.get("email") if isinstance(oauth.get("email"), str) else None
-    return {"connected": has_tokens, "email": email}
+    given_name = oauth.get("given_name") if isinstance(oauth.get("given_name"), str) else None
+    family_name = oauth.get("family_name") if isinstance(oauth.get("family_name"), str) else None
+    full_name = oauth.get("name") if isinstance(oauth.get("name"), str) else None
+    picture = oauth.get("picture") if isinstance(oauth.get("picture"), str) else None
+    return {
+        "connected": has_tokens,
+        "email": email,
+        "given_name": given_name,
+        "family_name": family_name,
+        "name": full_name,
+        "picture": picture,
+    }
 
 
 @app.get("/auth/google/logout")
@@ -1259,6 +1296,7 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
         risk_level = str(payload.get("risk_level") or "UNKNOWN")
         confidence = int(payload.get("confidence") or 0)
         summary = str(payload.get("summary") or "Recovered case result")
+        chat_reply = str(payload.get("chat_reply") or payload.get("conversational_reply") or summary).strip() or summary
         try:
             similar_cases = int(payload.get("similar_cases_found") or payload.get("similar_cases") or 0)
         except Exception:
@@ -1309,8 +1347,9 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
             "status": "completed",
             "input_type": payload.get("input_type", "text"),
             "verdict": persisted_verdict,
+            "chat_reply": chat_reply,
             "summary": summary,
-            "conversational_reply": summary,
+            "conversational_reply": str(payload.get("conversational_reply") or chat_reply).strip() or chat_reply,
             "scam_type": payload.get("scam_type", "UNKNOWN"),
             "official_category": payload.get("category") or payload.get("scam_type", "UNKNOWN"),
             "category": payload.get("category") or payload.get("scam_type", "UNKNOWN"),
@@ -1479,6 +1518,11 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     summary_text = str(pipeline_result.get("summary") or pipeline_result.get("victim_advice") or "").strip()
     if not summary_text:
         summary_text = "Analysis completed. Review the evidence and action steps."
+    chat_reply = str(
+        pipeline_result.get("chat_reply")
+        or pipeline_result.get("conversational_reply")
+        or summary_text
+    ).strip() or summary_text
 
     files = run_ctx["request"]["user_input"].get("files") or []
 
@@ -1564,10 +1608,13 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         recommended_actions = _sanitize_actions_for_no_reporting(recommended_actions)
         if _is_generic_verdict_text(verdict):
             verdict = "Likely scam attempt with no confirmed compromise from your answers."
-        summary_text = (
-            "This looks like a scam lure, but your answers do not indicate direct compromise yet. "
-            "Follow preventive safety steps."
-        )
+        if not summary_text:
+            summary_text = "Likely scam attempt with no confirmed compromise reported."
+        if not str(pipeline_result.get("chat_reply") or "").strip() and not str(pipeline_result.get("conversational_reply") or "").strip():
+            chat_reply = (
+                "This looks like a scam lure, but from what you reported there is no sign of direct compromise right now. "
+                "So you do not need to panic, just avoid the link and block the sender."
+            )
 
     presentation_sections_raw = (
         pipeline_result.get("presentation_sections")
@@ -1592,9 +1639,9 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
 
     conversational_reply = str(pipeline_result.get("conversational_reply") or "").strip()
     if not conversational_reply:
-        conversational_reply = summary_text
-    if no_reporting_mode:
-        conversational_reply = summary_text
+        conversational_reply = chat_reply or summary_text
+    if not chat_reply:
+        chat_reply = conversational_reply or summary_text
 
     evidence_rows: list[dict[str, Any]] = []
     raw_evidence = pipeline_result.get("evidence")
@@ -1871,6 +1918,7 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         "status": run_ctx["status"],
         "input_type": primary_type,
         "verdict": verdict,
+        "chat_reply": chat_reply,
         "summary": summary_text,
         "conversational_reply": conversational_reply,
         "scam_type": scam_type,

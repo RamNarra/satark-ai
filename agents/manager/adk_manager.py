@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import uuid
+from typing import Any
 from urllib.parse import urlparse
 
 import vertexai
@@ -1347,6 +1348,9 @@ def _normalize_mcp_plan(requires_mcp: bool, raw_plan: dict[str, Any] | None, req
 
 
 def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], recovery_answers: dict[str, Any]) -> dict[str, Any]:
+    presentation_raw = contract.get("presentation") if isinstance(contract.get("presentation"), dict) else {}
+    debug_raw = contract.get("debug") if isinstance(contract.get("debug"), dict) else {}
+
     raw_risk = str(contract.get("risk_level") or base.get("risk_level") or "UNKNOWN").strip().upper()
     allowed_risks = {"SAFE", "LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"}
     risk = raw_risk if raw_risk in allowed_risks else "UNKNOWN"
@@ -1360,7 +1364,7 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         else:
             response_mode = "proactive_warning"
 
-    verdict = str(contract.get("verdict") or "").strip()
+    verdict = str(contract.get("verdict") or presentation_raw.get("headline") or "").strip()
     if _is_generic_verdict(verdict):
         verdict = "Likely scam attempt"
 
@@ -1371,8 +1375,13 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         or scam_type
     ).strip() or scam_type
 
-    summary = str(contract.get("summary") or "").strip() or summary_base or "Suspicious content analyzed."
+    summary = str(
+        contract.get("summary")
+        or presentation_raw.get("summary_paragraph")
+        or ""
+    ).strip() or summary_base or "Suspicious content analyzed."
 
+    chat_reply = str(contract.get("chat_reply") or "").strip()
     conversational_reply = str(contract.get("conversational_reply") or "").strip()
 
     confidence_raw = contract.get("confidence", base.get("confidence"))
@@ -1384,7 +1393,9 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         confidence *= 100
     confidence = max(0.0, min(confidence, 100.0))
 
-    raw_steps = contract.get("recommended_actions") if isinstance(contract.get("recommended_actions"), list) else []
+    raw_steps = presentation_raw.get("actions") if isinstance(presentation_raw.get("actions"), list) else []
+    if not raw_steps:
+        raw_steps = contract.get("recommended_actions") if isinstance(contract.get("recommended_actions"), list) else []
     if not raw_steps:
         raw_steps = contract.get("action_steps") if isinstance(contract.get("action_steps"), list) else []
     action_steps = [str(x).strip() for x in raw_steps if str(x).strip()]
@@ -1394,6 +1405,24 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         action_steps = [summary_base]
     if not action_steps:
         action_steps = ["Follow the manager guidance above and monitor for any change in impact."]
+
+    # Keep citizen guidance concise and deterministic.
+    action_steps = action_steps[:4]
+    fallback_actions = [
+        "Do not open the suspicious link or attachment.",
+        "Block the sender and mark the message as spam.",
+        "Delete the suspicious message so it is not opened accidentally later.",
+        "Ignore follow-up reward or urgency messages from the same source.",
+    ]
+    seen_steps = {str(x).strip().casefold() for x in action_steps if str(x).strip()}
+    for fallback in fallback_actions:
+        if len(action_steps) >= 4:
+            break
+        key = fallback.casefold()
+        if key in seen_steps:
+            continue
+        action_steps.append(fallback)
+        seen_steps.add(key)
 
     raw_evidence = contract.get("evidence") if isinstance(contract.get("evidence"), list) else []
     evidence: list[dict[str, Any]] = []
@@ -1421,11 +1450,14 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
     )
     golden_hour_active = bool(contract.get("golden_hour_active", base.get("golden_hour_active", False)))
 
+    if not chat_reply:
+        chat_reply = conversational_reply or summary
     if not conversational_reply:
-        conversational_reply = summary
+        conversational_reply = chat_reply or summary
 
     raw_reporting = contract.get("reporting_recommendation") if isinstance(contract.get("reporting_recommendation"), dict) else {}
-    reporting_reason = str(raw_reporting.get("reason") or "").strip()
+    reporting_note = str(presentation_raw.get("reporting_note") or "").strip()
+    reporting_reason = str(raw_reporting.get("reason") or reporting_note or "").strip()
     reporting_should_report_now = bool(raw_reporting.get("should_report_now", requires_reporting))
 
     # Hard rule: if rationale is missing, suppress reporting-oriented output.
@@ -1454,9 +1486,16 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
             verdict = "Likely scam attempt"
         if not summary:
             summary = "No money loss or sensitive data exposure was reported. This appears to be a prevented scam lure."
+        if not str(contract.get("chat_reply") or "").strip():
+            chat_reply = (
+                "This looks like a scam lure, but from what you reported there is no sign of direct compromise right now. "
+                "So you do not need to panic, just avoid the link and block the sender."
+            )
 
+    if not chat_reply:
+        chat_reply = conversational_reply or summary
     if not conversational_reply:
-        conversational_reply = summary
+        conversational_reply = chat_reply or summary
 
     requires_mcp = bool(contract.get("requires_mcp", False)) and not _is_preventive_only_case(recovery_answers)
 
@@ -1487,14 +1526,16 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         )
     )
     presentation_sections = {
-        "headline": str(raw_sections.get("headline") or verdict).strip() or verdict,
+        "headline": str(raw_sections.get("headline") or presentation_raw.get("headline") or verdict).strip() or verdict,
         "status_line": str(raw_sections.get("status_line") or status_default).strip() or status_default,
         "primary_actions_title": actions_title,
         "actions_title": actions_title,
         "evidence_title": str(raw_sections.get("evidence_title") or "Why it looks suspicious").strip() or "Why it looks suspicious",
     }
 
-    raw_why = contract.get("why_this_decision") if isinstance(contract.get("why_this_decision"), list) else []
+    raw_why = presentation_raw.get("evidence_bullets") if isinstance(presentation_raw.get("evidence_bullets"), list) else []
+    if not raw_why:
+        raw_why = contract.get("why_this_decision") if isinstance(contract.get("why_this_decision"), list) else []
     why_this_decision = [str(x).strip() for x in raw_why if str(x).strip()]
     if not why_this_decision:
         why_this_decision = [str(x.get("label") or "").strip() for x in evidence if str(x.get("label") or "").strip()][:6]
@@ -1506,10 +1547,37 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
             "Sender legitimacy was not independently verified.",
         ]
 
+    presentation = {
+        "headline": str(presentation_raw.get("headline") or verdict).strip() or verdict,
+        "summary_paragraph": summary,
+        "evidence_bullets": why_this_decision[:6],
+        "actions": action_steps[:4],
+        "reporting_note": reporting_reason,
+    }
+
+    debug = {
+        "risk_level": str(debug_raw.get("risk_level") or risk),
+        "confidence": float(debug_raw.get("confidence") if isinstance(debug_raw.get("confidence"), (int, float)) else confidence),
+        "similar_cases": int(debug_raw.get("similar_cases") if isinstance(debug_raw.get("similar_cases"), (int, float)) else (base.get("similar_cases_found") or 0)),
+        "patterns": debug_raw.get("patterns") if isinstance(debug_raw.get("patterns"), list) else (base.get("pattern_matches") if isinstance(base.get("pattern_matches"), list) else []),
+    }
+
+    presentation_markdown = (
+        "## What this looks like\n"
+        f"{presentation['summary_paragraph']}\n\n"
+        "## Why I'm saying that\n"
+        + "\n".join([f"- {item}" for item in presentation["evidence_bullets"]])
+        + "\n\n## What to do now\n"
+        + "\n".join([f"{idx + 1}. {item}" for idx, item in enumerate(presentation["actions"])])
+        + "\n\n## Reporting\n"
+        + f"{presentation['reporting_note']}"
+    )
+
     return {
         "response_mode": response_mode,
         "verdict": verdict,
         "category": category,
+        "chat_reply": chat_reply,
         "summary": summary,
         "conversational_reply": conversational_reply,
         "risk_level": risk,
@@ -1527,6 +1595,9 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         "requires_mcp": requires_mcp,
         "mcp_plan": mcp_plan,
         "presentation_sections": presentation_sections,
+        "presentation": presentation,
+        "debug": debug,
+        "presentation_markdown": presentation_markdown,
     }
 
 
@@ -1640,6 +1711,19 @@ async def _generate_manager_decision_contract(
         "- Preventive cases: calm, firm, non-alarmist\n"
         "- Exposure/loss cases: urgent, direct\n"
         "- Do not use panic wording unless the facts justify it\n\n"
+        "WRITING QUALITY RULES\n"
+        "- Write chat_reply in 2 to 4 full sentences.\n"
+        "- Write summary as one short neutral sentence.\n"
+        "- Sound like a calm fraud advisor, not a classifier.\n"
+        "- Do not repeat the same sentence in headline, guide, and summary.\n"
+        "- If reporting is not needed, explain that in one natural sentence.\n"
+        "- Never place internal scoring fields inside citizen presentation text.\n\n"
+        "CHAT REPLY RULES\n"
+        "- chat_reply must be natural prose, not bullets.\n"
+        "- Use plain conversational English and natural contractions when appropriate.\n"
+        "- If there is no confirmed compromise, say that clearly and reduce panic naturally.\n"
+        "- If risk is severe, be direct and urgent but still human.\n"
+        "- Do not use robotic policy phrases like 'analysis indicates' or 'follow preventive safety steps'.\n\n"
         "OUTPUT REQUIREMENTS\n"
         "Return valid JSON only.\n"
         "Required schema:\n"
@@ -1648,15 +1732,25 @@ async def _generate_manager_decision_contract(
         '  "risk_level": "LOW|MEDIUM|HIGH|CRITICAL",\n'
         '  "confidence": 0.0,\n'
         '  "category": "...",\n'
+        '  "chat_reply": "Natural 2-4 sentence explanation written like one human assistant.",\n'
         '  "summary": "...",\n'
         '  "conversational_reply": "...",\n'
-        '  "recommended_actions": ["...", "...", "..."],\n'
+        '  "recommended_actions": ["...", "...", "...", "..."],\n'
         '  "requires_reporting": true,\n'
         '  "requires_emergency": false,\n'
         '  "requires_financial_blocking": false,\n'
         '  "golden_hour_active": false,\n'
         '  "reporting_recommendation": {"should_report_now": false, "reason": "..."},\n'
         '  "why_this_decision": ["..."],\n'
+        '  "presentation": {\n'
+        '    "headline": "Likely scam attempt",\n'
+        '    "summary_paragraph": "2-4 full sentences in calm human English",\n'
+        '    "evidence_bullets": ["...", "...", "...", "..."],\n'
+        '    "actions": ["...", "...", "...", "..."],\n'
+        '    "reporting_note": "Natural-language reporting status sentence"\n'
+        '  },\n'
+        '  "presentation_markdown": "## What this looks like...",\n'
+        '  "debug": {"risk_level": "...", "confidence": 0.98, "similar_cases": 3, "patterns": []},\n'
         '  "presentation_sections": {"headline": "...", "status_line": "...", "actions_title": "What to do now", "evidence_title": "Why it looks suspicious"},\n'
         '  "requires_mcp": true/false,\n'
         '  "mcp_plan": {"create_calendar": true/false, "create_tasks": true/false, "create_gmail_draft": true/false, "create_case_report_doc": true/false}\n'

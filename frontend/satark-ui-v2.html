@@ -525,6 +525,53 @@
       font-size: 12px;
     }
 
+    .msg-attachments {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .msg-attachment-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(8, 22, 42, 0.78);
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .msg-attachment-meta {
+      min-width: 0;
+    }
+
+    .msg-attachment-name {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg-attachment-sub {
+      margin: 3px 0 0;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .attachment-badge {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: #c8e1ff;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
     .drawer-toggle {
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -670,7 +717,7 @@
       </section>
 
       <section class="composer-wrap">
-        <input id="fileInput" type="file" hidden />
+        <input id="fileInput" type="file" multiple hidden />
         <div class="composer">
           <textarea id="composerInput" placeholder="Paste a suspicious message, explain the call, or ask SATARK for guidance."></textarea>
           <div class="composer-actions">
@@ -701,11 +748,14 @@
       profile: {
         connected: false,
         email: null,
+        givenName: null,
+        familyName: null,
+        fullName: null,
         name: 'Guest',
       },
       chats: [],
       activeChatId: null,
-      selectedFile: null,
+      selectedFiles: [],
       search: '',
       isProcessing: false,
       currentRunId: null,
@@ -719,7 +769,23 @@
       recording: false,
       mediaRecorder: null,
       mediaChunks: [],
+      speechBaseText: '',
+      speechFinalText: '',
+      micMode: 'idle',
     };
+
+    const GEMINI_REPLY_INSTRUCTION = [
+      'You are SATARK AI, a citizen cyber-fraud safety assistant.',
+      'Write in simple IELTS 6 to 6.5 English.',
+      'Reply format is strict:',
+      '1) Provide chat_reply in 2 to 4 natural sentences.',
+      '2) Then provide summary as one short neutral sentence.',
+      '3) Then provide exactly 3 to 4 bullet points of safety precautions or next steps.',
+      '4) Use only available evidence from user text and uploaded files.',
+      '5) Do not invent urgency unless evidence supports it.',
+      '6) If an attachment exists, mention that attachment directly in chat_reply.',
+      'Return structured fields for chat_reply, summary, and recommended_actions.',
+    ].join('\n');
 
     const AGENT_ORDER = ['manager', 'scam_detector', 'osint', 'audio_analyzer', 'apk_analyzer', 'golden_hour', 'google_calendar', 'google_tasks', 'google_gmail', 'google_docs'];
 
@@ -749,15 +815,79 @@
       }
     }
 
-    function toFriendlyName(email) {
-      const text = String(email || '').trim();
-      if (!text) return 'Guest';
-      const local = text.split('@')[0] || text;
-      return local
-        .split(/[._-]+/)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ') || 'User';
+    function resolveDisplayName(profile) {
+      const given = String(profile && profile.givenName ? profile.givenName : '').trim();
+      const family = String(profile && profile.familyName ? profile.familyName : '').trim();
+      const full = String(profile && profile.fullName ? profile.fullName : '').trim();
+      const email = String(profile && profile.email ? profile.email : '').trim();
+
+      const fullFromParts = [given, family].filter(Boolean).join(' ').trim();
+      if (fullFromParts) return fullFromParts;
+      if (full) return full;
+      if (email) {
+        const local = email.split('@')[0] || email;
+        return local
+          .split(/[._-]+/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ') || 'User';
+      }
+      return 'Guest';
+    }
+
+    function classifyAttachment(fileName, mimeType) {
+      const n = String(fileName || '').toLowerCase();
+      const m = String(mimeType || '').toLowerCase();
+      if (n.endsWith('.apk') || m === 'application/vnd.android.package-archive') return 'apk';
+      if (m.startsWith('image/')) return 'image';
+      if (m.startsWith('audio/')) return 'audio';
+      if (m.includes('pdf') || m.includes('text') || m.includes('document')) return 'document';
+      return 'file';
+    }
+
+    function normalizeAttachment(file) {
+      if (!file) return null;
+      return {
+        id: 'att_' + Math.random().toString(36).slice(2),
+        name: String(file.name || 'attachment.bin'),
+        mimeType: String(file.type || 'application/octet-stream'),
+        size: Number(file.size || 0),
+        category: classifyAttachment(file.name, file.type),
+        previewState: 'ready',
+        file,
+      };
+    }
+
+    function toAttachmentViewModel(att) {
+      return {
+        id: att.id,
+        name: att.name,
+        mimeType: att.mimeType,
+        size: att.size,
+        category: att.category,
+        previewState: att.previewState || 'ready',
+      };
+    }
+
+    function addSelectedFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      const incoming = Array.from(fileList)
+        .map((f) => normalizeAttachment(f))
+        .filter(Boolean);
+      const seen = new Set(state.selectedFiles.map((x) => `${x.name}|${x.size}|${x.mimeType}`));
+      for (const item of incoming) {
+        const key = `${item.name}|${item.size}|${item.mimeType}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        state.selectedFiles.push(item);
+      }
+      state.selectedFiles = state.selectedFiles.slice(0, 6);
+      renderAttachment();
+    }
+
+    function removeSelectedFile(id) {
+      state.selectedFiles = state.selectedFiles.filter((f) => f.id !== id);
+      renderAttachment();
     }
 
     function storageKey() {
@@ -842,8 +972,7 @@
     function sanitizeCitizenText(text) {
       let out = String(text || '').trim();
       if (!out) return out;
-      out = out.replace(/from your answers,?/ig, '').replace(/\s{2,}/g, ' ').trim();
-      out = out.replace(/\buser should\b/ig, 'you should');
+      out = out.replace(/\s{2,}/g, ' ').trim();
       return out;
     }
 
@@ -914,7 +1043,9 @@
 
         const body = document.createElement('div');
         body.className = 'bubble-body';
-        const text = sanitizeCitizenText(msg.text || '');
+        const text = msg.role === 'assistant'
+          ? String(msg.text || '').trim()
+          : sanitizeCitizenText(msg.text || '');
         body.innerHTML = text ? `<p>${escapeHtml(text)}</p>` : '<p>(No text)</p>';
 
         if (msg.role === 'assistant' && Array.isArray(msg.steps) && msg.steps.length) {
@@ -938,6 +1069,29 @@
             flags.appendChild(item);
           }
           body.appendChild(flags);
+        }
+
+        if (Array.isArray(msg.attachments) && msg.attachments.length) {
+          const wrap = document.createElement('div');
+          wrap.className = 'msg-attachments';
+          for (const attachment of msg.attachments) {
+            const card = document.createElement('div');
+            card.className = 'msg-attachment-card';
+            const sizeKb = Math.max(1, Math.round(Number(attachment.size || 0) / 1024));
+            const meta = document.createElement('div');
+            meta.className = 'msg-attachment-meta';
+            meta.innerHTML = `
+              <p class="msg-attachment-name">${escapeHtml(attachment.name || 'attachment')}</p>
+              <p class="msg-attachment-sub">${escapeHtml(String(attachment.mimeType || 'application/octet-stream'))} | ${sizeKb} KB | ${escapeHtml(String(attachment.previewState || 'uploaded'))}</p>
+            `;
+            const badge = document.createElement('span');
+            badge.className = 'attachment-badge';
+            badge.textContent = String(attachment.category || 'file');
+            card.appendChild(meta);
+            card.appendChild(badge);
+            wrap.appendChild(card);
+          }
+          body.appendChild(wrap);
         }
 
         bubble.appendChild(head);
@@ -983,19 +1137,19 @@
     function renderAttachment() {
       const slot = document.getElementById('attachmentSlot');
       slot.innerHTML = '';
-      if (!state.selectedFile) return;
-      const pill = document.createElement('div');
-      pill.className = 'attachment-pill';
-      pill.innerHTML = `<span>${escapeHtml(state.selectedFile.name)} (${Math.round(state.selectedFile.size / 1024)} KB)</span>`;
-      const clear = document.createElement('button');
-      clear.type = 'button';
-      clear.textContent = 'Remove';
-      clear.addEventListener('click', () => {
-        state.selectedFile = null;
-        renderAttachment();
-      });
-      pill.appendChild(clear);
-      slot.appendChild(pill);
+      if (!state.selectedFiles.length) return;
+      for (const meta of state.selectedFiles) {
+        const pill = document.createElement('div');
+        pill.className = 'attachment-pill';
+        const kb = Math.max(1, Math.round(meta.size / 1024));
+        pill.innerHTML = `<span>${escapeHtml(meta.name)} (${escapeHtml(meta.mimeType)}) | ${kb} KB | ${escapeHtml(meta.previewState || 'ready')}</span>`;
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.textContent = 'Remove';
+        clear.addEventListener('click', () => removeSelectedFile(meta.id));
+        pill.appendChild(clear);
+        slot.appendChild(pill);
+      }
     }
 
     function renderMode() {
@@ -1049,10 +1203,11 @@
       if (!chat) return;
       chat.messages.push({
         role,
-        text: sanitizeCitizenText(text),
+        text: role === 'assistant' ? String(text || '').trim() : sanitizeCitizenText(text),
         ts: new Date().toISOString(),
         steps: extra.steps || null,
         flags: extra.flags || null,
+        attachments: Array.isArray(extra.attachments) ? extra.attachments : [],
         runId: extra.runId || null,
       });
       if (chat.messages.length === 1 && role === 'user') {
@@ -1083,29 +1238,41 @@
     }
 
     function buildAssistantPayload(result) {
-      const cleanSummary = sanitizeCitizenText(result.summary || result.conversational_reply || 'Analysis complete.');
-      const cleanReply = sanitizeCitizenText(result.conversational_reply || result.summary || 'Please review the action steps below.');
-      const recommended = Array.isArray(result.recommended_actions) ? result.recommended_actions : [];
-      const steps = recommended.map((x) => sanitizeCitizenText(String(x || '').trim())).filter(Boolean).slice(0, 4);
+      function normalizeSteps(items) {
+        const arr = Array.isArray(items) ? items : [];
+        const out = [];
+        const seen = new Set();
+        for (const item of arr) {
+          let step = sanitizeCitizenText(String(item || '').replace(/^[-*\d.\s]+/, '').trim());
+          if (!step) continue;
+          const key = step.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(step);
+          if (out.length >= 4) break;
+        }
+        return out;
+      }
+
+      const mainReply = String(result.chat_reply || result.conversational_reply || result.summary || '').trim();
+      const steps = normalizeSteps(result.recommended_actions);
+
+      if (!mainReply || steps.length < 3) {
+        return {
+          ok: false,
+          error: 'Model response is incomplete. Please retry this analysis.',
+          text: '',
+          steps: [],
+          flags: [],
+        };
+      }
 
       const flags = [];
       if (result.requires_emergency) flags.push({ text: 'Act now', level: 'danger' });
       if (result.requires_reporting) flags.push({ text: 'Report guidance', level: 'warn' });
       if (result.requires_financial_blocking || result.requires_account_block) flags.push({ text: 'Protect accounts', level: 'warn' });
 
-      const reason = result.reporting_recommendation && result.reporting_recommendation.reason
-        ? sanitizeCitizenText(result.reporting_recommendation.reason)
-        : '';
-
-      let text = cleanSummary;
-      if (cleanReply && cleanReply !== cleanSummary) {
-        text += '\n\n' + cleanReply;
-      }
-      if (reason && result.requires_reporting) {
-        text += '\n\n' + reason;
-      }
-
-      return { text, steps, flags };
+      return { ok: true, text: mainReply, steps, flags };
     }
 
     function startStream(runId) {
@@ -1190,7 +1357,7 @@
       if (state.isProcessing) return;
       const input = document.getElementById('composerInput');
       const text = String(input.value || '').trim();
-      if (!text && !state.selectedFile) {
+      if (!text && !state.selectedFiles.length) {
         input.focus();
         return;
       }
@@ -1201,8 +1368,15 @@
         state.activeChatId = chat.id;
       }
 
-      addMessage('user', text || '(Sent file evidence)');
+      const pendingFiles = state.selectedFiles.slice();
+      const pendingAttachments = pendingFiles.map((f) => toAttachmentViewModel(f));
+      const pendingText = text;
+
+      addMessage('user', text || '(Sent file evidence)', {
+        attachments: pendingAttachments,
+      });
       input.value = '';
+      state.selectedFiles = [];
       renderAttachment();
       state.isProcessing = true;
       document.getElementById('composerHint').textContent = 'SATARK is working...';
@@ -1210,11 +1384,12 @@
 
       try {
         const files = [];
-        if (state.selectedFile) {
-          const dataUrl = await fileToDataUrl(state.selectedFile);
+        for (const selected of pendingFiles) {
+          if (!selected || !selected.file) continue;
+          const dataUrl = await fileToDataUrl(selected.file);
           files.push({
-            file_name: state.selectedFile.name,
-            file_type: state.selectedFile.type || 'application/octet-stream',
+            file_name: selected.name,
+            file_type: selected.mimeType || 'application/octet-stream',
             content_base64: dataUrl,
           });
         }
@@ -1222,7 +1397,7 @@
         const payload = {
           session_id: getSessionId(),
           user_input: {
-            text,
+            text: pendingText,
             files,
           },
           user_context: {
@@ -1233,6 +1408,9 @@
             stream: true,
             generate_report: true,
             trigger_mcp_actions: false,
+            response_instruction: GEMINI_REPLY_INSTRUCTION,
+            enforce_response_structure: true,
+            output_format: 'summary_and_bullets',
           },
         };
 
@@ -1256,11 +1434,17 @@
         state.latestPayload = result;
 
         const assistant = buildAssistantPayload(result || {});
-        addMessage('assistant', assistant.text, {
-          steps: assistant.steps,
-          flags: assistant.flags,
-          runId,
-        });
+        if (!assistant.ok) {
+          addMessage('assistant', assistant.error || 'Model response is incomplete. Please retry this analysis.', {
+            runId,
+          });
+        } else {
+          addMessage('assistant', assistant.text, {
+            steps: assistant.steps,
+            flags: assistant.flags,
+            runId,
+          });
+        }
 
         const chat = getActiveChat();
         if (chat && chat.messages.length >= 2) {
@@ -1271,8 +1455,10 @@
           }
         }
 
-        state.selectedFile = null;
       } catch (_err) {
+        input.value = pendingText;
+        state.selectedFiles = pendingFiles;
+        // Keep a visible retry path without fabricating assistance.
         addMessage('assistant', 'I could not finish this request right now. Please try again in a moment.');
       } finally {
         state.isProcessing = false;
@@ -1288,10 +1474,16 @@
         const data = await res.json();
         state.profile.connected = !!data.connected;
         state.profile.email = data.email || null;
-        state.profile.name = toFriendlyName(state.profile.email);
+        state.profile.givenName = data.given_name || null;
+        state.profile.familyName = data.family_name || null;
+        state.profile.fullName = data.name || null;
+        state.profile.name = resolveDisplayName(state.profile);
       } catch (_e) {
         state.profile.connected = false;
         state.profile.email = null;
+        state.profile.givenName = null;
+        state.profile.familyName = null;
+        state.profile.fullName = null;
         state.profile.name = 'Guest';
       }
     }
@@ -1305,25 +1497,38 @@
         recog.lang = navigator.language || 'en-IN';
         recog.interimResults = true;
         recog.maxAlternatives = 1;
-        recog.continuous = false;
+        recog.continuous = true;
         state.speechRec = recog;
 
-        recog.onresult = (event) => {
-          const textarea = document.getElementById('composerInput');
-          let finalText = '';
-          for (let i = event.resultIndex; i < event.results.length; i += 1) {
-            finalText += event.results[i][0].transcript;
-          }
-          textarea.value = (textarea.value + ' ' + finalText).replace(/\s+/g, ' ').trim();
-        };
-
         recog.onstart = () => {
+          const textarea = document.getElementById('composerInput');
+          state.speechBaseText = String(textarea.value || '').trim();
+          state.speechFinalText = '';
           state.recording = true;
           micBtn.classList.add('active');
           document.getElementById('composerHint').textContent = 'Listening... Speak now';
         };
 
+        recog.onresult = (event) => {
+          const textarea = document.getElementById('composerInput');
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const transcript = String(event.results[i][0].transcript || '').trim();
+            if (!transcript) continue;
+            if (event.results[i].isFinal) {
+              state.speechFinalText = (state.speechFinalText + ' ' + transcript).trim();
+            } else {
+              interim = (interim + ' ' + transcript).trim();
+            }
+          }
+          textarea.value = [state.speechBaseText, state.speechFinalText, interim].filter(Boolean).join(' ').trim();
+        };
+
         recog.onend = () => {
+          const textarea = document.getElementById('composerInput');
+          textarea.value = [state.speechBaseText, state.speechFinalText].filter(Boolean).join(' ').trim();
+          state.speechBaseText = '';
+          state.speechFinalText = '';
           state.recording = false;
           micBtn.classList.remove('active');
           document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
@@ -1340,6 +1545,13 @@
       }
 
       // Backend-ready path for Google Cloud Speech streaming.
+      const hasCaptureSupport = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      if (!hasCaptureSupport) {
+        micBtn.disabled = true;
+        micBtn.title = 'Live speech input is not supported in this browser.';
+        document.getElementById('composerHint').textContent = 'Mic not supported in this browser. Please type your message.';
+        return;
+      }
       micBtn.addEventListener('click', async () => {
         if (state.recording && state.mediaRecorder) {
           state.mediaRecorder.stop();
@@ -1361,10 +1573,10 @@
           recorder.onstop = async () => {
             state.recording = false;
             micBtn.classList.remove('active');
-            document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+            document.getElementById('composerHint').textContent = 'Audio captured as an attachment. Enter to send, Shift+Enter for new line';
             const blob = new Blob(state.mediaChunks, { type: 'audio/webm' });
-            // Placeholder for server endpoint: POST blob to backend for Google Cloud STT.
-            console.info('Audio captured for backend STT path', blob.size);
+            const audioFile = new File([blob], `voice-note-${Date.now()}.webm`, { type: 'audio/webm' });
+            addSelectedFiles([audioFile]);
             stream.getTracks().forEach((t) => t.stop());
           };
           recorder.start();
@@ -1408,9 +1620,9 @@
       });
 
       document.getElementById('fileInput').addEventListener('change', (evt) => {
-        const file = evt.target.files && evt.target.files[0] ? evt.target.files[0] : null;
-        state.selectedFile = file;
-        renderAttachment();
+        const files = evt.target.files ? Array.from(evt.target.files) : [];
+        addSelectedFiles(files);
+        evt.target.value = '';
       });
 
       document.getElementById('signInBtn').addEventListener('click', () => {

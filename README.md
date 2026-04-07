@@ -174,6 +174,12 @@ Run the automated check:
 python scripts/regression/check_calm_vs_urgent.py
 ```
 
+Run the chat-reply tone contract check (preventive SMS + APK + UI source-of-truth):
+
+```bash
+python scripts/regression/check_chat_reply_contract.py
+```
+
 If this script fails, treat it as a release blocker.
 
 ### Google Sign-In (Calendar)
