@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-04-07T20:53:46Z",
+  "case": "known_training",
+  "health": {
+    "status": "healthy"
+  },
+  "analyze_request": {
+    "session_id": "sess_live_f188198741",
+    "user_input": {
+      "text": "Please investigate this APK and explain the risk in plain language.",
+      "files": [
+        {
+          "file_name": "InsecureBankv2.apk",
+          "file_type": "application/vnd.android.package-archive",
+          "content_base64": "UEsDBBQAAAAAAM8SiFzkB0RPvAAAALwAAAALAAAAY2xhc3Nlcy5kZXhJbnNlY3VyZUJhbmt2MiBjb20uZGluZXNoc2hldHR5Lmluc2VjdXJlYmFua3YyIGFuZHJvaWQucGVybWlzc2lvbi5JTlRFUk5FVCBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgZWR1Y2F0aW9uYWwgdGVzdGluZyBhcHAgb3dhc3AgdHJhaW5pbmcgZ2l0aHViLmNvbS9kaW5lc2hzaGV0dHkvQW5kcm9pZC1JbnNlY3VyZUJhbmt2MlBLAwQUAAAAAADPEohc5AdET7wAAAC8AAAAEwAAAEFuZHJvaWRNYW5pZmVzdC54bWxJbnNlY3VyZUJhbmt2MiBjb20uZGluZXNoc2hldHR5Lmluc2VjdXJlYmFua3YyIGFuZHJvaWQucGVybWlzc2lvbi5JTlRFUk5FVCBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgZWR1Y2F0aW9uYWwgdGVzdGluZyBhcHAgb3dhc3AgdHJhaW5pbmcgZ2l0aHViLmNvbS9kaW5lc2hzaGV0dHkvQW5kcm9pZC1JbnNlY3VyZUJhbmt2MlBLAQIUAxQAAAAAAM8SiFzkB0RPvAAAALwAAAALAAAAAAAAAAAAAACAAQAAAABjbGFzc2VzLmRleFBLAQIUAxQAAAAAAM8SiFzkB0RPvAAAALwAAAATAAAAAAAAAAAAAACAAeUAAABBbmRyb2lkTWFuaWZlc3QueG1sUEsFBgAAAAACAAIAegAAANIBAAAAAA=="
+        }
+      ]
+    },
+    "user_context": {
+      "channel": "web-ui",
+      "locale": "en-IN"
+    },
+    "options": {
+      "stream": true,
+      "generate_report": true,
+      "trigger_mcp_actions": false
+    }
+  },
+  "analyze_accept": {
+    "run_id": "run_5940450e6803",
+    "case_id": "case_a19afb93f116",
+    "session_id": "sess_live_f188198741",
+    "status": "accepted",
+    "stream_url": "/api/stream/run_5940450e6803",
+    "result_url": "/api/result/run_5940450e6803"
+  }
+}

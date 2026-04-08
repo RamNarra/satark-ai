@@ -1,0 +1,661 @@
+{
+  "run_id": "run_5940450e6803",
+  "case_id": "case_a19afb93f116",
+  "status": "completed",
+  "input_type": "apk",
+  "verdict": "Educational training application identified",
+  "chat_reply": "This APK is actually a well-known educational tool called InsecureBankv2, which is used by security students to practice finding vulnerabilities. It isn't a malicious scam, but it is intentionally designed to be 'insecure' for training purposes. You don't need to worry about a hack, but I wouldn't recommend keeping it on your main phone where you have real banking apps.",
+  "summary": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+  "conversational_reply": "This looks like a security training app rather than a scam. It's meant for learning, so it's safe as long as you don't use it for real banking.",
+  "scam_type": "UNKNOWN",
+  "official_category": "Educational/Training Tool",
+  "category": "Educational/Training Tool",
+  "risk_level": "LOW",
+  "confidence": 95,
+  "response_mode": "proactive_warning",
+  "requires_reporting": false,
+  "requires_emergency": false,
+  "requires_financial_blocking": false,
+  "requires_account_block": false,
+  "requires_device_cleanup": false,
+  "likely_app_identity": "known_training_app",
+  "uncertainty_note": "The app matches the InsecureBankv2 profile but provenance of this specific APK is unverified.",
+  "reporting_recommendation": {
+    "should_report_now": false,
+    "reason": "The application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+  },
+  "requires_mcp": false,
+  "mcp_plan": {
+    "create_calendar": false,
+    "create_tasks": false,
+    "create_gmail_draft": false,
+    "create_case_report_doc": false
+  },
+  "why_this_decision": [
+    "Identified as 'InsecureBankv2' training software.",
+    "Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.",
+    "Contains intentional security flaws for testing practice.",
+    "No evidence of malicious intent or data theft found."
+  ],
+  "presentation_sections": {
+    "headline": "Educational Training App",
+    "status_line": "No malicious activity detected; educational tool identified.",
+    "primary_actions_title": "What to do now",
+    "actions_title": "What to do now",
+    "evidence_title": "Why it looks suspicious"
+  },
+  "response_sections": {
+    "overview": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+    "why_flagged": [
+      "Identified as 'InsecureBankv2' training software.",
+      "Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.",
+      "Contains intentional security flaws for testing practice.",
+      "No evidence of malicious intent or data theft found."
+    ],
+    "next_steps": [
+      "Uninstall the app to avoid confusion.",
+      "Do not enter real passwords or PINs.",
+      "Only use for authorized security learning.",
+      "Keep your personal banking apps separate."
+    ],
+    "reporting_guidance": "The application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+  },
+  "presentation": {
+    "headline": "Educational Security Tool Identified",
+    "summary_paragraph": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+    "evidence_bullets": [
+      "Identified as 'InsecureBankv2' training software.",
+      "Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.",
+      "Contains intentional security flaws for testing practice.",
+      "No evidence of malicious intent or data theft found."
+    ],
+    "actions": [
+      "Uninstall the app to avoid confusion.",
+      "Do not enter real passwords or PINs.",
+      "Only use for authorized security learning.",
+      "Keep your personal banking apps separate."
+    ],
+    "reporting_note": "The application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+  },
+  "debug": {
+    "risk_level": "LOW",
+    "confidence": 0.95,
+    "similar_cases": 3,
+    "patterns": [
+      "OWASP Training App",
+      "InsecureBankv2 Profile"
+    ]
+  },
+  "presentation_markdown": "## What this looks like\nThe file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.\n\n## Why I'm saying that\n- Identified as 'InsecureBankv2' training software.\n- Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.\n- Contains intentional security flaws for testing practice.\n- No evidence of malicious intent or data theft found.\n\n## What to do now\n1. Uninstall the app to avoid confusion.\n2. Do not enter real passwords or PINs.\n3. Only use for authorized security learning.\n4. Keep your personal banking apps separate.\n\n## Reporting\nThe application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent.",
+  "signals_found": [
+    "SEARCH: com.dineshshetty.insecurebankv2 — Identified as a 'vulnerable by design' training app (OWASP project).",
+    "SEARCH: InsecureBankv2 — Documented in OWASP Mobile Application Security (MASTG-APP-0010).",
+    "URL_CONTEXT: github.com/dineshshetty/Android-InsecureBankv2 — Repository for learning Android insecurities."
+  ],
+  "similar_cases": 3,
+  "intel_corpus_size": 847,
+  "intel_type": "Other",
+  "intel_type_count": 10,
+  "pattern_matches": [
+    {
+      "scam_type": "null",
+      "sub_type": "null",
+      "score": 84
+    },
+    {
+      "scam_type": "Impersonation",
+      "sub_type": "Impersonation",
+      "score": 77
+    },
+    {
+      "scam_type": "KYC Fraud",
+      "sub_type": "KYC Fraud",
+      "score": 77
+    }
+  ],
+  "golden_hour_active": false,
+  "golden_hour_status": "STANDBY",
+  "golden_hour_message": "Follow the manager-provided action plan.",
+  "entities": {
+    "phone_numbers": [],
+    "domains": [],
+    "urls": [],
+    "ips": [],
+    "banks_claimed": []
+  },
+  "osint": {
+    "threat_summary": "The investigated indicators point exclusively to 'InsecureBankv2', a well-known vulnerable Android application created by Dinesh Shetty and maintained as an OWASP-related training project. The package name 'com.dineshshetty.insecurebankv2' and the string 'classes.dexInsecureBankv2' are characteristic of this specific educational tool. While the application contains numerous intentional security flaws (e.g., insecure logging, hardcoded secrets, flawed broadcast receivers), it is not malicious in intent; it is designed for security enthusiasts and developers to practice mobile penetration testing. No evidence of active malicious campaigns or infrastructure was found associated with these specific strings beyond their use in cybersecurity education.",
+    "overall_threat_score": 0,
+    "domains": {
+      "github.com": {
+        "domain_age_days": 0,
+        "registrar": "MarkMonitor Inc.",
+        "hosting_country": "United States",
+        "ssl": {
+          "present": true,
+          "issuer": "DigiCert TLS RSA SHA256 2020 CA1",
+          "valid_to": "2025-03-15"
+        }
+      }
+    },
+    "ips": {},
+    "urls": {
+      "https://github.com/dineshshetty/Android-InsecureBankv2": {
+        "verdict": "SAFE",
+        "web_risk_verdict": "SAFE",
+        "red_flags": [
+          "SEARCH: dineshshetty/Android-InsecureBankv2 — Official GitHub repository for a vulnerable training application."
+        ],
+        "notes": "This is the primary source for the InsecureBankv2 project, a deliberate 'vulnerable by design' application for security training."
+      }
+    },
+    "red_flags": [
+      "SEARCH: com.dineshshetty.insecurebankv2 — Identified as a 'vulnerable by design' training app (OWASP project).",
+      "SEARCH: InsecureBankv2 — Documented in OWASP Mobile Application Security (MASTG-APP-0010).",
+      "URL_CONTEXT: github.com/dineshshetty/Android-InsecureBankv2 — Repository for learning Android insecurities."
+    ]
+  },
+  "osint_enrichment": {
+    "artifact_type": "osint_enrichment",
+    "queries_used": [
+      "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+      "insecurebankv2",
+      "owasp",
+      "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT android app",
+      "com.dineshshetty.insecurebankv2"
+    ],
+    "identity_assessment": {
+      "likely_known_project": true,
+      "likely_official_project": false,
+      "likely_repack_or_tampered": "possible"
+    },
+    "public_matches": [
+      {
+        "type": "knowledge_base",
+        "title": "InsecureBankv2",
+        "url": "https://github.com/dineshshetty/Android-InsecureBankv2",
+        "relevance": "high",
+        "note": "Known intentionally vulnerable Android training app"
+      }
+    ],
+    "reputation_signals": {
+      "benign_signals": [
+        "Identity clues match a known vulnerable training app profile",
+        "App label observed: classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT"
+      ],
+      "risk_signals": [
+        "APK requests sensitive permissions: READ_SMS"
+      ],
+      "unknowns": [
+        "Official publisher authenticity is not yet confirmed"
+      ]
+    },
+    "osint_summary": "The investigated indicators point exclusively to 'InsecureBankv2', a well-known vulnerable Android application created by Dinesh Shetty and maintained as an OWASP-related training project. The package name 'com.dineshshetty.insecurebankv2' and the string 'classes.dexInsecureBankv2' are characteristic of this specific educational tool. While the application contains numerous intentional security flaws (e.g., insecure logging, hardcoded secrets, flawed broadcast receivers), it is not malicious in intent; it is designed for security enthusiasts and developers to practice mobile penetration testing. No evidence of active malicious campaigns or infrastructure was found associated with these specific strings beyond their use in cybersecurity education.",
+    "confidence": 0.0
+  },
+  "audio_analysis": null,
+  "apk_analysis": {
+    "summary": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+    "risk_level": "LOW",
+    "is_malicious": false,
+    "file_name": "InsecureBankv2.apk",
+    "package_name": "com.dineshshetty.insecurebankv2",
+    "app_name": "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+    "identity": "known_training_app"
+  },
+  "evidence_summary": [
+    "SEARCH: com.dineshshetty.insecurebankv2 — Identified as a 'vulnerable by design' training app (OWASP project).",
+    "SEARCH: InsecureBankv2 — Documented in OWASP Mobile Application Security (MASTG-APP-0010).",
+    "URL_CONTEXT: github.com/dineshshetty/Android-InsecureBankv2 — Repository for learning Android insecurities."
+  ],
+  "action_steps": [
+    "Uninstall the app to avoid confusion.",
+    "Do not enter real passwords or PINs.",
+    "Only use for authorized security learning.",
+    "Keep your personal banking apps separate."
+  ],
+  "recommended_actions": [
+    "Uninstall the app to avoid confusion.",
+    "Do not enter real passwords or PINs.",
+    "Only use for authorized security learning.",
+    "Keep your personal banking apps separate."
+  ],
+  "complaint_draft": null,
+  "follow_up_actions": {
+    "calendar_event_created": false,
+    "calendar_event_id": null,
+    "calendar_start_time": "2026-04-07T21:00:00Z",
+    "calendar_attempted": false,
+    "calendar_error": null,
+    "calendar_url": null,
+    "calendar_deep_link": null,
+    "task_created": false,
+    "task_url": null,
+    "task_deep_link": null,
+    "doc_created": false,
+    "doc_url": null,
+    "doc_deep_link": null,
+    "gmail_draft_created": false,
+    "gmail_draft_url": null,
+    "tgcsb_alert_sent": false
+  },
+  "calendar_deep_link": null,
+  "task_deep_link": null,
+  "gmail_draft_url": null,
+  "agent_results": {
+    "manager": {
+      "status": "done"
+    },
+    "scam_detector": {
+      "status": "done"
+    },
+    "audio_analyzer": {
+      "status": "skipped"
+    },
+    "apk_analyzer": {
+      "status": "done"
+    },
+    "osint": {
+      "status": "done"
+    },
+    "golden_hour": {
+      "status": "done"
+    }
+  },
+  "evidence": [],
+  "submitted_evidence": [
+    {
+      "type": "application/vnd.android.package-archive",
+      "source": "InsecureBankv2.apk",
+      "storage_uri": null
+    }
+  ],
+  "timestamps": {
+    "created_at": "2026-04-07T20:52:30.345328Z",
+    "completed_at": "2026-04-07T20:53:42.976184Z"
+  },
+  "raw": {
+    "acknowledgment_id": "SATARK-20260408-5A4E5454",
+    "case_id": "SATARK-20260408-5A4E5454",
+    "input_type": "apk",
+    "timestamp": "2026-04-08T02:22:30.995431",
+    "pipeline_stages": [
+      "apk_static_analysis",
+      "detection",
+      "osint",
+      "golden_hour"
+    ],
+    "a2a_handoffs": [
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-5A4E5454",
+        "message_id": "ebf6373ca4e34c32b5b96ee05f4a851c",
+        "timestamp": "2026-04-07T20:52:30.995521+00:00",
+        "from": "satark_manager",
+        "to": "apk_analyzer",
+        "task": "detect_and_classify",
+        "payload": {
+          "input_type": "apk"
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-5A4E5454",
+        "message_id": "ef3b3ba8d9824ed1ae7e7255fd6d57ae",
+        "timestamp": "2026-04-07T20:52:43.443891+00:00",
+        "from": "satark_manager",
+        "to": "osint_agent",
+        "task": "investigate_indicators",
+        "payload": {
+          "indicators": [
+            "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+            "insecurebankv2",
+            "owasp",
+            "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT android app",
+            "com.dineshshetty.insecurebankv2"
+          ]
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-5A4E5454",
+        "message_id": "5dd3f515581949b99cfe2e2a845d3955",
+        "timestamp": "2026-04-07T20:52:43.746757+00:00",
+        "from": "satark_manager",
+        "to": "golden_hour_agent",
+        "task": "generate_golden_hour_plan",
+        "payload": {
+          "scam_type": "UNKNOWN",
+          "risk_level": "LOW"
+        },
+        "status": "completed"
+      }
+    ],
+    "is_scam": false,
+    "risk_level": "LOW",
+    "scam_type": "UNKNOWN",
+    "confidence": 95.0,
+    "red_flags": [
+      "SEARCH: com.dineshshetty.insecurebankv2 — Identified as a 'vulnerable by design' training app (OWASP project).",
+      "SEARCH: InsecureBankv2 — Documented in OWASP Mobile Application Security (MASTG-APP-0010).",
+      "URL_CONTEXT: github.com/dineshshetty/Android-InsecureBankv2 — Repository for learning Android insecurities."
+    ],
+    "extracted_entities": {
+      "urls": [],
+      "phones": [],
+      "domains": [],
+      "upi_ids": [],
+      "account_numbers": []
+    },
+    "victim_advice": "This app is intended for security research and educational labs only. It should not be installed on a personal device containing sensitive data, as it is designed to be 'insecure' by default. If you are not a security student or developer using this for training, you should uninstall it to prevent accidental data exposure.",
+    "osint_summary": "The investigated indicators point exclusively to 'InsecureBankv2', a well-known vulnerable Android application created by Dinesh Shetty and maintained as an OWASP-related training project. The package name 'com.dineshshetty.insecurebankv2' and the string 'classes.dexInsecureBankv2' are characteristic of this specific educational tool. While the application contains numerous intentional security flaws (e.g., insecure logging, hardcoded secrets, flawed broadcast receivers), it is not malicious in intent; it is designed for security enthusiasts and developers to practice mobile penetration testing. No evidence of active malicious campaigns or infrastructure was found associated with these specific strings beyond their use in cybersecurity education.",
+    "threat_score": 0,
+    "priority_actions": [
+      "Uninstall the app to avoid confusion.",
+      "Do not enter real passwords or PINs.",
+      "Only use for authorized security learning.",
+      "Keep your personal banking apps separate."
+    ],
+    "fir_template": "Subject: Complaint regarding distribution of malicious APK and attempted digital fraud.\n\nTo, The Officer-in-Charge, Cyber Cell.\n\nI am reporting a suspicious incident involving Case ID SATARK-20260408-5A4E5454. I was prompted to download and install an APK file from an unofficial source. Upon technical review, this file appears to be malware designed to intercept sensitive data and financial credentials. Although no immediate monetary loss is confirmed, this is a clear attempt at unauthorized access under Section 66 of the IT Act. I have preserved the APK file source and the communication logs from the sender. I request you to investigate the origin of this malicious link/file to prevent further victims. My device details and the source of the APK are ready for forensic submission if required.",
+    "golden_hour_active": false,
+    "calendar_event": {
+      "attempted": false,
+      "created": false,
+      "title": "GOLDEN HOUR: Secure Device & Report Malware (SATARK-20260408-5A4E5454)",
+      "event_id": "",
+      "start_time": "2026-04-07T21:00:00Z",
+      "description": "Urgent follow-up for APK fraud. Ensure 1930 is called and FIR is drafted on https://cybercrime.gov.in. Verify all banking passwords are changed.",
+      "error": ""
+    },
+    "google_tasks": {
+      "attempted": false,
+      "created": false,
+      "tasklist_id": "",
+      "tasks_created": 0,
+      "task_ids": [],
+      "task_url": "",
+      "error": ""
+    },
+    "case_report_doc": {
+      "attempted": false,
+      "created": false,
+      "doc_id": "",
+      "doc_url": "",
+      "error": ""
+    },
+    "gmail_draft": {
+      "attempted": false,
+      "created": false,
+      "draft_id": "",
+      "draft_url": "",
+      "error": ""
+    },
+    "similar_cases_found": 0,
+    "recovery_answers": {
+      "provided": false,
+      "did_lose_money": false,
+      "clicked_link": false,
+      "shared_personal_details": false,
+      "shared_bank_details": false,
+      "installed_apk": false,
+      "account_compromise": false,
+      "amount_lost": 0.0,
+      "time_bucket": null,
+      "explicit_report_request": false,
+      "reactive_recovery": false
+    },
+    "is_malicious": false,
+    "malware_type": "Clean",
+    "dangerous_permissions": [
+      "READ_SMS"
+    ],
+    "c2_servers": [],
+    "suspicious_strings": [],
+    "plain_english_summary": "The analyzed APK is the 'InsecureBankv2' application, which is a well-known intentionally vulnerable application created by Dinesh Shetty for educational and security training purposes (OWASP). While it contains the 'READ_SMS' permission, which is often used by banking trojans to steal OTPs, in this specific context, it is used to demonstrate security flaws to students and researchers. It does not contain malicious C2 infrastructure or obfuscated code characteristic of real-world malware.",
+    "apk_analysis": {
+      "artifact_type": "apk_analysis",
+      "file_name": "InsecureBankv2.apk",
+      "sha256": "646461cfc46642134c33670e22f89d72e5e8e9c34be00fdbae5166303eb8861a",
+      "package_name": "com.dineshshetty.insecurebankv2",
+      "app_name": "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+      "version_name": "",
+      "version_code": 0,
+      "min_sdk": null,
+      "target_sdk": null,
+      "signing": {
+        "is_debug": false,
+        "cert_subject": "",
+        "cert_issuer": "",
+        "cert_sha256": ""
+      },
+      "permissions": {
+        "all": [
+          "INTERNET",
+          "READ_SMS"
+        ],
+        "dangerous": [
+          "READ_SMS"
+        ],
+        "suspicious": []
+      },
+      "components": {
+        "exported_activities": [],
+        "exported_services": [],
+        "exported_receivers": [],
+        "deep_links": []
+      },
+      "network_indicators": {
+        "urls": [],
+        "domains": [],
+        "ip_literals": []
+      },
+      "code_indicators": {
+        "hardcoded_secrets": [],
+        "crypto_issues": [],
+        "webview_risks": [],
+        "root_detection": false,
+        "anti_analysis": false
+      },
+      "behavioral_flags": [
+        {
+          "flag": "uses_read_sms",
+          "severity": "high",
+          "evidence": "Manifest/string references android.permission.READ_SMS"
+        }
+      ],
+      "identity_clues": {
+        "labels": [
+          "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+          "insecurebankv2",
+          "owasp"
+        ],
+        "author_strings": [],
+        "repo_links": [],
+        "emails": []
+      },
+      "identity_assessment": {
+        "likely_known_project": true,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "possible"
+      },
+      "analysis_summary": "APK naming and strings align with a known intentionally vulnerable training app profile.",
+      "confidence": 0.45,
+      "is_malicious": false,
+      "malware_type": "Known Training App",
+      "risk_level": "SAFE",
+      "dangerous_permissions": [
+        "READ_SMS"
+      ],
+      "c2_servers": [],
+      "suspicious_strings": [],
+      "plain_english_summary": "APK naming and strings align with a known intentionally vulnerable training app profile.",
+      "victim_advice": "This appears to be a training-style vulnerable app, but only use it in an isolated test environment."
+    },
+    "osint": {
+      "indicators_investigated": [
+        "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+        "insecurebankv2",
+        "owasp",
+        "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT android app",
+        "com.dineshshetty.insecurebankv2"
+      ],
+      "domains": {
+        "github.com": {
+          "domain_age_days": 0,
+          "registrar": "MarkMonitor Inc.",
+          "hosting_country": "United States",
+          "ssl": {
+            "present": true,
+            "issuer": "DigiCert TLS RSA SHA256 2020 CA1",
+            "valid_to": "2025-03-15"
+          }
+        }
+      },
+      "ips": {},
+      "urls": {
+        "https://github.com/dineshshetty/Android-InsecureBankv2": {
+          "verdict": "SAFE",
+          "web_risk_verdict": "SAFE",
+          "red_flags": [
+            "SEARCH: dineshshetty/Android-InsecureBankv2 — Official GitHub repository for a vulnerable training application."
+          ],
+          "notes": "This is the primary source for the InsecureBankv2 project, a deliberate 'vulnerable by design' application for security training."
+        }
+      },
+      "threat_summary": "The investigated indicators point exclusively to 'InsecureBankv2', a well-known vulnerable Android application created by Dinesh Shetty and maintained as an OWASP-related training project. The package name 'com.dineshshetty.insecurebankv2' and the string 'classes.dexInsecureBankv2' are characteristic of this specific educational tool. While the application contains numerous intentional security flaws (e.g., insecure logging, hardcoded secrets, flawed broadcast receivers), it is not malicious in intent; it is designed for security enthusiasts and developers to practice mobile penetration testing. No evidence of active malicious campaigns or infrastructure was found associated with these specific strings beyond their use in cybersecurity education.",
+      "overall_threat_score": 0,
+      "red_flags": [
+        "SEARCH: com.dineshshetty.insecurebankv2 — Identified as a 'vulnerable by design' training app (OWASP project).",
+        "SEARCH: InsecureBankv2 — Documented in OWASP Mobile Application Security (MASTG-APP-0010).",
+        "URL_CONTEXT: github.com/dineshshetty/Android-InsecureBankv2 — Repository for learning Android insecurities."
+      ],
+      "recommendations": [
+        "Treat findings of this package as a security training exercise rather than a malware infection.",
+        "Do not deploy this application in production environments as it is intentionally insecure.",
+        "Use the official GitHub repository (dineshshetty/Android-InsecureBankv2) for authorized security research and learning."
+      ],
+      "sources": [
+        "google_search",
+        "github",
+        "owasp_mastg"
+      ]
+    },
+    "osint_enrichment": {
+      "artifact_type": "osint_enrichment",
+      "queries_used": [
+        "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT",
+        "insecurebankv2",
+        "owasp",
+        "classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT android app",
+        "com.dineshshetty.insecurebankv2"
+      ],
+      "identity_assessment": {
+        "likely_known_project": true,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "possible"
+      },
+      "public_matches": [
+        {
+          "type": "knowledge_base",
+          "title": "InsecureBankv2",
+          "url": "https://github.com/dineshshetty/Android-InsecureBankv2",
+          "relevance": "high",
+          "note": "Known intentionally vulnerable Android training app"
+        }
+      ],
+      "reputation_signals": {
+        "benign_signals": [
+          "Identity clues match a known vulnerable training app profile",
+          "App label observed: classes.dexInsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INT"
+        ],
+        "risk_signals": [
+          "APK requests sensitive permissions: READ_SMS"
+        ],
+        "unknowns": [
+          "Official publisher authenticity is not yet confirmed"
+        ]
+      },
+      "osint_summary": "The investigated indicators point exclusively to 'InsecureBankv2', a well-known vulnerable Android application created by Dinesh Shetty and maintained as an OWASP-related training project. The package name 'com.dineshshetty.insecurebankv2' and the string 'classes.dexInsecureBankv2' are characteristic of this specific educational tool. While the application contains numerous intentional security flaws (e.g., insecure logging, hardcoded secrets, flawed broadcast receivers), it is not malicious in intent; it is designed for security enthusiasts and developers to practice mobile penetration testing. No evidence of active malicious campaigns or infrastructure was found associated with these specific strings beyond their use in cybersecurity education.",
+      "confidence": 0.0
+    },
+    "response_mode": "proactive_warning",
+    "verdict": "Educational training application identified",
+    "category": "Educational/Training Tool",
+    "chat_reply": "This APK is actually a well-known educational tool called InsecureBankv2, which is used by security students to practice finding vulnerabilities. It isn't a malicious scam, but it is intentionally designed to be 'insecure' for training purposes. You don't need to worry about a hack, but I wouldn't recommend keeping it on your main phone where you have real banking apps.",
+    "summary": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+    "conversational_reply": "This looks like a security training app rather than a scam. It's meant for learning, so it's safe as long as you don't use it for real banking.",
+    "evidence": [],
+    "why_this_decision": [
+      "Identified as 'InsecureBankv2' training software.",
+      "Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.",
+      "Contains intentional security flaws for testing practice.",
+      "No evidence of malicious intent or data theft found."
+    ],
+    "recommended_actions": [
+      "Uninstall the app to avoid confusion.",
+      "Do not enter real passwords or PINs.",
+      "Only use for authorized security learning.",
+      "Keep your personal banking apps separate."
+    ],
+    "action_steps": [
+      "Uninstall the app to avoid confusion.",
+      "Do not enter real passwords or PINs.",
+      "Only use for authorized security learning.",
+      "Keep your personal banking apps separate."
+    ],
+    "requires_reporting": false,
+    "requires_emergency": false,
+    "requires_financial_blocking": false,
+    "requires_account_block": false,
+    "requires_device_cleanup": false,
+    "likely_app_identity": "known_training_app",
+    "uncertainty_note": "The app matches the InsecureBankv2 profile but provenance of this specific APK is unverified.",
+    "reporting_recommendation": {
+      "should_report_now": false,
+      "reason": "The application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+    },
+    "requires_mcp": false,
+    "mcp_plan": {
+      "create_calendar": false,
+      "create_tasks": false,
+      "create_gmail_draft": false,
+      "create_case_report_doc": false
+    },
+    "presentation_sections": {
+      "headline": "Educational Training App",
+      "status_line": "No malicious activity detected; educational tool identified.",
+      "primary_actions_title": "What to do now",
+      "actions_title": "What to do now",
+      "evidence_title": "Why it looks suspicious"
+    },
+    "presentation": {
+      "headline": "Educational Security Tool Identified",
+      "summary_paragraph": "The file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.",
+      "evidence_bullets": [
+        "Identified as 'InsecureBankv2' training software.",
+        "Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.",
+        "Contains intentional security flaws for testing practice.",
+        "No evidence of malicious intent or data theft found."
+      ],
+      "actions": [
+        "Uninstall the app to avoid confusion.",
+        "Do not enter real passwords or PINs.",
+        "Only use for authorized security learning.",
+        "Keep your personal banking apps separate."
+      ],
+      "reporting_note": "The application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+    },
+    "debug": {
+      "risk_level": "LOW",
+      "confidence": 0.95,
+      "similar_cases": 3,
+      "patterns": [
+        "OWASP Training App",
+        "InsecureBankv2 Profile"
+      ]
+    },
+    "presentation_markdown": "## What this looks like\nThe file is identified as InsecureBankv2, an OWASP-related training app designed for security testing, not for personal use.\n\n## Why I'm saying that\n- Identified as 'InsecureBankv2' training software.\n- Package name 'com.dineshshetty.insecurebankv2' is a known educational ID.\n- Contains intentional security flaws for testing practice.\n- No evidence of malicious intent or data theft found.\n\n## What to do now\n1. Uninstall the app to avoid confusion.\n2. Do not enter real passwords or PINs.\n3. Only use for authorized security learning.\n4. Keep your personal banking apps separate.\n\n## Reporting\nThe application is a known educational security tool and there is no evidence of financial loss, data theft, or malicious intent."
+  }
+}

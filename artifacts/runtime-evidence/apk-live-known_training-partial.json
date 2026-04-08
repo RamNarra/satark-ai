@@ -1,0 +1,135 @@
+{
+  "generated_at": "2026-04-07T20:51:25Z",
+  "case": "known_training",
+  "failed_phase": "ui_capture",
+  "error": "ui_capture timed out waiting for /api/result for known_training",
+  "api_run_id": "run_fbd993df5b08",
+  "last_sse_event": {
+    "ts": "2026-04-07T20:47:50Z",
+    "event": "tool.result",
+    "data": {
+      "run_id": "run_fbd993df5b08",
+      "timestamp": "2026-04-07T20:47:50.156392Z",
+      "agent": "manager",
+      "tool": "vector_pattern_lookup",
+      "status": "ok",
+      "matches": 3
+    }
+  },
+  "recent_sse_events": [
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468086Z",
+        "agent": "scam_detector",
+        "label": "Scam Detector",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468089Z",
+        "agent": "osint",
+        "label": "Osint",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468092Z",
+        "agent": "apk_analyzer",
+        "label": "Apk Analyzer",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468095Z",
+        "agent": "golden_hour",
+        "label": "Golden Hour",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468099Z",
+        "agent": "apk_analyzer",
+        "step": "apk_static_analysis",
+        "status": "running",
+        "message": "Inspecting APK structure..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468102Z",
+        "agent": "osint",
+        "step": "identity_enrichment",
+        "status": "running",
+        "message": "Searching public references..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468105Z",
+        "agent": "manager",
+        "step": "decision_synthesis",
+        "status": "running",
+        "message": "Preparing verdict..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "tool.called",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468110Z",
+        "agent": "manager",
+        "tool": "manager_pipeline",
+        "message": "Manager delegating to selected agents"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "tool.called",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:49.468116Z",
+        "agent": "manager",
+        "tool": "vector_pattern_lookup",
+        "message": "Searching similar historical fraud patterns"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:47:50Z",
+      "event": "tool.result",
+      "data": {
+        "run_id": "run_fbd993df5b08",
+        "timestamp": "2026-04-07T20:47:50.156392Z",
+        "agent": "manager",
+        "tool": "vector_pattern_lookup",
+        "status": "ok",
+        "matches": 3
+      }
+    }
+  ]
+}

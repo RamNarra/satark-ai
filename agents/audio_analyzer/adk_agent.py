@@ -1,4 +1,5 @@
 from google.adk.agents import Agent
+from google.genai import types
 from config import GEMINI_FLASH_MODEL
 
 
@@ -6,6 +7,10 @@ audio_analyzer_agent = Agent(
     name="audio_analyzer",
     model=GEMINI_FLASH_MODEL,
     description="Analyzes audio recordings for vishing and phone scams",
+  generate_content_config=types.GenerateContentConfig(
+    thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
+  ),
     instruction="""
 You are a vishing (voice phishing) detection specialist.
 

@@ -1,0 +1,10 @@
+{
+  "name": "apk_malicious_like",
+  "file_name": "bank_secure_update.apk",
+  "raw_text": "com.fake.bank.secure android.permission.READ_SMS android.permission.SEND_SMS android.permission.RECORD_AUDIO android.permission.BIND_ACCESSIBILITY_SERVICE android.permission.REQUEST_INSTALL_PACKAGES otp steal credential intercept keylog exfil http://bad-c2.example/collect",
+  "expect": {
+    "is_malicious": true,
+    "risk_at_least": "HIGH",
+    "must_include_dangerous": ["READ_SMS", "SEND_SMS"]
+  }
+}

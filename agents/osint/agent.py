@@ -1,4 +1,4 @@
-import json, os, sys
+import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google import genai
 from google.genai import types
@@ -9,6 +9,37 @@ from tools.osint_tools import (
 )
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+
+
+def _response_text(resp) -> str:
+    try:
+        candidates = getattr(resp, "candidates", None)
+        if candidates and getattr(candidates[0], "content", None):
+            parts = candidates[0].content.parts
+            return "".join(
+                t
+                for t in (getattr(p, "text", None) for p in (parts or []))
+                if isinstance(t, str) and t
+            )
+    except Exception:
+        pass
+    if isinstance(resp, str):
+        return resp
+    if isinstance(resp, dict):
+        t = resp.get("text")
+        return t if isinstance(t, str) else ""
+    return ""
+
+
+def _append_candidate_content(history: list, resp) -> None:
+    """Append the model's full Content (including thought signature parts)."""
+
+    try:
+        candidates = getattr(resp, "candidates", None)
+        if candidates and getattr(candidates[0], "content", None):
+            history.append(candidates[0].content)
+    except Exception:
+        pass
 
 def run_full_osint(indicators: dict) -> dict:
     results = {"domains": {}, "ips": {}, "urls": {}, "threat_summary": "", "overall_threat_score": 0}
@@ -41,17 +72,57 @@ def run_full_osint(indicators: dict) -> dict:
 
 def synthesize(indicators: dict, raw: dict) -> str:
     try:
-        resp = client.models.generate_content(
-            model=MODEL_PRO_TOOLS,
-            contents=f"""You are a Threat Intelligence analyst at TGCSB.
+        use_grounding = str(os.getenv("SATARK_ENABLE_OSINT_GROUNDING", "1") or "1").strip().lower() not in {"0", "false", "no"}
+        has_url = False
+        try:
+            urls = indicators.get("urls") or []
+            has_url = any(re.search(r"https?://", str(u or "")) for u in urls)
+        except Exception:
+            has_url = False
+
+        tools = None
+        if use_grounding:
+            tool_list = []
+            try:
+                if hasattr(types, "GoogleSearch"):
+                    tool_list.append(types.Tool(google_search=types.GoogleSearch()))
+            except Exception:
+                pass
+            try:
+                if has_url and hasattr(types, "UrlContext"):
+                    tool_list.append(types.Tool(url_context=types.UrlContext()))
+            except Exception:
+                pass
+            tools = tool_list or None
+
+        prompt = f"""You are a Threat Intelligence analyst at TGCSB.
 Write a 3-4 sentence threat intelligence summary for law enforcement.
 Focus on: domain age, hosting location, bulletproof hosting, fraud infrastructure.
 
+If URLs are present, use URL Context to fetch and briefly describe what the page does.
+Use Google Search grounding to validate any claims about phone numbers/domains (prior reports, scam warnings).
+
 Indicators: {json.dumps(indicators)}
-Findings: {json.dumps(raw, default=str)[:3000]}""",
-            config=types.GenerateContentConfig(temperature=0.2)
+Findings: {json.dumps(raw, default=str)[:3000]}"""
+
+        history = [
+            types.Content(
+                role="user",
+                parts=[types.Part(text=prompt)],
+            )
+        ]
+        resp = client.models.generate_content(
+            model=MODEL_PRO_TOOLS,
+            contents=history,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+                tools=tools,
+                tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="AUTO")) if tools else types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
+            )
         )
-        return resp.text.strip()
+        _append_candidate_content(history, resp)
+        return _response_text(resp).strip()
     except Exception as e:
         return f"OSINT analysis complete. Synthesis error: {e}"
 

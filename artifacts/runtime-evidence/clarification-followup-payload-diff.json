@@ -1,0 +1,33 @@
+{
+  "diff": [
+    {
+      "op": "added",
+      "path": "$.options.clarification_followup",
+      "after": true
+    },
+    {
+      "op": "added",
+      "path": "$.options.preprocessed_context",
+      "after": {}
+    },
+    {
+      "op": "added",
+      "path": "$.options.recovery_answers",
+      "after": {
+        "clicked_link": true
+      }
+    },
+    {
+      "op": "changed",
+      "path": "$.user_input.files",
+      "before": [],
+      "after": [
+        {
+          "file_name": "clarification-flow-input.png",
+          "file_type": "image/png",
+          "content_base64": "<base64:len=114>"
+        }
+      ]
+    }
+  ]
+}

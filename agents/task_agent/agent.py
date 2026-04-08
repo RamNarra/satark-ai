@@ -22,6 +22,8 @@ def _priority_for_item(item: str) -> str:
 def _deadline_for_item(item: str) -> str | None:
     text = item.lower()
     now = datetime.now(timezone.utc)
+    if any(keyword in text for keyword in ["urgent", "asap", "critical", "immediately", "now", "golden hour", "1930"]):
+        return (now + timedelta(minutes=5)).isoformat()
     if "today" in text:
         return now.isoformat()
     if "tomorrow" in text:

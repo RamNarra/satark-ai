@@ -1,0 +1,423 @@
+{
+  "version": "2026-04-deep-bench-v1",
+  "cases": [
+    {
+      "id": "text_01_upi_refund",
+      "modality": "text",
+      "payload": {
+        "session_id": "bench_text_01",
+        "user_input": {
+          "text": "I got a message saying my UPI KYC is blocked and to click http://kyc-update.example.in right now.",
+          "files": []
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "text_02_bank_alert",
+      "modality": "text",
+      "payload": {
+        "session_id": "bench_text_02",
+        "user_input": {
+          "text": "Bank alert: suspicious transaction. Verify account by sharing OTP within 10 minutes.",
+          "files": []
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "text_03_job_scam",
+      "modality": "text",
+      "payload": {
+        "session_id": "bench_text_03",
+        "user_input": {
+          "text": "I received a work from home offer asking me to pay a training fee and send Aadhaar details.",
+          "files": []
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "text_04_courier_fee",
+      "modality": "text",
+      "payload": {
+        "session_id": "bench_text_04",
+        "user_input": {
+          "text": "Courier failed. Pay Rs 19 redelivery fee on this link immediately or parcel will be returned.",
+          "files": []
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "text_05_social_takeover",
+      "modality": "text",
+      "payload": {
+        "session_id": "bench_text_05",
+        "user_input": {
+          "text": "My friend sent me a link claiming to vote in a contest and now my account might be compromised.",
+          "files": []
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "image_01_sms_screenshot",
+      "modality": "image",
+      "payload": {
+        "session_id": "bench_image_01",
+        "user_input": {
+          "text": "Please check this screenshot and tell me if this is fraud.",
+          "files": [
+            {
+              "file_name": "sms1.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "image_02_kyc_warning",
+      "modality": "image",
+      "payload": {
+        "session_id": "bench_image_02",
+        "user_input": {
+          "text": "Screenshot claims my account will be blocked in 2 hours. Verify this.",
+          "files": [
+            {
+              "file_name": "kyc.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "image_03_delivery_scam",
+      "modality": "image",
+      "payload": {
+        "session_id": "bench_image_03",
+        "user_input": {
+          "text": "Image from unknown sender asks for card details to release package.",
+          "files": [
+            {
+              "file_name": "delivery.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "image_04_fake_support",
+      "modality": "image",
+      "payload": {
+        "session_id": "bench_image_04",
+        "user_input": {
+          "text": "This screenshot says call urgent support number to unfreeze wallet.",
+          "files": [
+            {
+              "file_name": "support.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "image_05_investment_lure",
+      "modality": "image",
+      "payload": {
+        "session_id": "bench_image_05",
+        "user_input": {
+          "text": "Please analyze this investment return screenshot shared on messaging app.",
+          "files": [
+            {
+              "file_name": "invest.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "audio_01_otp_call",
+      "modality": "audio",
+      "payload": {
+        "session_id": "bench_audio_01",
+        "user_input": {
+          "text": "Analyze this call recording for vishing indicators.",
+          "files": [
+            {
+              "file_name": "otp.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "audio_02_loan_offer",
+      "modality": "audio",
+      "payload": {
+        "session_id": "bench_audio_02",
+        "user_input": {
+          "text": "Caller promised instant loan and asked for card CVV. Check risk.",
+          "files": [
+            {
+              "file_name": "loan.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "audio_03_kbc_prize",
+      "modality": "audio",
+      "payload": {
+        "session_id": "bench_audio_03",
+        "user_input": {
+          "text": "Audio claims I won lottery and must transfer processing fee today.",
+          "files": [
+            {
+              "file_name": "prize.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "audio_04_remote_access",
+      "modality": "audio",
+      "payload": {
+        "session_id": "bench_audio_04",
+        "user_input": {
+          "text": "Caller asks me to install app and share screen for account verification.",
+          "files": [
+            {
+              "file_name": "remote.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "audio_05_payment_link",
+      "modality": "audio",
+      "payload": {
+        "session_id": "bench_audio_05",
+        "user_input": {
+          "text": "Voice note says to click payment reversal link before account freeze.",
+          "files": [
+            {
+              "file_name": "voice.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "apk_01_sideload_wallet",
+      "modality": "apk",
+      "payload": {
+        "session_id": "bench_apk_01",
+        "user_input": {
+          "text": "Please inspect this wallet APK before installation.",
+          "files": [
+            {
+              "file_name": "wallet.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "apk_02_upi_clone",
+      "modality": "apk",
+      "payload": {
+        "session_id": "bench_apk_02",
+        "user_input": {
+          "text": "APK sent on chat says it is mandatory UPI security update.",
+          "files": [
+            {
+              "file_name": "upi_secure.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "apk_03_remote_admin",
+      "modality": "apk",
+      "payload": {
+        "session_id": "bench_apk_03",
+        "user_input": {
+          "text": "This APK claims to solve payment failure. Check for remote control malware.",
+          "files": [
+            {
+              "file_name": "helper.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "apk_04_bank_spoof",
+      "modality": "apk",
+      "payload": {
+        "session_id": "bench_apk_04",
+        "user_input": {
+          "text": "APK pretends to be my bank app update and asks all permissions.",
+          "files": [
+            {
+              "file_name": "bank_update.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "apk_05_sms_stealer",
+      "modality": "apk",
+      "payload": {
+        "session_id": "bench_apk_05",
+        "user_input": {
+          "text": "Analyze this app package for SMS interception and credential theft.",
+          "files": [
+            {
+              "file_name": "smsguard.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "mixed_01_text_plus_image",
+      "modality": "mixed",
+      "payload": {
+        "session_id": "bench_mixed_01",
+        "user_input": {
+          "text": "I got this screenshot and also this message asking to share OTP for refund.",
+          "files": [
+            {
+              "file_name": "mixed.png",
+              "file_type": "image/png",
+              "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "mixed_02_text_plus_audio",
+      "modality": "mixed",
+      "payload": {
+        "session_id": "bench_mixed_02",
+        "user_input": {
+          "text": "Voice call asked for AnyDesk installation and this follow-up SMS has link.",
+          "files": [
+            {
+              "file_name": "mixed.wav",
+              "file_type": "audio/wav",
+              "content_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    },
+    {
+      "id": "mixed_03_worst_case_apk",
+      "modality": "mixed",
+      "payload": {
+        "session_id": "bench_mixed_03",
+        "user_input": {
+          "text": "APK, OTP phishing text, and suspicious payment reversal narrative all in one incident.",
+          "files": [
+            {
+              "file_name": "worst.apk",
+              "file_type": "application/vnd.android.package-archive",
+              "content_base64": "UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAJAAAATWFuaWZlc3QueG1sUEsBAhQAFAAAAAgAAAAhAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAAAAAAAAAE1hbmlmZXN0LnhtbFBLBQYAAAAAAQABADcAAAAuAAAAAAA="
+            }
+          ]
+        },
+        "user_context": {"channel": "benchmark", "locale": "en-IN"},
+        "options": {"stream": false, "generate_report": true}
+      }
+    }
+  ],
+  "quality_rules": {
+    "required_fields": [
+      "summary",
+      "scam_type",
+      "risk_level",
+      "confidence",
+      "recommended_actions",
+      "deep_reason_code"
+    ],
+    "min_recommended_actions": 2
+  }
+}

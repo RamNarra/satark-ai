@@ -9,7 +9,7 @@ def _requires_meeting(task_title: str) -> bool:
 
 
 def run(tasks: list[dict], timezone_name: str = "UTC") -> dict:
-    base = datetime.now(timezone.utc).replace(hour=10, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    base = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
     cursor = base
     events: list[dict] = []
 

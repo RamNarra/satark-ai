@@ -1,0 +1,206 @@
+{
+  "generated_at": "2026-04-07T20:53:46Z",
+  "case": "known_training",
+  "run_id": "run_5940450e6803",
+  "events": [
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "run.accepted",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345343Z",
+        "case_id": "case_a19afb93f116",
+        "status": "accepted"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "run.classified",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345678Z",
+        "case_id": "case_a19afb93f116",
+        "primary_type": "apk",
+        "selected_agents": [
+          "manager",
+          "scam_detector",
+          "osint",
+          "apk_analyzer",
+          "golden_hour"
+        ],
+        "skipped_agents": [
+          {
+            "agent": "audio_analyzer",
+            "reason": "no audio file uploaded"
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.completed",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345693Z",
+        "agent": "audio_analyzer",
+        "status": "skipped",
+        "output": {
+          "summary": "Skipped: no audio file uploaded",
+          "reason": "no audio file uploaded"
+        }
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345701Z",
+        "agent": "manager",
+        "label": "Manager Agent",
+        "status": "booting"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345708Z",
+        "agent": "manager",
+        "step": "route_planning",
+        "status": "running",
+        "message": "Manager selected execution graph"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345717Z",
+        "agent": "scam_detector",
+        "label": "Scam Detector",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345724Z",
+        "agent": "osint",
+        "label": "Osint",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345731Z",
+        "agent": "apk_analyzer",
+        "label": "Apk Analyzer",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345737Z",
+        "agent": "golden_hour",
+        "label": "Golden Hour",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345744Z",
+        "agent": "apk_analyzer",
+        "step": "apk_static_analysis",
+        "status": "running",
+        "message": "Inspecting APK structure..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345751Z",
+        "agent": "osint",
+        "step": "identity_enrichment",
+        "status": "running",
+        "message": "Searching public references..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345757Z",
+        "agent": "manager",
+        "step": "decision_synthesis",
+        "status": "running",
+        "message": "Preparing verdict..."
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "tool.called",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345764Z",
+        "agent": "manager",
+        "tool": "manager_pipeline",
+        "message": "Manager delegating to selected agents"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "tool.called",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.345773Z",
+        "agent": "manager",
+        "tool": "vector_pattern_lookup",
+        "message": "Searching similar historical fraud patterns"
+      }
+    },
+    {
+      "ts": "2026-04-07T20:52:31Z",
+      "event": "tool.result",
+      "data": {
+        "run_id": "run_5940450e6803",
+        "timestamp": "2026-04-07T20:52:30.993472Z",
+        "agent": "manager",
+        "tool": "vector_pattern_lookup",
+        "status": "ok",
+        "matches": 3
+      }
+    }
+  ],
+  "errors": [
+    "timed out"
+  ],
+  "last_event": {
+    "ts": "2026-04-07T20:52:31Z",
+    "event": "tool.result",
+    "data": {
+      "run_id": "run_5940450e6803",
+      "timestamp": "2026-04-07T20:52:30.993472Z",
+      "agent": "manager",
+      "tool": "vector_pattern_lookup",
+      "status": "ok",
+      "matches": 3
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "session_id": "sess_1s7zfg4v1iwmnpppprg",
+  "user_input": {
+    "text": "I got this suspicious screenshot. I am not sure whether I clicked any link. Is this a scam?",
+    "files": [
+      {
+        "file_name": "clarification-flow-input.png",
+        "file_type": "image/png",
+        "content_base64": "<base64:len=114>"
+      }
+    ]
+  },
+  "user_context": {
+    "channel": "web-ui",
+    "locale": "en-US"
+  },
+  "options": {
+    "stream": true,
+    "generate_report": false,
+    "clarification_followup": true,
+    "trigger_mcp_actions": false,
+    "response_instruction": "You are SATARK AI, a citizen cyber-fraud safety assistant.\nWrite in simple IELTS 6 to 6.5 English.\nReply format is strict:\n1) Provide chat_reply in 2 to 4 natural sentences.\n2) Then provide summary as one short neutral sentence.\n3) Then provide exactly 3 to 4 bullet points of safety precautions or next steps.\n4) Use only available evidence from user text and uploaded files.\n5) Do not invent urgency unless evidence supports it.\n6) If an attachment exists, mention that attachment directly in chat_reply.\nReturn structured fields for chat_reply, summary, and recommended_actions.",
+    "enforce_response_structure": true,
+    "output_format": "summary_and_bullets",
+    "recovery_answers": {
+      "clicked_link": true
+    },
+    "preprocessed_context": {}
+  }
+}

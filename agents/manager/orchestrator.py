@@ -15,6 +15,7 @@ from db.notes_repo import save_notes
 from db.sessions_repo import upsert_session
 from db.tasks_repo import save_tasks
 from db.workflows_repo import create_workflow, update_workflow
+from satark_mcp.registry import get_clients
 
 EmitFn = Callable[[str, dict[str, Any]], Awaitable[None]]
 
@@ -144,6 +145,55 @@ async def run_productivity_workflow(
     ]
     artifact_ids = save_artifacts(workflow_id, artifacts)
 
+    mcp_results: dict[str, Any] = {}
+    options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+    auto_execute_tools = bool(options.get("auto_execute_tools", True))
+    if auto_execute_tools:
+        clients = get_clients()
+        max_events = int(payload.get("mcp_max_events") or 4)
+        max_tasks = int(payload.get("mcp_max_tasks") or 8)
+        max_notes = int(payload.get("mcp_max_notes") or 4)
+
+        await emit_event("tool.called", {"tool": "mcp.sync", "status": "running"})
+        try:
+            calendar_fn = clients.get("calendar")
+            tasks_fn = clients.get("tasks")
+            notes_fn = clients.get("notes")
+
+            sync_jobs = []
+            if callable(calendar_fn):
+                sync_jobs.append(calendar_fn((schedule_out.get("events") or [])[:max_events]))
+            if callable(tasks_fn):
+                sync_jobs.append(tasks_fn(tasks[:max_tasks]))
+            if callable(notes_fn):
+                sync_jobs.append(notes_fn((notes_out.get("notes") or [])[:max_notes]))
+
+            results = await asyncio.gather(*sync_jobs, return_exceptions=True)
+            for item in results:
+                if isinstance(item, Exception):
+                    continue
+                tool_name = str(item.get("tool") or "").strip()
+                if tool_name:
+                    mcp_results[tool_name] = item
+
+            await emit_event(
+                "tool.result",
+                {
+                    "tool": "mcp.sync",
+                    "status": "ok",
+                    "results": {k: (v.get("status") if isinstance(v, dict) else "unknown") for k, v in mcp_results.items()},
+                },
+            )
+        except Exception as exc:
+            await emit_event(
+                "tool.result",
+                {
+                    "tool": "mcp.sync",
+                    "status": "error",
+                    "error": str(exc),
+                },
+            )
+
     updated_memory = await asyncio.to_thread(memory_agent.update_context, user_id, goal, tasks)
     await emit_event(
         "tool.result",
@@ -174,6 +224,7 @@ async def run_productivity_workflow(
             "tasks": tasks_out,
             "research": research_out,
             "schedule": schedule_out,
+            "mcp": mcp_results,
             "memory": {
                 "recent_goals": updated_memory.get("recent_goals", []),
                 "routines": updated_memory.get("routines", []),

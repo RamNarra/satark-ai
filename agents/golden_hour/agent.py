@@ -6,6 +6,37 @@ from config import GEMINI_API_KEY, MODEL_PRO_TOOLS, PROJECT_ID, LOCATION, MODEL_
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
 
+
+def _response_text(resp) -> str:
+    try:
+        candidates = getattr(resp, "candidates", None)
+        if candidates and getattr(candidates[0], "content", None):
+            parts = candidates[0].content.parts
+            return "".join(
+                t
+                for t in (getattr(p, "text", None) for p in (parts or []))
+                if isinstance(t, str) and t
+            )
+    except Exception:
+        pass
+    if isinstance(resp, str):
+        return resp
+    if isinstance(resp, dict):
+        t = resp.get("text")
+        return t if isinstance(t, str) else ""
+    return ""
+
+
+def _append_candidate_content(history: list, resp) -> None:
+    """Append the model's full Content (including thought signature parts)."""
+
+    try:
+        candidates = getattr(resp, "candidates", None)
+        if candidates and getattr(candidates[0], "content", None):
+            history.append(candidates[0].content)
+    except Exception:
+        pass
+
 SYSTEM_PROMPT = """You are a cybercrime response specialist at TGCSB.
 The GOLDEN HOUR is the critical first hour after fraud — money can still be recovered.
 Return ONLY valid JSON:
@@ -47,16 +78,25 @@ Minutes Since Fraud: {input_data.get("minutes_since_fraud", "unknown")}
 Victim Complaint: {input_data.get("original_complaint", "")[:300]}
 """
     try:
+        history = [
+            types.Content(
+                role="user",
+                parts=[types.Part(text=f"Generate a Golden Hour response plan:\n{summary}")],
+            )
+        ]
         resp = client.models.generate_content(
             model=MODEL_FLASH,
-            contents=f"Generate a Golden Hour response plan:\n{summary}",
+            contents=history,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
                 temperature=0.1,
+                thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+                tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
                 response_mime_type="application/json"
             )
         )
-        return json.loads(resp.text.strip())
+        _append_candidate_content(history, resp)
+        return json.loads(_response_text(resp).strip())
     except Exception as e:
         return {
             "golden_hour_active": True,

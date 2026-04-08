@@ -134,15 +134,38 @@ The platform behavior maps to four operational intelligence buckets:
 
 ## API Surface
 
-- GET /health
-- GET /stats
-- GET /ui
-- POST /analyze
-- POST /analyze/text
-- POST /analyze/image
-- POST /analyze/audio
-- POST /analyze/apk
-- WS /stream
+- UI and health:
+  - GET /ui
+  - GET /ops
+  - GET /api
+  - GET /health
+  - GET /api/health
+- Auth:
+  - GET /auth/google/start
+  - GET /auth/google/callback
+  - GET /auth/google/logout
+  - GET /api/auth/status
+- Two-phase analyze API (recommended):
+  - POST /api/analyze/preprocess
+  - POST /api/analyze
+  - POST /api/analyze/deep
+  - GET /api/stream/{run_id}
+  - GET /api/result/{run_id}
+  - GET /api/debug/timings/{run_id}
+  - POST /api/recovery/finalize
+  - GET /api/cases
+- Productivity workflow API:
+  - POST /workflow/run
+  - GET /workflow/{workflow_id}
+  - GET /workflow/{workflow_id}/stream
+- Legacy compatibility routes:
+  - GET /stats
+  - POST /analyze
+  - POST /analyze/text
+  - POST /analyze/image
+  - POST /analyze/audio
+  - POST /analyze/apk
+  - WS /stream
 
 ## Regression Lock: Calm Vs Urgent
 
@@ -167,6 +190,9 @@ Regression fixtures:
 
 - `artifacts/regression-fixtures/prevented_scam.json`
 - `artifacts/regression-fixtures/money_lost.json`
+- `artifacts/regression-fixtures/apk_known_training.json`
+- `artifacts/regression-fixtures/apk_malicious_like.json`
+- `artifacts/regression-fixtures/apk_benign_like.json`
 
 Run the automated check:
 
@@ -178,6 +204,12 @@ Run the chat-reply tone contract check (preventive SMS + APK + UI source-of-trut
 
 ```bash
 python scripts/regression/check_chat_reply_contract.py
+```
+
+Run deterministic APK fixture profile checks (known training app vs malicious-like vs benign-like):
+
+```bash
+python scripts/regression/check_apk_fixture_profiles.py
 ```
 
 If this script fails, treat it as a release blocker.
@@ -420,10 +452,19 @@ satark-ai/
     osint/
     scam_detector/
   api/
+  artifacts/
+  benchmarks/
   db/
+  docs/
   frontend/
+  satark_mcp/
+  scripts/
+    regression/
+  tests/
   tools/
   config.py
+  Dockerfile
+  .env.example
   requirements.txt
 ```
 

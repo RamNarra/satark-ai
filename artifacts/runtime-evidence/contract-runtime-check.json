@@ -1,0 +1,34 @@
+{
+  "all_passed": true,
+  "results": {
+    "attachment_visible": {
+      "pass": true,
+      "slot_text": "dummy-test.apk (application/vnd.android.package-archive) | 1 KB | ready\nRemove",
+      "bubble_meta": "application/vnd.android.package-archive | 1 KB | ready",
+      "bubble_badge": "APK",
+      "screenshot": "artifacts/runtime-evidence/test1_attachment_visible.png"
+    },
+    "google_name_mapping": {
+      "pass": true,
+      "display_name": "John Doe",
+      "screenshot": "artifacts/runtime-evidence/test2_google_name_mapping.png"
+    },
+    "live_stt_merge": {
+      "pass": true,
+      "composer_text": "typed seed final transcript",
+      "screenshot": "artifacts/runtime-evidence/test3_live_stt_merge.png"
+    },
+    "apk_prompt_structured_reply": {
+      "pass": true,
+      "summary": "This looks like a scam lure, but your answers do not indicate direct compromise yet. Follow preventive safety steps.",
+      "step_count": 4,
+      "screenshot": "artifacts/runtime-evidence/test4_apk_prompt_structured_reply.png"
+    },
+    "malformed_response_degraded_state": {
+      "pass": true,
+      "message": "Model response is incomplete. Please retry this analysis.",
+      "steps_count": 0,
+      "screenshot": "artifacts/runtime-evidence/test5_malformed_response_degraded_state.png"
+    }
+  }
+}

@@ -1,0 +1,578 @@
+{
+  "run_id": "run_ddc22fc0f342",
+  "case_id": "case_2c9ee6c71fcf",
+  "status": "completed",
+  "input_type": "apk",
+  "verdict": "Untrusted application file",
+  "chat_reply": "This APK looks like a simple notes app and doesn't show any signs of malicious behavior or data theft. Since you haven't installed it or shared any details, there's no risk to your device right now. I'd recommend just deleting the file and sticking to official apps from the Play Store.",
+  "summary": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+  "conversational_reply": "I've checked the file you uploaded. It appears to be a harmless notes application, but since it's from an unofficial source, it's best to stay cautious. You haven't lost any money or data, so you're completely safe—just delete the file to be sure.",
+  "scam_type": "UNKNOWN",
+  "official_category": "APK Analysis",
+  "category": "APK Analysis",
+  "risk_level": "LOW",
+  "confidence": 85,
+  "response_mode": "proactive_warning",
+  "requires_reporting": false,
+  "requires_emergency": false,
+  "requires_financial_blocking": false,
+  "requires_account_block": false,
+  "requires_device_cleanup": false,
+  "likely_app_identity": "known_training_app",
+  "uncertainty_note": "The app identity matches a generic template often used for development or training purposes.",
+  "reporting_recommendation": {
+    "should_report_now": false,
+    "reason": "No financial loss, data exposure, or installation occurred, so there is no incident to report."
+  },
+  "requires_mcp": false,
+  "mcp_plan": {
+    "create_calendar": false,
+    "create_tasks": false,
+    "create_gmail_draft": false,
+    "create_case_report_doc": false
+  },
+  "why_this_decision": [
+    "Only requests basic internet access permission.",
+    "No evidence of credential or OTP theft found.",
+    "No financial or personal data was shared.",
+    "The file was not installed on your device."
+  ],
+  "presentation_sections": {
+    "headline": "Untrusted application file",
+    "status_line": "No compromise detected. Safe to ignore after deleting.",
+    "primary_actions_title": "What to do now",
+    "actions_title": "What to do now",
+    "evidence_title": "Why it looks safe"
+  },
+  "response_sections": {
+    "overview": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+    "why_flagged": [
+      "Only requests basic internet access permission.",
+      "No evidence of credential or OTP theft found.",
+      "No financial or personal data was shared.",
+      "The file was not installed on your device."
+    ],
+    "next_steps": [
+      "Delete the APK file immediately.",
+      "Do not proceed with installation.",
+      "Stick to the Google Play Store.",
+      "Ignore the source of this file."
+    ],
+    "reporting_guidance": "No financial loss, data exposure, or installation occurred, so there is no incident to report."
+  },
+  "presentation": {
+    "headline": "Untrusted application file",
+    "summary_paragraph": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+    "evidence_bullets": [
+      "Only requests basic internet access permission.",
+      "No evidence of credential or OTP theft found.",
+      "No financial or personal data was shared.",
+      "The file was not installed on your device."
+    ],
+    "actions": [
+      "Delete the APK file immediately.",
+      "Do not proceed with installation.",
+      "Stick to the Google Play Store.",
+      "Ignore the source of this file."
+    ],
+    "reporting_note": "No financial loss, data exposure, or installation occurred, so there is no incident to report."
+  },
+  "debug": {
+    "risk_level": "LOW",
+    "confidence": 0.85,
+    "similar_cases": 3,
+    "patterns": [
+      "benign_template"
+    ]
+  },
+  "presentation_markdown": "## What this looks like\nThe analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.\n\n## Why I'm saying that\n- Only requests basic internet access permission.\n- No evidence of credential or OTP theft found.\n- No financial or personal data was shared.\n- The file was not installed on your device.\n\n## What to do now\n1. Delete the APK file immediately.\n2. Do not proceed with installation.\n3. Stick to the Google Play Store.\n4. Ignore the source of this file.\n\n## Reporting\nNo financial loss, data exposure, or installation occurred, so there is no incident to report.",
+  "signals_found": [],
+  "similar_cases": 3,
+  "intel_corpus_size": 847,
+  "intel_type": "Other",
+  "intel_type_count": 10,
+  "pattern_matches": [
+    {
+      "scam_type": "null",
+      "sub_type": "null",
+      "score": 84
+    },
+    {
+      "scam_type": "Impersonation",
+      "sub_type": "Impersonation",
+      "score": 77
+    },
+    {
+      "scam_type": "KYC Fraud",
+      "sub_type": "KYC Fraud",
+      "score": 77
+    }
+  ],
+  "golden_hour_active": false,
+  "golden_hour_status": "STANDBY",
+  "golden_hour_message": "Follow the manager-provided action plan.",
+  "entities": {
+    "phone_numbers": [],
+    "domains": [
+      "api.example.com"
+    ],
+    "urls": [
+      "https://api.example.com/v1/notes"
+    ],
+    "ips": [],
+    "banks_claimed": []
+  },
+  "osint": null,
+  "osint_enrichment": {
+    "artifact_type": "osint_enrichment",
+    "queries_used": [
+      "https://api.example.com/v1/notes",
+      "api.example.com",
+      "benign_like-notes_app",
+      "benign_like-notes_app android app",
+      "classes.dexcom.example.notesapp"
+    ],
+    "identity_assessment": {
+      "likely_known_project": false,
+      "likely_official_project": false,
+      "likely_repack_or_tampered": "unknown"
+    },
+    "public_matches": [
+      {
+        "type": "package_hint",
+        "title": "classes.dexcom.example.notesapp",
+        "url": "",
+        "relevance": "medium",
+        "note": "Package identifier extracted from APK"
+      }
+    ],
+    "reputation_signals": {
+      "benign_signals": [
+        "App label observed: benign_like-notes_app"
+      ],
+      "risk_signals": [],
+      "unknowns": [
+        "Official publisher authenticity is not yet confirmed",
+        "Repack/tamper status remains uncertain without signature baseline"
+      ]
+    },
+    "osint_summary": "Public identity confidence is limited; treat the APK as untrusted until provenance is verified.",
+    "confidence": 0.45
+  },
+  "audio_analysis": null,
+  "apk_analysis": {
+    "summary": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+    "risk_level": "LOW",
+    "is_malicious": false,
+    "file_name": "benign_like-notes_app.apk",
+    "package_name": "classes.dexcom.example.notesapp",
+    "app_name": "benign_like-notes_app",
+    "identity": "known_training_app"
+  },
+  "evidence_summary": [
+    "Automated multi-agent analysis completed",
+    "Pattern checks and response planning executed"
+  ],
+  "action_steps": [
+    "Delete the APK file immediately.",
+    "Do not proceed with installation.",
+    "Stick to the Google Play Store.",
+    "Ignore the source of this file."
+  ],
+  "recommended_actions": [
+    "Delete the APK file immediately.",
+    "Do not proceed with installation.",
+    "Stick to the Google Play Store.",
+    "Ignore the source of this file."
+  ],
+  "complaint_draft": null,
+  "follow_up_actions": {
+    "calendar_event_created": false,
+    "calendar_event_id": null,
+    "calendar_start_time": "2026-04-07T21:00:00Z",
+    "calendar_attempted": false,
+    "calendar_error": null,
+    "calendar_url": null,
+    "calendar_deep_link": null,
+    "task_created": false,
+    "task_url": null,
+    "task_deep_link": null,
+    "doc_created": false,
+    "doc_url": null,
+    "doc_deep_link": null,
+    "gmail_draft_created": false,
+    "gmail_draft_url": null,
+    "tgcsb_alert_sent": false
+  },
+  "calendar_deep_link": null,
+  "task_deep_link": null,
+  "gmail_draft_url": null,
+  "agent_results": {
+    "manager": {
+      "status": "done"
+    },
+    "scam_detector": {
+      "status": "done"
+    },
+    "audio_analyzer": {
+      "status": "skipped"
+    },
+    "apk_analyzer": {
+      "status": "done"
+    },
+    "osint": {
+      "status": "done"
+    },
+    "golden_hour": {
+      "status": "done"
+    }
+  },
+  "evidence": [],
+  "submitted_evidence": [
+    {
+      "type": "application/vnd.android.package-archive",
+      "source": "benign_like-notes_app.apk",
+      "storage_uri": null
+    }
+  ],
+  "timestamps": {
+    "created_at": "2026-04-07T20:19:49.200465Z",
+    "completed_at": "2026-04-07T20:21:18.036444Z"
+  },
+  "raw": {
+    "acknowledgment_id": "SATARK-20260408-30A5E463",
+    "case_id": "SATARK-20260408-30A5E463",
+    "input_type": "apk",
+    "timestamp": "2026-04-08T01:49:49.978152",
+    "pipeline_stages": [
+      "apk_static_analysis",
+      "detection",
+      "osint",
+      "golden_hour"
+    ],
+    "a2a_handoffs": [
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-30A5E463",
+        "message_id": "cc6e5f2ebde04bbaa7888d2b7a420d8f",
+        "timestamp": "2026-04-07T20:19:49.978197+00:00",
+        "from": "satark_manager",
+        "to": "apk_analyzer",
+        "task": "detect_and_classify",
+        "payload": {
+          "input_type": "apk"
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-30A5E463",
+        "message_id": "4fb62124dfc647e4b5b469c76fc0bfbf",
+        "timestamp": "2026-04-07T20:20:02.157248+00:00",
+        "from": "satark_manager",
+        "to": "osint_agent",
+        "task": "investigate_indicators",
+        "payload": {
+          "indicators": [
+            "https://api.example.com/v1/notes",
+            "api.example.com",
+            "benign_like-notes_app",
+            "benign_like-notes_app android app",
+            "classes.dexcom.example.notesapp"
+          ]
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-30A5E463",
+        "message_id": "382f7c0b7d964f55874bc8db93aa6455",
+        "timestamp": "2026-04-07T20:20:02.447380+00:00",
+        "from": "satark_manager",
+        "to": "golden_hour_agent",
+        "task": "generate_golden_hour_plan",
+        "payload": {
+          "scam_type": "UNKNOWN",
+          "risk_level": "SAFE"
+        },
+        "status": "completed"
+      }
+    ],
+    "is_scam": false,
+    "risk_level": "LOW",
+    "scam_type": "UNKNOWN",
+    "confidence": 85.0,
+    "red_flags": [],
+    "extracted_entities": {
+      "urls": [
+        "https://api.example.com/v1/notes"
+      ],
+      "phones": [],
+      "domains": [
+        "api.example.com"
+      ],
+      "upi_ids": [],
+      "account_numbers": []
+    },
+    "victim_advice": "This application shows no signs of malicious activity. It is safe to use based on static analysis. However, always ensure you download apps from official sources like the Google Play Store and keep your device software updated.",
+    "osint_summary": "",
+    "threat_score": 0,
+    "priority_actions": [
+      "Delete the APK file immediately.",
+      "Do not proceed with installation.",
+      "Stick to the Google Play Store.",
+      "Ignore the source of this file."
+    ],
+    "fir_template": "Subject: Complaint regarding suspicious APK file and attempted cyber fraud.\n\nTo, The Nodal Officer, NCRP. \n\nI am reporting a suspicious incident involving a malicious APK file (App Package). On 2026-04-07, I encountered a link/file which appears to be a tool for unauthorized access to my device. The technical details involve a connection to api.example.com. Although no financial loss has occurred yet, this appears to be a precursor to KYC or Impersonation fraud. I have not shared any OTPs or installed the software. I am filing this complaint to bring the source of this malicious file to your notice for technical investigation and to prevent potential financial theft from my bank accounts. \n\nDetails:\n- Incident Date: 2026-04-07\n- Domain involved: api.example.com\n- Risk: High (Malware/Spyware delivery)\n\nI request you to block the associated URLs and take necessary action against the perpetrators.",
+    "golden_hour_active": false,
+    "calendar_event": {
+      "attempted": false,
+      "created": false,
+      "title": "Security Audit & Malware Cleanup - Case SATARK-30A5E463",
+      "event_id": "",
+      "start_time": "2026-04-07T21:00:00Z",
+      "description": "Follow up on device security after APK threat. Verify no unauthorized access. Report to https://cybercrime.gov.in",
+      "error": ""
+    },
+    "google_tasks": {
+      "attempted": false,
+      "created": false,
+      "tasklist_id": "",
+      "tasks_created": 0,
+      "task_ids": [],
+      "task_url": "",
+      "error": ""
+    },
+    "case_report_doc": {
+      "attempted": false,
+      "created": false,
+      "doc_id": "",
+      "doc_url": "",
+      "error": ""
+    },
+    "gmail_draft": {
+      "attempted": false,
+      "created": false,
+      "draft_id": "",
+      "draft_url": "",
+      "error": ""
+    },
+    "similar_cases_found": 0,
+    "recovery_answers": {
+      "provided": false,
+      "did_lose_money": false,
+      "clicked_link": false,
+      "shared_personal_details": false,
+      "shared_bank_details": false,
+      "installed_apk": false,
+      "account_compromise": false,
+      "amount_lost": 0.0,
+      "time_bucket": null,
+      "explicit_report_request": false,
+      "reactive_recovery": false
+    },
+    "is_malicious": false,
+    "malware_type": "Clean",
+    "dangerous_permissions": [],
+    "c2_servers": [],
+    "suspicious_strings": [
+      "otp",
+      "credential"
+    ],
+    "plain_english_summary": "The analyzed APK appears to be a legitimate, simple notes application. It requests only basic internet access and connects to a standard API endpoint. While the strings 'otp' and 'credential' were found, the context within the code (e.g., 'no otp no credential capture') suggests these are descriptive strings confirming the absence of such features rather than functional code for stealing data. No dangerous permissions like SMS reading or audio recording are present.",
+    "apk_analysis": {
+      "artifact_type": "apk_analysis",
+      "file_name": "benign_like-notes_app.apk",
+      "sha256": "ef271452e89a2d398d65129594c46f35e90e2294a1dc7290bdf48cafb4461e6f",
+      "package_name": "classes.dexcom.example.notesapp",
+      "app_name": "benign_like-notes_app",
+      "version_name": "",
+      "version_code": 0,
+      "min_sdk": null,
+      "target_sdk": null,
+      "signing": {
+        "is_debug": false,
+        "cert_subject": "",
+        "cert_issuer": "",
+        "cert_sha256": ""
+      },
+      "permissions": {
+        "all": [
+          "INTERNET"
+        ],
+        "dangerous": [],
+        "suspicious": []
+      },
+      "components": {
+        "exported_activities": [],
+        "exported_services": [],
+        "exported_receivers": [],
+        "deep_links": []
+      },
+      "network_indicators": {
+        "urls": [
+          "https://api.example.com/v1/notes"
+        ],
+        "domains": [
+          "api.example.com"
+        ],
+        "ip_literals": []
+      },
+      "code_indicators": {
+        "hardcoded_secrets": [],
+        "crypto_issues": [],
+        "webview_risks": [],
+        "root_detection": false,
+        "anti_analysis": false
+      },
+      "behavioral_flags": [
+        {
+          "flag": "suspicious_network_endpoints",
+          "severity": "high",
+          "evidence": "Found 1 non-trusted hardcoded URL(s)"
+        }
+      ],
+      "identity_clues": {
+        "labels": [
+          "benign_like-notes_app"
+        ],
+        "author_strings": [],
+        "repo_links": [],
+        "emails": []
+      },
+      "identity_assessment": {
+        "likely_known_project": false,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "unknown"
+      },
+      "analysis_summary": "Static APK analysis completed with identity and risk indicators.",
+      "confidence": 0.62,
+      "is_malicious": false,
+      "malware_type": "Clean",
+      "risk_level": "LOW",
+      "dangerous_permissions": [],
+      "c2_servers": [
+        "https://api.example.com/v1/notes"
+      ],
+      "suspicious_strings": [
+        "otp",
+        "credential"
+      ],
+      "plain_english_summary": "Static APK analysis completed with identity and risk indicators.",
+      "victim_advice": "Treat this APK as untrusted on your personal phone. Remove it and avoid entering real credentials."
+    },
+    "osint": {},
+    "osint_enrichment": {
+      "artifact_type": "osint_enrichment",
+      "queries_used": [
+        "https://api.example.com/v1/notes",
+        "api.example.com",
+        "benign_like-notes_app",
+        "benign_like-notes_app android app",
+        "classes.dexcom.example.notesapp"
+      ],
+      "identity_assessment": {
+        "likely_known_project": false,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "unknown"
+      },
+      "public_matches": [
+        {
+          "type": "package_hint",
+          "title": "classes.dexcom.example.notesapp",
+          "url": "",
+          "relevance": "medium",
+          "note": "Package identifier extracted from APK"
+        }
+      ],
+      "reputation_signals": {
+        "benign_signals": [
+          "App label observed: benign_like-notes_app"
+        ],
+        "risk_signals": [],
+        "unknowns": [
+          "Official publisher authenticity is not yet confirmed",
+          "Repack/tamper status remains uncertain without signature baseline"
+        ]
+      },
+      "osint_summary": "Public identity confidence is limited; treat the APK as untrusted until provenance is verified.",
+      "confidence": 0.45
+    },
+    "response_mode": "proactive_warning",
+    "verdict": "Untrusted application file",
+    "category": "APK Analysis",
+    "chat_reply": "This APK looks like a simple notes app and doesn't show any signs of malicious behavior or data theft. Since you haven't installed it or shared any details, there's no risk to your device right now. I'd recommend just deleting the file and sticking to official apps from the Play Store.",
+    "summary": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+    "conversational_reply": "I've checked the file you uploaded. It appears to be a harmless notes application, but since it's from an unofficial source, it's best to stay cautious. You haven't lost any money or data, so you're completely safe—just delete the file to be sure.",
+    "evidence": [],
+    "why_this_decision": [
+      "Only requests basic internet access permission.",
+      "No evidence of credential or OTP theft found.",
+      "No financial or personal data was shared.",
+      "The file was not installed on your device."
+    ],
+    "recommended_actions": [
+      "Delete the APK file immediately.",
+      "Do not proceed with installation.",
+      "Stick to the Google Play Store.",
+      "Ignore the source of this file."
+    ],
+    "action_steps": [
+      "Delete the APK file immediately.",
+      "Do not proceed with installation.",
+      "Stick to the Google Play Store.",
+      "Ignore the source of this file."
+    ],
+    "requires_reporting": false,
+    "requires_emergency": false,
+    "requires_financial_blocking": false,
+    "requires_account_block": false,
+    "requires_device_cleanup": false,
+    "likely_app_identity": "known_training_app",
+    "uncertainty_note": "The app identity matches a generic template often used for development or training purposes.",
+    "reporting_recommendation": {
+      "should_report_now": false,
+      "reason": "No financial loss, data exposure, or installation occurred, so there is no incident to report."
+    },
+    "requires_mcp": false,
+    "mcp_plan": {
+      "create_calendar": false,
+      "create_tasks": false,
+      "create_gmail_draft": false,
+      "create_case_report_doc": false
+    },
+    "presentation_sections": {
+      "headline": "Untrusted application file",
+      "status_line": "No compromise detected. Safe to ignore after deleting.",
+      "primary_actions_title": "What to do now",
+      "actions_title": "What to do now",
+      "evidence_title": "Why it looks safe"
+    },
+    "presentation": {
+      "headline": "Untrusted application file",
+      "summary_paragraph": "The analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.",
+      "evidence_bullets": [
+        "Only requests basic internet access permission.",
+        "No evidence of credential or OTP theft found.",
+        "No financial or personal data was shared.",
+        "The file was not installed on your device."
+      ],
+      "actions": [
+        "Delete the APK file immediately.",
+        "Do not proceed with installation.",
+        "Stick to the Google Play Store.",
+        "Ignore the source of this file."
+      ],
+      "reporting_note": "No financial loss, data exposure, or installation occurred, so there is no incident to report."
+    },
+    "debug": {
+      "risk_level": "LOW",
+      "confidence": 0.85,
+      "similar_cases": 0,
+      "patterns": [
+        "benign_template"
+      ]
+    },
+    "presentation_markdown": "## What this looks like\nThe analyzed APK is a basic utility with minimal permissions and no evidence of malicious intent or data compromise.\n\n## Why I'm saying that\n- Only requests basic internet access permission.\n- No evidence of credential or OTP theft found.\n- No financial or personal data was shared.\n- The file was not installed on your device.\n\n## What to do now\n1. Delete the APK file immediately.\n2. Do not proceed with installation.\n3. Stick to the Google Play Store.\n4. Ignore the source of this file.\n\n## Reporting\nNo financial loss, data exposure, or installation occurred, so there is no incident to report."
+  }
+}

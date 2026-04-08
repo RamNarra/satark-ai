@@ -1,0 +1,10 @@
+{
+  "name": "apk_benign_like",
+  "file_name": "notes_app.apk",
+  "raw_text": "com.example.notesapp android.permission.INTERNET https://api.example.com/v1/notes simple note app no banking no otp no credential capture",
+  "expect": {
+    "is_malicious": false,
+    "likely_known_project": false,
+    "risk_not_above": "MEDIUM"
+  }
+}

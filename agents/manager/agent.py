@@ -40,9 +40,14 @@ def run(input_data: dict) -> dict:
     result["victim_advice"] = detection.get("victim_advice", "")
     result["signals_found"] = detection.get("signals_found", [])
 
-    # Stage 2: OSINT (only if scam with >30% confidence)
-    osint_result = {"threat_summary": "Not run", "overall_threat_score": 0}
-    if detection.get("is_scam") and detection.get("confidence", 0) > 30:
+    # Stage 2: OSINT (run when indicators exist)
+    osint_result = {"threat_summary": "Skipped (no indicators)", "overall_threat_score": 0}
+    extracted_entities = detection.get("extracted_entities", {}) if isinstance(detection.get("extracted_entities"), dict) else {}
+    urls = extracted_entities.get("urls") or []
+    phones = extracted_entities.get("phone_numbers") or extracted_entities.get("phones") or []
+    domains = extracted_entities.get("domains") or []
+    has_indicators = bool(urls) or bool(phones) or bool(domains)
+    if has_indicators:
         print(f"[{ack_id}] Stage 2: OSINT...")
         try:
             osint_result = osint_agent.run(detection)

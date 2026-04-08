@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SATARK AI — Cyber Fraud Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05070f;
+  --surface:#0a0d1a;
+  --surface-2:#0f1423;
+  --surface-3:#141929;
+  --border:#1a2035;
+  --border-glow:#00d4aa30;
+  --teal:#00d4aa;
+  --teal-dim:#00a882;
+  --teal-glow:#00d4aa20;
+  --red:#ff3b3b;
+  --orange:#ff8c00;
+  --yellow:#ffd600;
+  --green:#00d4aa;
+  --text:#e2e8f4;
+  --text-muted:#6b7a99;
+  --text-faint:#3a4460;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --display:'Space Grotesk',sans-serif;
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+html{height:100%;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;overflow-x:hidden}
+
+/* GRID BACKGROUND */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:40px 40px;
+  opacity:0.3;pointer-events:none;z-index:0;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 40%,transparent 100%);
+}
+
+/* SCANLINE EFFECT */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,170,0.01) 2px,rgba(0,212,170,0.01) 4px);
+  pointer-events:none;z-index:0;
+}
+
+/* TOP BAR */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;
+  background:rgba(5,7,15,0.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.topbar-logo{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--display);font-size:16px;font-weight:700;
+  letter-spacing:0.08em;color:var(--teal);
+  text-decoration:none;
+}
+.topbar-logo svg{width:22px;height:22px}
+.logo-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 8px var(--teal);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--teal)}50%{opacity:0.5;box-shadow:0 0 3px var(--teal)}}
+
+.topbar-right{display:flex;align-items:center;gap:12px}
+#authBadge{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 12px;border-radius:6px;
+  background:var(--surface-2);border:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);cursor:pointer;
+  transition:all 0.2s;text-decoration:none;
+}
+#authBadge:hover{border-color:var(--teal-dim);color:var(--text)}
+#authBadge.connected{border-color:var(--teal-dim);color:var(--teal)}
+#authBadge .badge-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0;
+  transition:background 0.3s;
+}
+#authBadge.connected .badge-dot{background:var(--teal);box-shadow:0 0 6px var(--teal)}
+.ops-link{
+  padding:5px 12px;border-radius:6px;
+  background:transparent;border:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);text-decoration:none;
+  transition:all 0.2s;font-family:var(--sans);
+}
+.ops-link:hover{border-color:var(--border-glow);color:var(--teal)}
+#logoutBtn{
+  padding:5px 10px;border-radius:6px;background:transparent;
+  border:1px solid var(--border);color:var(--text-muted);
+  font-size:11px;cursor:pointer;transition:all 0.2s;display:none;
+  font-family:var(--sans);
+}
+#logoutBtn:hover{border-color:#ff3b3b40;color:var(--red)}
+#logoutBtn.visible{display:block}
+
+/* MAIN WRAPPER */
+.main{
+  position:relative;z-index:1;
+  min-height:100vh;padding-top:56px;
+  display:flex;flex-direction:column;
+}
+
+/* ============ INPUT VIEW ============ */
+#inputView{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:48px 24px;
+  transition:opacity 0.4s,transform 0.4s;
+}
+#inputView.hidden{opacity:0;transform:translateY(-20px);pointer-events:none;position:absolute;top:56px;left:0;right:0}
+
+.hero-eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.15em;
+  color:var(--teal);text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{
+  content:'';display:block;width:24px;height:1px;background:var(--teal);opacity:0.5;
+}
+.hero-title{
+  font-family:var(--display);font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:700;text-align:center;line-height:1.1;
+  margin-bottom:12px;
+  background:linear-gradient(135deg,#e2e8f4 0%,#94a3c4 50%,var(--teal) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:40px;max-width:420px;
+}
+
+.input-card{
+  width:100%;max-width:600px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:24px;
+  box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.4),0 0 80px var(--teal-glow);
+  transition:box-shadow 0.3s;
+}
+.input-card:focus-within{
+  border-color:rgba(0,212,170,0.3);
+  box-shadow:0 0 0 1px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.4),0 0 120px rgba(0,212,170,0.12);
+}
+
+.input-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.12em;
+  color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;
+}
+#inputText{
+  width:100%;min-height:120px;resize:none;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;color:var(--text);font-family:var(--sans);font-size:14px;
+  line-height:1.6;outline:none;transition:border-color 0.2s;
+  caret-color:var(--teal);
+}
+#inputText::placeholder{color:var(--text-faint)}
+#inputText:focus{border-color:rgba(0,212,170,0.25)}
+#inputText::-webkit-scrollbar{width:4px}
+#inputText::-webkit-scrollbar-track{background:transparent}
+#inputText::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.input-divider{
+  display:flex;align-items:center;gap:12px;margin:16px 0;
+}
+.input-divider::before,.input-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.input-divider span{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
+
+/* DROPZONE */
+#dropzone{
+  border:1px dashed var(--border);border-radius:10px;
+  padding:20px;text-align:center;cursor:pointer;
+  transition:all 0.2s;position:relative;overflow:hidden;
+  background:var(--surface-2);
+}
+#dropzone:hover,#dropzone.drag-over{
+  border-color:rgba(0,212,170,0.4);
+  background:rgba(0,212,170,0.04);
+}
+#dropzone.has-file{border-color:var(--teal-dim);border-style:solid;background:rgba(0,212,170,0.06)}
+#fileInput{display:none}
+.drop-icon{
+  width:32px;height:32px;margin:0 auto 8px;
+  color:var(--text-faint);
+}
+#dropzone.has-file .drop-icon{color:var(--teal)}
+.drop-text{font-size:13px;color:var(--text-muted)}
+.drop-subtext{font-size:11px;color:var(--text-faint);margin-top:4px;font-family:var(--mono)}
+#fileName{font-size:12px;color:var(--teal);font-family:var(--mono);display:none;margin-top:4px}
+#dropzone.has-file #fileName{display:block}
+
+/* SUBMIT BUTTON */
+.submit-row{display:flex;gap:10px;margin-top:16px}
+#submitBtn{
+  flex:1;padding:13px 24px;border-radius:10px;
+  background:var(--teal);border:none;color:#000;
+  font-family:var(--display);font-size:14px;font-weight:600;
+  letter-spacing:0.06em;cursor:pointer;
+  transition:all 0.2s var(--ease-out);
+  position:relative;overflow:hidden;
+}
+#submitBtn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  transform:translateX(-100%);transition:transform 0.6s;
+}
+#submitBtn:hover{background:#00e6bb;box-shadow:0 0 24px rgba(0,212,170,0.4);transform:translateY(-1px)}
+#submitBtn:hover::before{transform:translateX(100%)}
+#submitBtn:active{transform:translateY(0)}
+#submitBtn:disabled{background:var(--surface-3);color:var(--text-faint);cursor:not-allowed;box-shadow:none;transform:none}
+
+/* TAGS */
+.input-tags{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.tag{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;
+  background:var(--surface-3);border:1px solid var(--border);
+  font-size:11px;color:var(--text-muted);font-family:var(--mono);
+}
+.tag svg{width:12px;height:12px;color:var(--teal)}
+
+/* ============ ANALYZING VIEW ============ */
+#analyzingView{
+  display:none;flex:1;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:48px 24px;
+}
+#analyzingView.visible{display:flex}
+
+.analyzing-header{text-align:center;margin-bottom:48px}
+.analyzing-title{
+  font-family:var(--display);font-size:28px;font-weight:700;
+  color:var(--teal);letter-spacing:0.04em;margin-bottom:8px;
+}
+.analyzing-sub{
+  font-family:var(--mono);font-size:12px;color:var(--text-muted);
+  letter-spacing:0.1em;
+}
+.typing-cursor{
+  display:inline-block;width:2px;height:14px;background:var(--teal);
+  animation:blink 0.7s infinite;vertical-align:middle;margin-left:2px;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.agents-grid{
+  display:flex;flex-direction:column;gap:8px;
+  width:100%;max-width:520px;
+}
+.agent-row{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  transition:all 0.3s var(--ease-out);opacity:0.4;
+}
+.agent-row.active{opacity:1;border-color:rgba(0,212,170,0.2);background:rgba(0,212,170,0.04)}
+.agent-row.done{opacity:1;border-color:rgba(0,212,170,0.15)}
+.agent-icon{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);
+  flex-shrink:0;transition:all 0.3s;
+  font-size:14px;
+}
+.agent-row.active .agent-icon,.agent-row.done .agent-icon{
+  background:rgba(0,212,170,0.1);border-color:rgba(0,212,170,0.3);
+}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text)}
+.agent-status{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:2px;letter-spacing:0.06em}
+.agent-row.active .agent-status{color:var(--teal)}
+.agent-row.done .agent-status{color:var(--teal-dim)}
+.agent-indicator{
+  width:8px;height:8px;border-radius:50%;background:var(--text-faint);flex-shrink:0;transition:all 0.3s;
+}
+.agent-row.active .agent-indicator{
+  background:var(--teal);box-shadow:0 0 8px var(--teal);
+  animation:pulse 1s ease-in-out infinite;
+}
+.agent-row.done .agent-indicator{background:var(--teal-dim);box-shadow:none;animation:none}
+
+.progress-bar-wrap{
+  width:100%;max-width:520px;margin-top:24px;
+  background:var(--surface-2);border-radius:4px;height:3px;overflow:hidden;
+  border:1px solid var(--border);
+}
+.progress-bar{
+  height:100%;background:linear-gradient(90deg,var(--teal-dim),var(--teal));
+  border-radius:4px;transition:width 0.5s var(--ease-out);width:0%;
+  box-shadow:0 0 8px var(--teal);
+}
+
+/* ============ RESULTS VIEW ============ */
+#resultsView{
+  display:none;flex:1;flex-direction:column;
+  padding:32px 24px;max-width:800px;margin:0 auto;width:100%;
+}
+#resultsView.visible{display:flex}
+
+.results-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.results-back{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text-muted);cursor:pointer;
+  transition:color 0.2s;background:none;border:none;font-family:var(--sans);
+  padding:0;
+}
+.results-back:hover{color:var(--teal)}
+.results-back svg{width:14px;height:14px}
+.case-id{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+
+/* VERDICT CARD */
+.verdict-card{
+  border-radius:14px;padding:24px;margin-bottom:16px;
+  background:var(--surface);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.verdict-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--risk-color,var(--teal));
+}
+.verdict-card.CRITICAL{--risk-color:var(--red);border-color:rgba(255,59,59,0.2);background:rgba(255,59,59,0.05)}
+.verdict-card.HIGH{--risk-color:var(--orange);border-color:rgba(255,140,0,0.2);background:rgba(255,140,0,0.04)}
+.verdict-card.MEDIUM{--risk-color:var(--yellow);border-color:rgba(255,214,0,0.2)}
+.verdict-card.LOW{--risk-color:var(--green);border-color:rgba(0,212,170,0.2)}
+
+.verdict-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.risk-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.1em;
+  margin-bottom:10px;
+}
+.risk-badge.CRITICAL{background:rgba(255,59,59,0.15);color:var(--red);border:1px solid rgba(255,59,59,0.3)}
+.risk-badge.HIGH{background:rgba(255,140,0,0.15);color:var(--orange);border:1px solid rgba(255,140,0,0.3)}
+.risk-badge.MEDIUM{background:rgba(255,214,0,0.15);color:var(--yellow);border:1px solid rgba(255,214,0,0.3)}
+.risk-badge.LOW{background:rgba(0,212,170,0.15);color:var(--teal);border:1px solid rgba(0,212,170,0.3)}
+.risk-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite}
+
+.verdict-type{
+  font-family:var(--display);font-size:22px;font-weight:700;
+  color:var(--text);line-height:1.2;margin-bottom:6px;
+}
+.verdict-summary{font-size:13px;color:var(--text-muted);max-width:400px}
+
+.verdict-stats{display:flex;gap:20px;flex-wrap:wrap}
+.stat-label{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--text-faint);text-transform:uppercase;margin-bottom:4px}
+.stat-value{font-family:var(--display);font-size:22px;font-weight:700;color:var(--text)}
+.stat-value.teal{color:var(--teal)}
+
+/* SECTION CARDS */
+.section-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  margin-bottom:12px;overflow:hidden;
+}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;cursor:pointer;
+  transition:background 0.2s;user-select:none;
+}
+.section-header:hover{background:rgba(255,255,255,0.02)}
+.section-title-row{display:flex;align-items:center;gap:8px}
+.section-icon{width:16px;height:16px;color:var(--teal);flex-shrink:0}
+.section-title{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text)}
+.section-toggle{
+  width:16px;height:16px;color:var(--text-faint);
+  transition:transform 0.2s;
+}
+.section-card.open .section-toggle{transform:rotate(180deg)}
+.section-body{
+  padding:0 18px 16px;display:none;
+  border-top:1px solid var(--border);padding-top:16px;
+}
+.section-card.open .section-body{display:block}
+
+/* RED FLAGS */
+.flags-list{display:flex;flex-direction:column;gap:6px}
+.flag-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:8px;
+  background:var(--surface-2);
+  font-size:13px;color:var(--text-muted);
+}
+.flag-item::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--red);flex-shrink:0;
+}
+
+/* OSINT */
+.osint-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media(max-width:500px){.osint-grid{grid-template-columns:1fr}}
+.osint-item{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:8px;padding:10px 12px;
+}
+.osint-key{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.osint-val{font-size:13px;color:var(--text);font-family:var(--mono)}
+.osint-val.danger{color:var(--red)}
+.osint-val.warn{color:var(--orange)}
+.osint-val.safe{color:var(--teal)}
+.osint-summary{
+  font-size:13px;color:var(--text-muted);line-height:1.6;
+  padding:12px;background:var(--surface-2);border-radius:8px;
+  border-left:2px solid var(--teal-dim);
+}
+
+/* ACTIONS */
+.actions-list{display:flex;flex-direction:column;gap:8px}
+.action-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 14px;border-radius:8px;
+  background:var(--surface-2);border:1px solid var(--border);
+  font-size:13px;color:var(--text);
+}
+.action-num{
+  font-family:var(--mono);font-size:10px;color:var(--teal);
+  width:18px;flex-shrink:0;margin-top:2px;font-weight:600;
+}
+.action-cta{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:12px;padding:10px 20px;border-radius:8px;
+  background:var(--teal);color:#000;border:none;cursor:pointer;
+  font-family:var(--display);font-size:13px;font-weight:600;
+  transition:all 0.2s;text-decoration:none;
+}
+.action-cta:hover{background:#00e6bb;box-shadow:0 0 16px rgba(0,212,170,0.3);transform:translateY(-1px)}
+.action-cta svg{width:14px;height:14px}
+
+/* GOLDEN HOUR */
+.golden-hour-banner{
+  border-radius:12px;padding:16px 18px;margin-bottom:12px;
+  border:1px solid;
+  display:flex;align-items:flex-start;gap:14px;
+}
+.golden-hour-banner.active{
+  background:rgba(255,214,0,0.06);border-color:rgba(255,214,0,0.25);
+}
+.golden-hour-banner.inactive{
+  background:var(--surface);border-color:var(--border);
+}
+.gh-icon{font-size:24px;flex-shrink:0;line-height:1}
+.gh-title{
+  font-family:var(--display);font-size:14px;font-weight:700;
+  margin-bottom:4px;
+}
+.golden-hour-banner.active .gh-title{color:var(--yellow)}
+.golden-hour-banner.inactive .gh-title{color:var(--text-muted)}
+.gh-text{font-size:12px;color:var(--text-muted)}
+.gh-event{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-top:8px;padding:5px 10px;border-radius:6px;
+  background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.2);
+  font-family:var(--mono);font-size:10px;color:var(--yellow);
+  text-decoration:none;transition:all 0.2s;
+}
+.gh-event:hover{background:rgba(255,214,0,0.15)}
+
+/* FIR */
+.fir-box{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:8px;padding:14px;
+  font-family:var(--mono);font-size:11px;color:var(--text-muted);
+  line-height:1.8;white-space:pre-wrap;max-height:280px;overflow-y:auto;
+  word-break:break-word;
+}
+.fir-box::-webkit-scrollbar{width:4px}
+.fir-box::-webkit-scrollbar-track{background:transparent}
+.fir-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.fir-actions{display:flex;gap:8px;margin-top:12px}
+.fir-btn{
+  padding:7px 14px;border-radius:7px;
+  font-size:12px;font-family:var(--sans);cursor:pointer;
+  transition:all 0.2s;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-muted);
+  display:flex;align-items:center;gap:5px;
+}
+.fir-btn:hover{border-color:var(--teal-dim);color:var(--teal)}
+.fir-btn.primary{background:rgba(0,212,170,0.1);border-color:rgba(0,212,170,0.3);color:var(--teal)}
+.fir-btn.primary:hover{background:rgba(0,212,170,0.15)}
+
+/* PATTERN MATCHES */
+.matches-list{display:flex;flex-direction:column;gap:6px}
+.match-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-radius:8px;background:var(--surface-2);
+}
+.match-type{font-size:12px;color:var(--text-muted)}
+.match-score{font-family:var(--mono);font-size:12px;color:var(--teal)}
+.match-bar-wrap{flex:1;height:3px;background:var(--border);border-radius:2px;margin:0 12px;overflow:hidden}
+.match-bar{height:100%;background:linear-gradient(90deg,var(--teal-dim),var(--teal));border-radius:2px;transition:width 0.6s var(--ease-out)}
+
+/* EMERGENCY FOOTER */
+.emergency-footer{
+  margin-top:16px;padding:14px 18px;border-radius:12px;
+  background:rgba(255,59,59,0.05);border:1px solid rgba(255,59,59,0.15);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.emergency-text{font-size:13px;color:var(--text-muted)}
+.emergency-text strong{color:var(--red)}
+.emergency-links{display:flex;gap:8px;flex-wrap:wrap}
+.emergency-link{
+  padding:6px 12px;border-radius:6px;font-size:12px;
+  border:1px solid rgba(255,59,59,0.2);color:var(--red);
+  text-decoration:none;background:rgba(255,59,59,0.08);
+  transition:all 0.2s;font-family:var(--mono);
+}
+.emergency-link:hover{background:rgba(255,59,59,0.15)}
+
+/* ERROR STATE */
+#errorView{
+  display:none;flex:1;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;padding:48px 24px;text-align:center;
+}
+#errorView.visible{display:flex}
+.error-icon{font-size:48px;margin-bottom:8px}
+.error-title{font-family:var(--display);font-size:20px;font-weight:700;color:var(--red)}
+.error-msg{font-size:13px;color:var(--text-muted);max-width:400px}
+.retry-btn{
+  padding:10px 24px;border-radius:8px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text);cursor:pointer;
+  font-family:var(--sans);font-size:13px;transition:all 0.2s;margin-top:8px;
+}
+.retry-btn:hover{border-color:var(--teal-dim);color:var(--teal)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
+
+/* UTIL */
+.hidden{display:none!important}
+a{color:var(--teal);text-decoration:none}
+a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <a class="topbar-logo" href="/ui">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
+    </svg>
+    <span>SATARK AI</span>
+    <div class="logo-dot"></div>
+  </a>
+  <div class="topbar-right">
+    <a href="/ops" class="ops-link">⬡ OPS BOARD</a>
+    <div id="authBadge">
+      <div class="badge-dot"></div>
+      <span id="authLabel">Sign in with Google</span>
+    </div>
+    <button id="logoutBtn">Sign out</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- INPUT VIEW -->
+  <section id="inputView">
+    <div class="hero-eyebrow">TGCSB-Inspired Citizen Assist</div>
+    <h1 class="hero-title">SATARK AI</h1>
+    <p class="hero-sub">Paste a suspicious message, upload evidence, or submit an APK. Get a full fraud intelligence report in under 60 seconds.</p>
+
+    <div class="input-card">
+      <div class="input-label">// SUSPICIOUS CONTENT</div>
+      <textarea id="inputText" placeholder="Paste a WhatsApp message, email, SMS, or describe the call you received...&#10;&#10;Example: &quot;Your SBI account will be blocked. Share OTP to verify.&quot;" rows="5"></textarea>
+
+      <div class="input-divider"><span>OR UPLOAD EVIDENCE</span></div>
+
+      <div id="dropzone">
+        <input type="file" id="fileInput" accept="image/*,audio/*,.apk,.pdf,.mp3,.wav,.ogg">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-text">Drop image, audio, APK, or PDF here</div>
+        <div class="drop-subtext">or click to browse · max 50MB</div>
+        <div id="fileName"></div>
+      </div>
+
+      <div class="submit-row">
+        <button id="submitBtn">⬡ ANALYZE THREAT</button>
+      </div>
+
+      <div class="input-tags">
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Private
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          &lt;60s analysis
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Golden Hour
+        </span>
+        <span class="tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendar Alert
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYZING VIEW -->
+  <section id="analyzingView">
+    <div class="analyzing-header">
+      <div class="analyzing-title">INITIALIZING<span class="typing-cursor"></span></div>
+      <div class="analyzing-sub" id="analyzingStatus">SATARK INTELLIGENCE NETWORK ONLINE</div>
+    </div>
+
+    <div class="agents-grid">
+      <div class="agent-row" id="agent-manager">
+        <div class="agent-icon">⬡</div>
+        <div class="agent-info">
+          <div class="agent-name">Manager Agent</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-scam_detector">
+        <div class="agent-icon">🔍</div>
+        <div class="agent-info">
+          <div class="agent-name">Scam Detector</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-osint">
+        <div class="agent-icon">🌐</div>
+        <div class="agent-info">
+          <div class="agent-name">OSINT Intelligence</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-audio_analyzer">
+        <div class="agent-icon">🎙</div>
+        <div class="agent-info">
+          <div class="agent-name">Audio Analyzer</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+      <div class="agent-row" id="agent-golden_hour">
+        <div class="agent-icon">⚡</div>
+        <div class="agent-info">
+          <div class="agent-name">Golden Hour Response</div>
+          <div class="agent-status">STANDBY</div>
+        </div>
+        <div class="agent-indicator"></div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap" style="margin-top:24px">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </section>
+
+  <!-- ERROR VIEW -->
+  <section id="errorView">
+    <div class="error-icon">⚠</div>
+    <div class="error-title">Analysis Failed</div>
+    <div class="error-msg" id="errorMsg">Could not complete the threat analysis. Please try again.</div>
+    <button class="retry-btn" onclick="resetToInput()">← Try Again</button>
+  </section>
+
+  <!-- RESULTS VIEW -->
+  <section id="resultsView">
+    <div class="results-header">
+      <button class="results-back" onclick="resetToInput()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        New Analysis
+      </button>
+      <span class="case-id" id="resultCaseId"></span>
+    </div>
+
+    <!-- GOLDEN HOUR BANNER -->
+    <div class="golden-hour-banner inactive" id="goldenHourBanner">
+      <div class="gh-icon">⚡</div>
+      <div class="gh-content">
+        <div class="gh-title">Golden Hour</div>
+        <div class="gh-text" id="ghText">Checking golden hour status...</div>
+        <a href="#" class="gh-event hidden" id="ghEventLink" target="_blank">📅 Open Calendar Event</a>
+      </div>
+    </div>
+
+    <!-- VERDICT -->
+    <div class="verdict-card" id="verdictCard">
+      <div class="verdict-top">
+        <div class="verdict-left">
+          <div class="risk-badge" id="riskBadge"><span class="risk-dot"></span><span id="riskLabel">ANALYZING</span></div>
+          <div class="verdict-type" id="verdictType">—</div>
+          <div class="verdict-summary" id="verdictSummary"></div>
+        </div>
+        <div class="verdict-stats">
+          <div class="stat-item">
+            <div class="stat-label">Confidence</div>
+            <div class="stat-value teal" id="statConfidence">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Similar Cases</div>
+            <div class="stat-value" id="statCases">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RED FLAGS -->
+    <div class="section-card open" id="sectionFlags">
+      <div class="section-header" onclick="toggleSection('sectionFlags')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <span class="section-title">Red Flags Detected</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <div class="flags-list" id="flagsList"></div>
+      </div>
+    </div>
+
+    <!-- IMMEDIATE ACTIONS -->
+    <div class="section-card open" id="sectionActions">
+      <div class="section-header" onclick="toggleSection('sectionActions')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="section-title">Immediate Actions</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <div class="actions-list" id="actionsList"></div>
+        <a href="https://cybercrime.gov.in" target="_blank" class="action-cta" style="margin-top:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          File on cybercrime.gov.in
+        </a>
+      </div>
+    </div>
+
+    <!-- OSINT -->
+    <div class="section-card" id="sectionOsint">
+      <div class="section-header" onclick="toggleSection('sectionOsint')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="section-title">Infrastructure Intelligence</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body" id="osintBody">
+        <div class="osint-summary" id="osintSummary"></div>
+        <div class="osint-grid" id="osintGrid" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- PATTERN MATCHES -->
+    <div class="section-card" id="sectionMatches">
+      <div class="section-header" onclick="toggleSection('sectionMatches')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="section-title">Pattern Match Database</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <div class="matches-list" id="matchesList"></div>
+      </div>
+    </div>
+
+    <!-- FIR TEMPLATE -->
+    <div class="section-card open" id="sectionFir">
+      <div class="section-header" onclick="toggleSection('sectionFir')">
+        <div class="section-title-row">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span class="section-title">NCRP Complaint Draft</span>
+        </div>
+        <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="section-body">
+        <div class="fir-box" id="firBox"></div>
+        <div class="fir-actions">
+          <button class="fir-btn primary" onclick="copyFir()">⎘ Copy Complaint</button>
+          <button class="fir-btn" onclick="downloadFir()">⬇ Download .txt</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMERGENCY FOOTER -->
+    <div class="emergency-footer">
+      <div class="emergency-text">Cybercrime Helpline: <strong>1930</strong> · Available 24/7</div>
+      <div class="emergency-links">
+        <a href="tel:1930" class="emergency-link">📞 Call 1930</a>
+        <a href="https://cybercrime.gov.in" target="_blank" class="emergency-link">🌐 NCRP Portal</a>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<script>
+// ── STATE ──
+let sessionId = null;
+let selectedFile = null;
+let currentRunId = null;
+let pollInterval = null;
+let firContent = '';
+
+const SESSION_STORAGE_KEY = 'satark_session_id';
+
+// ── SESSION ID ──
+function getSessionId() {
+  if (!sessionId) {
+    const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (existing && existing.length >= 6) {
+      sessionId = existing;
+    } else {
+      let created = null;
+      try {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+        created = `sess_${hex}`;
+      } catch (_e) {
+        created = 'sess_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      }
+      sessionId = created;
+      localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+    }
+  }
+  return sessionId;
+}
+
+// ── AUTH ──
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+    const badge = document.getElementById('authBadge');
+    const label = document.getElementById('authLabel');
+    const logout = document.getElementById('logoutBtn');
+    if (d.connected) {
+      badge.classList.add('connected');
+      label.textContent = d.email || '✓ Google connected';
+      badge.onclick = null;
+      badge.style.cursor = 'default';
+      logout.classList.add('visible');
+    } else {
+      badge.classList.remove('connected');
+      label.textContent = 'Sign in with Google (Calendar)';
+      badge.onclick = startAuth;
+      badge.style.cursor = 'pointer';
+      logout.classList.remove('visible');
+    }
+  } catch(e) {}
+}
+
+function startAuth() {
+  const sid = getSessionId();
+  window.location.href = `/auth/google/start?session_id=${sid}&next=/ui`;
+}
+
+document.getElementById('logoutBtn').onclick = () => {
+  window.location.href = '/auth/google/logout';
+};
+
+// ── FILE HANDLING ──
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+function setFile(f) {
+  selectedFile = f;
+  dropzone.classList.add('has-file');
+  document.getElementById('fileName').textContent = '📎 ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)';
+}
+
+function toDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── SUBMIT ──
+document.getElementById('submitBtn').addEventListener('click', runAnalysis);
+document.getElementById('inputText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) runAnalysis();
+});
+
+async function runAnalysis() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text && !selectedFile) {
+    document.getElementById('inputText').focus();
+    return;
+  }
+  showAnalyzing();
+  try {
+    const sid = getSessionId();
+
+    const files = [];
+    if (selectedFile) {
+      const dataUrl = await toDataUrl(selectedFile);
+      files.push({
+        file_name: selectedFile.name,
+        file_type: selectedFile.type || 'application/octet-stream',
+        content_base64: dataUrl,
+      });
+    }
+
+    const payload = {
+      session_id: sid,
+      user_input: { text: text || '', files },
+      user_context: { channel: 'web-ui' },
+      options: { stream: true, generate_report: true, trigger_mcp_actions: false },
+    };
+
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('API error ' + r.status);
+    const d = await r.json();
+    currentRunId = d.run_id;
+    startStreaming(d.run_id);
+    startPolling(d.run_id);
+  } catch(e) {
+    showError('Could not start analysis. Is the server running?');
+  }
+}
+
+// ── STREAMING (named SSE events) ──
+let evtSource = null;
+let agentsDone = new Set();
+let agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
+
+function _agentRow(agent) {
+  const key = String(agent || '').trim();
+  if (!key) return null;
+  return document.getElementById('agent-' + key) || null;
+}
+
+function _markAgentState(agent, stateText, cls) {
+  const row = _agentRow(agent);
+  if (!row) return;
+  const st = row.querySelector('.agent-status');
+  row.classList.remove('active', 'done');
+  if (cls) row.classList.add(cls);
+  if (st) st.textContent = stateText;
+}
+
+function updateProgress() {
+  const total = Math.max(1, agentsPlanned.size);
+  let done = 0;
+  for (const a of agentsDone) {
+    if (agentsPlanned.has(a)) done++;
+  }
+  document.getElementById('progressBar').style.width = (done / total * 100) + '%';
+}
+
+function startStreaming(runId) {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource(`/api/stream/${runId}`);
+
+  evtSource.addEventListener('run.classified', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const selected = Array.isArray(d.selected_agents) ? d.selected_agents : [];
+      const planned = new Set();
+      planned.add('manager');
+      for (const a of selected) {
+        const agent = String(a || '').trim();
+        if (_agentRow(agent)) planned.add(agent);
+      }
+      agentsPlanned = planned;
+      updateProgress();
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('agent.started', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || '').trim();
+      if (agent) {
+        _markAgentState(agent, 'ANALYZING...', 'active');
+        const statusEl = document.getElementById('analyzingStatus');
+        if (statusEl) statusEl.textContent = `${agent.replaceAll('_', ' ').toUpperCase()} ONLINE`;
+      }
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('agent.progress', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || '').trim();
+      if (agent) _markAgentState(agent, 'ANALYZING...', 'active');
+      const msg = String(d.message || '').trim();
+      const statusEl = document.getElementById('analyzingStatus');
+      if (statusEl && msg) statusEl.textContent = msg.toUpperCase();
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('agent.completed', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const agent = String(d.agent || '').trim();
+      if (agent) {
+        _markAgentState(agent, 'COMPLETE', 'done');
+        agentsDone.add(agent);
+        updateProgress();
+      }
+    } catch (_err) {}
+  });
+
+  evtSource.addEventListener('run.completed', () => {
+    const statusEl = document.getElementById('analyzingStatus');
+    if (statusEl) statusEl.textContent = 'FINALIZING REPORT…';
+  });
+
+  evtSource.addEventListener('run.failed', (e) => {
+    try {
+      const d = JSON.parse(e.data || '{}');
+      const err = String(d.error || 'Unknown error');
+      showError(err);
+    } catch (_err) {
+      showError('Analysis failed.');
+    }
+  });
+
+  evtSource.onerror = () => {
+    try { evtSource.close(); } catch(_e) {}
+  };
+}
+
+// ── POLLING ──
+function startPolling(runId) {
+  if (pollInterval) clearInterval(pollInterval);
+  let attempts = 0;
+  const maxAttempts = 60;
+  pollInterval = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(pollInterval);
+      showError('Analysis timed out. Server may be busy — please try again.');
+      return;
+    }
+    try {
+      const r = await fetch(`/api/result/${runId}`);
+      if (r.status === 202) return;
+      if (!r.ok) { clearInterval(pollInterval); showError('Analysis failed.'); return; }
+      const d = await r.json();
+      clearInterval(pollInterval);
+      if (evtSource) evtSource.close();
+      showResults(d);
+    } catch(e) {}
+  }, 2000);
+}
+
+// ── VIEWS ──
+function showAnalyzing() {
+  agentsDone.clear();
+  agentsPlanned = new Set(['manager', 'scam_detector', 'osint', 'audio_analyzer', 'golden_hour']);
+  document.getElementById('progressBar').style.width = '0%';
+  document.querySelectorAll('.agent-row').forEach(r => {
+    r.classList.remove('active','done');
+    r.querySelector('.agent-status').textContent = 'STANDBY';
+  });
+  document.getElementById('inputView').classList.add('hidden');
+  document.getElementById('analyzingView').classList.add('visible');
+  document.getElementById('resultsView').classList.remove('visible');
+  document.getElementById('errorView').classList.remove('visible');
+  document.getElementById('analyzingStatus').textContent = 'SATARK INTELLIGENCE NETWORK ONLINE';
+}
+
+function showError(msg) {
+  document.getElementById('analyzingView').classList.remove('visible');
+  document.getElementById('errorView').classList.add('visible');
+  document.getElementById('errorMsg').textContent = msg;
+}
+
+function resetToInput() {
+  if (pollInterval) clearInterval(pollInterval);
+  if (evtSource) evtSource.close();
+  document.getElementById('inputView').classList.remove('hidden');
+  document.getElementById('analyzingView').classList.remove('visible');
+  document.getElementById('resultsView').classList.remove('visible');
+  document.getElementById('errorView').classList.remove('visible');
+  document.getElementById('inputText').value = '';
+  selectedFile = null;
+  dropzone.classList.remove('has-file');
+  document.getElementById('fileName').textContent = '';
+}
+
+// ── RENDER RESULTS ──
+function showResults(data) {
+  document.getElementById('analyzingView').classList.remove('visible');
+  document.getElementById('resultsView').classList.add('visible');
+  renderResults(data);
+}
+
+function renderResults(d) {
+  // Case ID
+  const caseId = d.case_id || d.acknowledgment_id || '';
+  document.getElementById('resultCaseId').textContent = caseId ? 'CASE: ' + caseId.slice(-12).toUpperCase() : '';
+
+  // Golden Hour
+  const ghBanner = document.getElementById('goldenHourBanner');
+  const ghText = document.getElementById('ghText');
+  const ghLink = document.getElementById('ghEventLink');
+  const ghActive = (String(d.golden_hour_status || '').toUpperCase() === 'ACTIVE') || d.golden_hour_active === true;
+  const follow = (d.follow_up_actions && typeof d.follow_up_actions === 'object') ? d.follow_up_actions : {};
+  const rawCal = (d.raw && typeof d.raw === 'object' && d.raw.calendar_event && typeof d.raw.calendar_event === 'object') ? d.raw.calendar_event : {};
+
+  const calCreated = follow.calendar_event_created === true || rawCal.created === true;
+  const calAttempted = follow.calendar_attempted === true || rawCal.attempted === true;
+  const eventId = String(follow.calendar_event_id || rawCal.event_id || '').trim();
+  const startTime = String(follow.calendar_start_time || rawCal.start_time || '').trim();
+  const calError = String(follow.calendar_error || rawCal.error || '').trim();
+
+  if (ghActive) {
+    ghBanner.className = 'golden-hour-banner active';
+    let msg = String(d.golden_hour_message || '').trim();
+    if (!msg) msg = '⚡ GOLDEN HOUR ACTIVE — Call 1930 and file at cybercrime.gov.in.';
+
+    const meta = [];
+    if (startTime) meta.push('start: ' + startTime);
+    if (eventId) meta.push('event_id: ' + eventId);
+    if (!calCreated && calAttempted && calError) meta.push('error: ' + calError);
+    ghText.textContent = meta.length ? `${msg}  (${meta.join(' · ')})` : msg;
+
+    if (calCreated && eventId) {
+      ghLink.classList.remove('hidden');
+      ghLink.href = 'https://calendar.google.com/calendar/u/0/r';
+    } else {
+      ghLink.classList.add('hidden');
+    }
+  } else {
+    ghBanner.className = 'golden-hour-banner inactive';
+    ghText.textContent = 'Golden Hour window has passed. Focus on filing a complaint and preserving evidence.';
+    ghLink.classList.add('hidden');
+  }
+
+  // Risk + Verdict
+  const riskRaw = String(d.risk_level || 'UNKNOWN').toUpperCase();
+  const risk = riskRaw === 'SAFE' ? 'LOW' : riskRaw;
+  const verdictCard = document.getElementById('verdictCard');
+  verdictCard.className = 'verdict-card ' + risk;
+  const badge = document.getElementById('riskBadge');
+  badge.className = 'risk-badge ' + risk;
+  document.getElementById('riskLabel').textContent = risk;
+  document.getElementById('verdictType').textContent = d.scam_type || 'Unknown Threat';
+  document.getElementById('verdictSummary').textContent = d.summary || '';
+  const conf = Number(d.confidence);
+  document.getElementById('statConfidence').textContent = Number.isFinite(conf) ? Math.round(conf) + '%' : '—';
+  const sim = Number(d.similar_cases);
+  document.getElementById('statCases').textContent = Number.isFinite(sim) ? String(sim) : '—';
+
+  // Red flags
+  const flags = dedup([].concat(d.signals_found || [], (d.osint && d.osint.red_flags) ? d.osint.red_flags : []));
+  const flagsList = document.getElementById('flagsList');
+  if (flags.length) {
+    flagsList.innerHTML = flags.map(f => `<div class="flag-item">${escHtml(f)}</div>`).join('');
+    document.getElementById('sectionFlags').classList.add('open');
+  } else {
+    document.getElementById('sectionFlags').classList.remove('open');
+    flagsList.innerHTML = '<div class="flag-item" style="color:var(--text-faint)">No specific red flags extracted.</div>';
+  }
+
+  // Actions
+  const actions = dedup(d.recommended_actions || []);
+  const actionsList = document.getElementById('actionsList');
+  if (actions.length) {
+    actionsList.innerHTML = actions.map((a,i) =>
+      `<div class="action-item"><span class="action-num">${String(i+1).padStart(2,'0')}</span><span>${escHtml(a.replace(/^STANDBY:\s*/i,'').replace(/^ACTIVE:\s*/i,''))}</span></div>`
+    ).join('');
+  } else {
+    actionsList.innerHTML = '<div class="action-item"><span class="action-num">01</span><span>Call 1930 immediately to report this fraud</span></div>';
+  }
+
+  // OSINT
+  const osint = (d.osint && typeof d.osint === 'object') ? d.osint : {};
+  const entities = (d.entities && typeof d.entities === 'object') ? d.entities : {};
+  const osintSummary = String(osint.threat_summary || '').trim();
+  const hasOsint = osintSummary || (entities.domains && entities.domains.length) || (entities.urls && entities.urls.length) || (entities.phone_numbers && entities.phone_numbers.length);
+  if (hasOsint) {
+    document.getElementById('sectionOsint').classList.add('open');
+    document.getElementById('osintSummary').textContent = osintSummary || 'Infrastructure analysis complete.';
+    const grid = document.getElementById('osintGrid');
+    const gridItems = [];
+    if (entities.domains && entities.domains.length) gridItems.push({k:'Domains',v:entities.domains.join(', '),cls:'danger'});
+    if (entities.urls && entities.urls.length) gridItems.push({k:'URLs',v:entities.urls[0],cls:'warn'});
+    if (entities.phone_numbers && entities.phone_numbers.length) gridItems.push({k:'Phone',v:entities.phone_numbers[0],cls:'warn'});
+    const score = Number(osint.overall_threat_score || 0);
+    if (Number.isFinite(score) && score > 0) gridItems.push({k:'Threat Score',v:Math.round(score) + '/100',cls:score>70?'danger':'warn'});
+    grid.innerHTML = gridItems.map(({k,v,cls}) =>
+      `<div class="osint-item"><div class="osint-key">${escHtml(k)}</div><div class="osint-val ${cls}">${escHtml(v)}</div></div>`
+    ).join('');
+  } else {
+    document.getElementById('sectionOsint').classList.remove('open');
+  }
+
+  // Pattern matches
+  const matches = Array.isArray(d.pattern_matches) ? d.pattern_matches : [];
+  const matchesList = document.getElementById('matchesList');
+  if (matches.length) {
+    document.getElementById('sectionMatches').classList.add('open');
+    matchesList.innerHTML = matches.slice(0,5).map(m =>
+      `<div class="match-item">
+        <span class="match-type">${escHtml(m.scam_type || m.sub_type || 'Unknown')}</span>
+        <div class="match-bar-wrap"><div class="match-bar" style="width:${m.score||0}%"></div></div>
+        <span class="match-score">${m.score || 0}%</span>
+      </div>`
+    ).join('');
+  } else {
+    document.getElementById('sectionMatches').classList.remove('open');
+  }
+
+  // FIR
+  let fir = '';
+  if (d.complaint_draft && typeof d.complaint_draft === 'object') {
+    fir = String(d.complaint_draft.body || '').trim();
+  } else if (typeof d.complaint_draft === 'string') {
+    fir = String(d.complaint_draft || '').trim();
+  }
+
+  firContent = fir;
+  const firBox = document.getElementById('firBox');
+  if (fir && fir.length > 30) {
+    firBox.textContent = fir;
+    document.getElementById('sectionFir').classList.add('open');
+  } else {
+    firBox.textContent = 'Complaint draft unavailable. Please file manually at cybercrime.gov.in with the details above.';
+    document.getElementById('sectionFir').classList.add('open');
+  }
+
+  // Animate match bars after render
+  setTimeout(() => {
+    document.querySelectorAll('.match-bar').forEach(b => {
+      const w = b.style.width; b.style.width = '0'; setTimeout(()=>b.style.width=w,50);
+    });
+  }, 100);
+}
+
+// ── SECTION TOGGLE ──
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── FIR ACTIONS ──
+function copyFir() {
+  navigator.clipboard.writeText(firContent).then(() => {
+    const btn = document.querySelector('.fir-btn.primary');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+function downloadFir() {
+  const b = new Blob([firContent], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = 'satark-ncrp-complaint.txt';
+  a.click();
+}
+
+// ── UTILS ──
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function dedup(arr) {
+  const out = new Map();
+  for (const raw of Array.isArray(arr) ? arr : []) {
+    const x = String(raw || '');
+    const k = x.replace(/^(STANDBY|ACTIVE):\s*/i,'').toLowerCase().trim();
+    if (!k) continue;
+    if (!out.has(k)) out.set(k, x);
+  }
+  return [...out.values()];
+}
+
+// ── INIT ──
+(async () => {
+  getSessionId();
+  await checkAuth();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('google') === 'connected') {
+    window.history.replaceState({}, '', '/ui');
+    await checkAuth();
+  }
+})();
+</script>
+</body>
+</html>

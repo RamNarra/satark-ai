@@ -6,73 +6,149 @@
   <title>Satark AI | Fraud Analyzer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/ui.css" />
 </head>
 <body>
-  <main class="page">
+  <main class="page" id="pageRoot">
     <header class="hero">
-      <p class="eyebrow">TGCSB-INSPIRED CITIZEN ASSIST</p>
-      <h1>Check if this message, call, image, or APK is a scam.</h1>
-      <p class="subtext">Paste a WhatsApp message, or upload a screenshot, audio clip, or APK for fast fraud triage.</p>
+      <p class="eyebrow">Citizen-first fraud triage</p>
+      <h1>Check if this message, call, image, or APK is a scam</h1>
+      <p class="subtext">Fast, private triage with Golden Hour support — designed to help you act in minutes, not hours.</p>
+      <div class="hero-row">
+        <div class="trust-chips" aria-label="Trust indicators">
+          <span class="chip">Private</span>
+          <span class="chip">Fast triage</span>
+          <span class="chip">Golden Hour support</span>
+        </div>
+        <div id="google-auth-btn" class="google-auth">
+          <a class="btn btn-secondary" id="googleAuthLink" href="#" rel="noopener noreferrer">Sign in with Google (Calendar)</a>
+        </div>
+      </div>
     </header>
 
-    <section class="intake card">
+    <nav class="stepper" id="stepper" aria-label="Workflow steps">
+      <div class="stepper-step is-active" data-step="1">
+        <div class="stepper-dot">1</div>
+        <div class="stepper-text">
+          <div class="stepper-title">Input</div>
+          <div class="stepper-sub">Paste text or upload evidence</div>
+        </div>
+      </div>
+      <div class="stepper-step" data-step="2">
+        <div class="stepper-dot">2</div>
+        <div class="stepper-text">
+          <div class="stepper-title">Investigation</div>
+          <div class="stepper-sub">Agents run OSINT + Golden Hour</div>
+        </div>
+      </div>
+      <div class="stepper-step" data-step="3">
+        <div class="stepper-dot">3</div>
+        <div class="stepper-text">
+          <div class="stepper-title">Report</div>
+          <div class="stepper-sub">Actions + complaint draft</div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="intake card" id="intakeCard">
       <label for="inputText" class="field-label">Suspicious content</label>
       <textarea id="inputText" rows="7" placeholder="Paste suspicious message, call transcript, payment request, or incident details..."></textarea>
 
       <div class="intake-row">
-        <label class="upload-btn" for="inputFile">Upload file</label>
-        <input id="inputFile" type="file" accept="image/*,audio/*,.apk,.txt,.pdf" />
-        <span id="fileName" class="file-name">No file selected</span>
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload evidence">
+          <div class="dropzone-title">Drag & drop evidence</div>
+          <div class="dropzone-sub">Image, audio, APK, PDF, or text</div>
+          <div class="dropzone-meta"><span id="fileName" class="file-name">No file selected</span></div>
+          <input id="inputFile" type="file" accept="image/*,audio/*,.apk,.txt,.pdf" />
+        </div>
       </div>
 
       <div class="actions-row">
-        <button id="submitBtn" class="primary-btn" type="button">Analyze Now</button>
-        <a class="ops-link" href="/ops" target="_blank" rel="noopener noreferrer">Open live ops board</a>
+        <button id="submitBtn" class="btn btn-primary primary-btn" type="button">Start investigation</button>
+        <a class="ops-link" href="/ops" target="_blank" rel="noopener noreferrer">Expert mode: live ops board</a>
       </div>
-      <p id="statusText" class="status-text">Ready for analysis.</p>
+      <p id="statusText" class="status-text">Ready when you are.</p>
     </section>
 
-    <section id="reportRoot" class="report hidden">
-      <article class="answer-card card" id="answerCard">
-        <p class="eyebrow">Final Answer</p>
-        <h2 id="verdictText">Pending analysis</h2>
-        <p id="summaryText">Submit content to generate a fraud report.</p>
-        <div class="answer-metrics">
-          <div><span>Risk Level</span><strong id="riskText">-</strong></div>
-          <div><span>Confidence</span><strong id="confidenceText">-</strong></div>
-          <div><span>Scam Type</span><strong id="scamTypeText">-</strong></div>
+    <section id="reportRoot" class="analysis hidden" aria-label="Investigation results">
+      <div class="agent-strip" aria-label="Agents">
+        <div class="agent-chip" id="chip-manager" data-state="idle">
+          <span class="agent-chip__name">Manager</span>
+          <span class="agent-chip__state">Queued</span>
         </div>
-      </article>
+        <div class="agent-chip" id="chip-scam" data-state="idle">
+          <span class="agent-chip__name">Scam Detector</span>
+          <span class="agent-chip__state">Queued</span>
+        </div>
+        <div class="agent-chip" id="chip-osint" data-state="idle">
+          <span class="agent-chip__name">OSINT</span>
+          <span class="agent-chip__state">Queued</span>
+        </div>
+        <div class="agent-chip" id="chip-modality" data-state="idle">
+          <span class="agent-chip__name">APK / Audio</span>
+          <span class="agent-chip__state">Queued</span>
+        </div>
+        <div class="agent-chip" id="chip-golden" data-state="idle">
+          <span class="agent-chip__name">Golden Hour</span>
+          <span class="agent-chip__state">Queued</span>
+        </div>
+      </div>
 
-      <article class="card">
-        <h3>What you should do now</h3>
-        <p id="goldenHourText" class="small-text"></p>
-        <ul id="actionsList" class="list"></ul>
-      </article>
+      <div class="analysis-grid">
+        <article class="answer-card card" id="answerCard">
+          <div class="card-header">
+            <p class="eyebrow">Verdict</p>
+            <span class="badge" id="riskBadge">—</span>
+          </div>
+          <h2 id="verdictText">Pending analysis</h2>
+          <p id="summaryText">Submit content to generate a fraud report.</p>
+          <ul id="timelineList" class="timeline" aria-label="Investigation timeline"></ul>
+          <div class="answer-metrics">
+            <div><span>Risk Level</span><strong id="riskText">-</strong></div>
+            <div><span>Confidence</span><strong id="confidenceText">-</strong></div>
+            <div><span>Scam Type</span><strong id="scamTypeText">-</strong></div>
+          </div>
+        </article>
 
-      <article class="card">
-        <h3>Why this was flagged</h3>
-        <ul id="signalsList" class="list"></ul>
-        <p id="similarCasesText" class="small-text"></p>
-      </article>
+        <article class="card" id="whyCard">
+          <h3>Why flagged</h3>
+          <ul id="signalsList" class="list"></ul>
+          <p id="similarCasesText" class="small-text"></p>
 
-      <article class="card">
-        <h3>Infrastructure intelligence</h3>
-        <pre id="osintBlock" class="json-block">No OSINT findings.</pre>
-      </article>
+          <details class="details">
+            <summary>Infrastructure intelligence</summary>
+            <pre id="osintBlock" class="json-block">No OSINT findings.</pre>
+          </details>
 
-      <article class="card">
-        <h3>Audio or APK findings</h3>
-        <pre id="modalityBlock" class="json-block">No modality-specific findings.</pre>
-      </article>
+          <details class="details">
+            <summary>APK / audio findings</summary>
+            <pre id="modalityBlock" class="json-block">No modality-specific findings.</pre>
+          </details>
+        </article>
 
-      <article class="card">
-        <h3>Complaint draft</h3>
-        <p id="caseIdText" class="small-text"></p>
-        <pre id="complaintText" class="complaint-block"></pre>
-      </article>
+        <div class="right-col">
+          <article class="card" id="actionsCard">
+            <h3>Immediate actions</h3>
+            <p id="goldenHourText" class="small-text"></p>
+
+            <div class="proof" id="goldenHourProof" hidden>
+              <div class="proof-row">
+                <span class="proof-label">Golden Hour proof</span>
+                <span class="proof-pill" id="calendarProofPill">—</span>
+              </div>
+              <div class="proof-meta" id="calendarProofMeta"></div>
+            </div>
+            <ul id="actionsList" class="list"></ul>
+          </article>
+
+          <article class="card" id="evidenceCard">
+            <h3>Complaint draft</h3>
+            <p id="caseIdText" class="small-text"></p>
+            <pre id="complaintText" class="complaint-block"></pre>
+          </article>
+        </div>
+      </div>
     </section>
 
     <footer class="footer-note">

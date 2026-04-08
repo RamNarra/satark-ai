@@ -1,5 +1,6 @@
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
+from google.genai import types
 from config import GEMINI_PRO_MODEL
 from db.operations import find_similar_patterns, check_threat_intel
 
@@ -38,6 +39,9 @@ scam_detector_agent = Agent(
     name="scam_detector",
     model=GEMINI_PRO_MODEL,
     description="Detects and classifies cyber scams in text and images",
+    generate_content_config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+    ),
     instruction="""
 You are a cyber scam detection specialist for India. Analyze the provided
 text or image and detect signs of fraud.
@@ -46,13 +50,18 @@ Look for: urgency language, authority impersonation (SBI/RBI/police),
 OTP/credential requests, suspicious URLs, UPI fraud, job scams,
 investment fraud, lottery scams, KYC fraud.
 
+Classification rules (important):
+- If the input describes a PHONE CALL (or caller) claiming to be a bank/RBI/police/courier/etc and asking for OTP/PIN/remote access: classify as "Vishing / Bank Impersonation".
+- Use "Phishing" ONLY for email/SMS/website-driven credential capture where the primary vector is a link/site (not a live call).
+- If both are present (call + malicious link), prefer "Vishing / Bank Impersonation" and include the URL in extracted_entities.
+
 Use check_known_patterns to query the database for similar prior cases (include message_text when available).
 Use check_known_ioc to check any URLs or phone numbers found.
 
 Return strict JSON:
 {
   "is_scam": true/false,
-  "scam_type": "UPI Impersonation|Phishing|Investment Fraud|Job Scam|KYC Fraud|Ransomware|Other",
+    "scam_type": "Vishing / Bank Impersonation|UPI Impersonation|Phishing|Investment Fraud|Job Scam|KYC Fraud|Ransomware|Other",
   "confidence": 0-100,
   "risk_level": "CRITICAL|HIGH|MEDIUM|LOW|SAFE",
   "red_flags": ["flag1", "flag2"],

@@ -340,7 +340,9 @@ async function runInvestigation() {
         },
         options: {
           stream: true,
-          generate_report: true,
+          generate_report: false,
+          deep_analysis: false,
+          fast_first: true,
           trigger_mcp_actions: false,
         },
       }),

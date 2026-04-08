@@ -1,0 +1,10 @@
+{
+  "name": "apk_known_training",
+  "file_name": "InsecureBankv2.apk",
+  "raw_text": "InsecureBankv2 com.dineshshetty.insecurebankv2 android.permission.INTERNET android.permission.READ_SMS educational testing app owasp training github.com/dineshshetty/Android-InsecureBankv2",
+  "expect": {
+    "is_malicious": false,
+    "likely_known_project": true,
+    "risk_not_above": "MEDIUM"
+  }
+}

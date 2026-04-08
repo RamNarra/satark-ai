@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-04-07T17:23:52.864284Z",
+  "base_url": "http://127.0.0.1:8098/ui",
+  "all_passed": true,
+  "tests": [
+    {
+      "name": "multiple_attachments_one_message",
+      "passed": true,
+      "details": "payload_files=2 bubble_cards=2",
+      "screenshot": "artifacts/runtime-evidence/edge_test1_multi_attachments.png"
+    },
+    {
+      "name": "mixed_file_types_image_audio_apk",
+      "passed": true,
+      "details": "badges=['image', 'audio', 'apk'] types=['image/png', 'audio/webm', 'application/vnd.android.package-archive']",
+      "screenshot": "artifacts/runtime-evidence/edge_test2_mixed_types.png"
+    },
+    {
+      "name": "stt_unsupported_browser_fallback",
+      "passed": true,
+      "details": "mic_disabled=True hint=mic not supported in this browser. please type your message.",
+      "screenshot": "artifacts/runtime-evidence/edge_test3_stt_unsupported_fallback.png"
+    },
+    {
+      "name": "structured_rendering_long_duplicate_outputs",
+      "passed": true,
+      "details": "summary_sentences=2 steps=['Call your bank through the official helpline.', 'Freeze your card if any OTP was shared.', 'Report the number in your SMS app.', 'Collect evidence screenshots for police reporting.']",
+      "screenshot": "artifacts/runtime-evidence/edge_test4_structured_long_duplicate.png"
+    },
+    {
+      "name": "structured_rendering_partial_empty_degraded",
+      "passed": true,
+      "details": "text=model response is incomplete. please retry this analysis. steps_count=0",
+      "screenshot": "artifacts/runtime-evidence/edge_test5_partial_empty_degraded.png"
+    },
+    {
+      "name": "timeout_loading_retry_no_fabrication",
+      "passed": true,
+      "details": "loading_hint=satark is working... restored_text=Retry state should preserve this text. pills=1 bot_steps=0",
+      "screenshot": "artifacts/runtime-evidence/edge_test6_retry_loading_no_fabrication.png"
+    }
+  ],
+  "notes": [
+    "Real everyday-browser STT validation (outside headless automation) should be checked manually before final demo."
+  ]
+}

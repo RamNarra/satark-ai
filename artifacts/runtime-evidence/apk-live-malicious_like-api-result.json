@@ -1,0 +1,745 @@
+{
+  "run_id": "run_bc87b1765afd",
+  "case_id": "case_299a55e638d6",
+  "status": "completed",
+  "input_type": "apk",
+  "verdict": "Likely training or simulation APK",
+  "chat_reply": "This APK appears to be a security training tool or a lab exercise rather than a real-world attack. It uses a reserved '.example' web address that does not function on the public internet, meaning it cannot send your data to an actual attacker. While it mimics the behavior of a banking trojan for educational purposes, there is no sign of an active compromise. You should still delete it to maintain good security hygiene.",
+  "summary": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+  "conversational_reply": "It looks like you have encountered a training tool. Since it uses non-functional web addresses, your data is not at risk of being sent to a real attacker.",
+  "scam_type": "UNKNOWN",
+  "official_category": "Educational/Training Tool",
+  "category": "Educational/Training Tool",
+  "risk_level": "LOW",
+  "confidence": 98,
+  "response_mode": "proactive_warning",
+  "requires_reporting": false,
+  "requires_emergency": false,
+  "requires_financial_blocking": false,
+  "requires_account_block": false,
+  "requires_device_cleanup": true,
+  "likely_app_identity": "known_training_app",
+  "uncertainty_note": "The package name and domain are standard placeholders for security documentation and lab environments.",
+  "reporting_recommendation": {
+    "should_report_now": false,
+    "reason": "The application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+  },
+  "requires_mcp": false,
+  "mcp_plan": {
+    "create_calendar": false,
+    "create_tasks": false,
+    "create_gmail_draft": false,
+    "create_case_report_doc": false
+  },
+  "why_this_decision": [
+    "Uses a reserved '.example' web domain that doesn't work on the real internet",
+    "Package name is a known placeholder for security research",
+    "No active connection to real-world malicious servers",
+    "Designed to demonstrate how permissions are abused in a controlled environment"
+  ],
+  "presentation_sections": {
+    "headline": "Training Tool Detected",
+    "status_line": "No active risk detected; likely educational material.",
+    "primary_actions_title": "What to do now",
+    "actions_title": "What to do now",
+    "evidence_title": "Why it looks suspicious"
+  },
+  "response_sections": {
+    "overview": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+    "why_flagged": [
+      "Uses a reserved '.example' web domain that doesn't work on the real internet",
+      "Package name is a known placeholder for security research",
+      "No active connection to real-world malicious servers",
+      "Designed to demonstrate how permissions are abused in a controlled environment"
+    ],
+    "next_steps": [
+      "Delete the APK file from your downloads folder",
+      "Uninstall the application if it was installed",
+      "Stick to official app stores for all banking needs",
+      "Keep your phone's security software updated"
+    ],
+    "reporting_guidance": "The application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+  },
+  "presentation": {
+    "headline": "Security Training Tool Identified",
+    "summary_paragraph": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+    "evidence_bullets": [
+      "Uses a reserved '.example' web domain that doesn't work on the real internet",
+      "Package name is a known placeholder for security research",
+      "No active connection to real-world malicious servers",
+      "Designed to demonstrate how permissions are abused in a controlled environment"
+    ],
+    "actions": [
+      "Delete the APK file from your downloads folder",
+      "Uninstall the application if it was installed",
+      "Stick to official app stores for all banking needs",
+      "Keep your phone's security software updated"
+    ],
+    "reporting_note": "The application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+  },
+  "debug": {
+    "risk_level": "LOW",
+    "confidence": 0.98,
+    "similar_cases": 3,
+    "patterns": [
+      "training_app_indicators",
+      "reserved_tld_usage"
+    ]
+  },
+  "presentation_markdown": "## What this looks like\nThe APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.\n\n## Why I'm saying that\n- Uses a reserved '.example' web domain that doesn't work on the real internet\n- Package name is a known placeholder for security research\n- No active connection to real-world malicious servers\n- Designed to demonstrate how permissions are abused in a controlled environment\n\n## What to do now\n1. Delete the APK file from your downloads folder\n2. Uninstall the application if it was installed\n3. Stick to official app stores for all banking needs\n4. Keep your phone's security software updated\n\n## Reporting\nThe application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam.",
+  "signals_found": [
+    "SEARCH: com.fake.bank.secure — Identified as a common placeholder in security training and malware analysis labs.",
+    "URL_CONTEXT: http://bad-c2.example/collectPK — Contains ZIP file central directory headers (PK\\x01\\x02), indicating file upload/exfiltration.",
+    "Domain uses reserved '.example' TLD, preventing public resolution.",
+    "Impersonation of a 'secure bank update' in the metadata."
+  ],
+  "similar_cases": 3,
+  "intel_corpus_size": 847,
+  "intel_type": "Other",
+  "intel_type_count": 10,
+  "pattern_matches": [
+    {
+      "scam_type": "null",
+      "sub_type": "null",
+      "score": 84
+    },
+    {
+      "scam_type": "Impersonation",
+      "sub_type": "Impersonation",
+      "score": 77
+    },
+    {
+      "scam_type": "KYC Fraud",
+      "sub_type": "KYC Fraud",
+      "score": 77
+    }
+  ],
+  "golden_hour_active": false,
+  "golden_hour_status": "STANDBY",
+  "golden_hour_message": "Follow the manager-provided action plan.",
+  "entities": {
+    "phone_numbers": [],
+    "domains": [
+      "bad-c2.example"
+    ],
+    "urls": [
+      "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+      "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure"
+    ],
+    "ips": [],
+    "banks_claimed": []
+  },
+  "osint": {
+    "threat_summary": "The indicators point to a simulated or training-based Android malware campaign. The use of the '.example' TLD and the package name 'com.fake.bank.secure' strongly suggests a lab environment, CTF, or security training exercise rather than an active wild threat. However, the structure of the indicators (C2 collection paths, binary headers in URLs, and bank-impersonating package names) mimics real-world banking trojan behavior, specifically data exfiltration and credential harvesting.",
+    "overall_threat_score": 3,
+    "domains": {
+      "bad-c2.example": {
+        "domain_age_days": 0,
+        "registrar": "Unknown",
+        "hosting_country": "Unknown",
+        "ssl": {
+          "present": false,
+          "issuer": "",
+          "valid_to": ""
+        },
+        "notes": "The domain '.example' is a reserved top-level domain for documentation and examples. It is not a live routable domain on the public internet."
+      }
+    },
+    "ips": {},
+    "urls": {
+      "http://bad-c2.example/collectPK": {
+        "verdict": "SUSPICIOUS",
+        "web_risk_verdict": "SAFE",
+        "red_flags": [
+          "URL contains binary/ZIP header fragments (PK\\x01\\x02)",
+          "Path '/collectPK' suggests data exfiltration or C2 collection",
+          "Associated with suspicious package name 'com.fake.bank.secure'"
+        ],
+        "notes": "The URL contains raw byte sequences typical of a ZIP file structure, often seen in automated exfiltration of Android APK components or data."
+      }
+    },
+    "red_flags": [
+      "SEARCH: com.fake.bank.secure — Identified as a common placeholder in security training and malware analysis labs.",
+      "URL_CONTEXT: http://bad-c2.example/collectPK — Contains ZIP file central directory headers (PK\\x01\\x02), indicating file upload/exfiltration.",
+      "Domain uses reserved '.example' TLD, preventing public resolution.",
+      "Impersonation of a 'secure bank update' in the metadata."
+    ]
+  },
+  "osint_enrichment": {
+    "artifact_type": "osint_enrichment",
+    "queries_used": [
+      "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+      "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure",
+      "bad-c2.example",
+      "malicious_like-bank_secure_update",
+      "malicious_like-bank_secure_update android app",
+      "classes.dexcom.fake.bank.secure"
+    ],
+    "identity_assessment": {
+      "likely_known_project": false,
+      "likely_official_project": false,
+      "likely_repack_or_tampered": "unknown"
+    },
+    "public_matches": [
+      {
+        "type": "package_hint",
+        "title": "classes.dexcom.fake.bank.secure",
+        "url": "",
+        "relevance": "medium",
+        "note": "Package identifier extracted from APK"
+      }
+    ],
+    "reputation_signals": {
+      "benign_signals": [
+        "App label observed: malicious_like-bank_secure_update"
+      ],
+      "risk_signals": [
+        "APK requests sensitive permissions: READ_SMS, SEND_SMS, RECORD_AUDIO, BIND_ACCESSIBILITY_SERVICE"
+      ],
+      "unknowns": [
+        "Official publisher authenticity is not yet confirmed",
+        "Repack/tamper status remains uncertain without signature baseline"
+      ]
+    },
+    "osint_summary": "The indicators point to a simulated or training-based Android malware campaign. The use of the '.example' TLD and the package name 'com.fake.bank.secure' strongly suggests a lab environment, CTF, or security training exercise rather than an active wild threat. However, the structure of the indicators (C2 collection paths, binary headers in URLs, and bank-impersonating package names) mimics real-world banking trojan behavior, specifically data exfiltration and credential harvesting.",
+    "confidence": 0.03
+  },
+  "audio_analysis": null,
+  "apk_analysis": {
+    "summary": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+    "risk_level": "LOW",
+    "is_malicious": true,
+    "file_name": "malicious_like-bank_secure_update.apk",
+    "package_name": "classes.dexcom.fake.bank.secure",
+    "app_name": "malicious_like-bank_secure_update",
+    "identity": "known_training_app"
+  },
+  "evidence_summary": [
+    "SEARCH: com.fake.bank.secure — Identified as a common placeholder in security training and malware analysis labs.",
+    "URL_CONTEXT: http://bad-c2.example/collectPK — Contains ZIP file central directory headers (PK\\x01\\x02), indicating file upload/exfiltration.",
+    "Domain uses reserved '.example' TLD, preventing public resolution.",
+    "Impersonation of a 'secure bank update' in the metadata."
+  ],
+  "action_steps": [
+    "Delete the APK file from your downloads folder",
+    "Uninstall the application if it was installed",
+    "Stick to official app stores for all banking needs",
+    "Keep your phone's security software updated"
+  ],
+  "recommended_actions": [
+    "Delete the APK file from your downloads folder",
+    "Uninstall the application if it was installed",
+    "Stick to official app stores for all banking needs",
+    "Keep your phone's security software updated"
+  ],
+  "complaint_draft": null,
+  "follow_up_actions": {
+    "calendar_event_created": false,
+    "calendar_event_id": null,
+    "calendar_start_time": "2026-04-07T21:00:00Z",
+    "calendar_attempted": false,
+    "calendar_error": null,
+    "calendar_url": null,
+    "calendar_deep_link": null,
+    "task_created": false,
+    "task_url": null,
+    "task_deep_link": null,
+    "doc_created": false,
+    "doc_url": null,
+    "doc_deep_link": null,
+    "gmail_draft_created": false,
+    "gmail_draft_url": null,
+    "tgcsb_alert_sent": false
+  },
+  "calendar_deep_link": null,
+  "task_deep_link": null,
+  "gmail_draft_url": null,
+  "agent_results": {
+    "manager": {
+      "status": "done"
+    },
+    "scam_detector": {
+      "status": "done"
+    },
+    "audio_analyzer": {
+      "status": "skipped"
+    },
+    "apk_analyzer": {
+      "status": "done"
+    },
+    "osint": {
+      "status": "done"
+    },
+    "golden_hour": {
+      "status": "done"
+    }
+  },
+  "evidence": [],
+  "submitted_evidence": [
+    {
+      "type": "application/vnd.android.package-archive",
+      "source": "malicious_like-bank_secure_update.apk",
+      "storage_uri": null
+    }
+  ],
+  "timestamps": {
+    "created_at": "2026-04-07T20:35:10.084291Z",
+    "completed_at": "2026-04-07T20:36:21.161358Z"
+  },
+  "raw": {
+    "acknowledgment_id": "SATARK-20260408-891396C0",
+    "case_id": "SATARK-20260408-891396C0",
+    "input_type": "apk",
+    "timestamp": "2026-04-08T02:05:10.819204",
+    "pipeline_stages": [
+      "apk_static_analysis",
+      "detection",
+      "osint",
+      "golden_hour"
+    ],
+    "a2a_handoffs": [
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-891396C0",
+        "message_id": "81cfd70baf574991b3435e5c95f9e520",
+        "timestamp": "2026-04-07T20:35:10.819248+00:00",
+        "from": "satark_manager",
+        "to": "apk_analyzer",
+        "task": "detect_and_classify",
+        "payload": {
+          "input_type": "apk"
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-891396C0",
+        "message_id": "910b0efc9b7d4a428432485dd4024c5c",
+        "timestamp": "2026-04-07T20:35:18.186344+00:00",
+        "from": "satark_manager",
+        "to": "osint_agent",
+        "task": "investigate_indicators",
+        "payload": {
+          "indicators": [
+            "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+            "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure",
+            "bad-c2.example",
+            "malicious_like-bank_secure_update",
+            "malicious_like-bank_secure_update android app",
+            "classes.dexcom.fake.bank.secure"
+          ]
+        },
+        "status": "completed"
+      },
+      {
+        "protocol": "SATARK-A2A/1.0",
+        "acknowledgment_id": "SATARK-20260408-891396C0",
+        "message_id": "8fa6d2a6f2a24b32bd2b9de38701defd",
+        "timestamp": "2026-04-07T20:35:19.316029+00:00",
+        "from": "satark_manager",
+        "to": "golden_hour_agent",
+        "task": "generate_golden_hour_plan",
+        "payload": {
+          "scam_type": "UNKNOWN",
+          "risk_level": "CRITICAL"
+        },
+        "status": "completed"
+      }
+    ],
+    "is_scam": false,
+    "risk_level": "LOW",
+    "scam_type": "UNKNOWN",
+    "confidence": 98.0,
+    "red_flags": [
+      "SEARCH: com.fake.bank.secure — Identified as a common placeholder in security training and malware analysis labs.",
+      "URL_CONTEXT: http://bad-c2.example/collectPK — Contains ZIP file central directory headers (PK\\x01\\x02), indicating file upload/exfiltration.",
+      "Domain uses reserved '.example' TLD, preventing public resolution.",
+      "Impersonation of a 'secure bank update' in the metadata."
+    ],
+    "extracted_entities": {
+      "urls": [
+        "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+        "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure"
+      ],
+      "phones": [],
+      "domains": [
+        "bad-c2.example"
+      ],
+      "upi_ids": [],
+      "account_numbers": []
+    },
+    "victim_advice": "1. Immediately disconnect your device from the internet (Wi-Fi and mobile data). 2. Do not log into any banking or financial apps. 3. Go to Settings > Apps and look for 'com.fake.bank.secure' or any app related to 'Bank Secure Update' and uninstall it. 4. If the app has 'Device Administrator' or 'Accessibility' rights, revoke them first before uninstalling. 5. Contact your bank immediately to freeze your accounts and reset your login credentials from a clean device. 6. Consider a factory reset of your mobile device to ensure all malicious components are removed.",
+    "osint_summary": "The indicators point to a simulated or training-based Android malware campaign. The use of the '.example' TLD and the package name 'com.fake.bank.secure' strongly suggests a lab environment, CTF, or security training exercise rather than an active wild threat. However, the structure of the indicators (C2 collection paths, binary headers in URLs, and bank-impersonating package names) mimics real-world banking trojan behavior, specifically data exfiltration and credential harvesting.",
+    "threat_score": 3,
+    "priority_actions": [
+      "Delete the APK file from your downloads folder",
+      "Uninstall the application if it was installed",
+      "Stick to official app stores for all banking needs",
+      "Keep your phone's security software updated"
+    ],
+    "fir_template": "Subject: Reporting Malicious Banking Malware (APK) and Attempted Financial Fraud. \n\nDetails: I received a link (http://bad-c2.example/collect) prompting me to download an application named 'com.fake.bank.secure'. Upon investigation, this application appears to be a fraudulent APK designed to steal banking credentials and intercept SMS/OTP data. The incident originated from a URL pointing to 'bad-c2.example'. No financial loss has been confirmed yet, but the risk level is critical as the app is designed for unauthorized account access. I am reporting this to prevent further exploitation and to request the blocking of the associated malicious domain. My device has been isolated and I am in the process of securing my bank accounts linked to the phone number. \n\nEvidence: URL: http://bad-c2.example/collect, Package Name: com.fake.bank.secure. Case ID: SATARK-20260408-891396C0.",
+    "golden_hour_active": false,
+    "calendar_event": {
+      "attempted": false,
+      "created": false,
+      "title": "URGENT: Cyber Fraud Response - Case SATARK-20260408-891396C0",
+      "event_id": "",
+      "start_time": "2026-04-07T21:00:00Z",
+      "description": "Golden Hour response for APK Malware. Action: Freeze bank accounts and file complaint at https://cybercrime.gov.in. Reference Case: SATARK-20260408-891396C0",
+      "error": ""
+    },
+    "google_tasks": {
+      "attempted": false,
+      "created": false,
+      "tasklist_id": "",
+      "tasks_created": 0,
+      "task_ids": [],
+      "task_url": "",
+      "error": ""
+    },
+    "case_report_doc": {
+      "attempted": false,
+      "created": false,
+      "doc_id": "",
+      "doc_url": "",
+      "error": ""
+    },
+    "gmail_draft": {
+      "attempted": false,
+      "created": false,
+      "draft_id": "",
+      "draft_url": "",
+      "error": ""
+    },
+    "similar_cases_found": 0,
+    "recovery_answers": {
+      "provided": false,
+      "did_lose_money": false,
+      "clicked_link": false,
+      "shared_personal_details": false,
+      "shared_bank_details": false,
+      "installed_apk": false,
+      "account_compromise": false,
+      "amount_lost": 0.0,
+      "time_bucket": null,
+      "explicit_report_request": false,
+      "reactive_recovery": false
+    },
+    "is_malicious": true,
+    "malware_type": "Banking Trojan",
+    "dangerous_permissions": [
+      "READ_SMS",
+      "SEND_SMS",
+      "RECORD_AUDIO",
+      "BIND_ACCESSIBILITY_SERVICE",
+      "REQUEST_INSTALL_PACKAGES"
+    ],
+    "c2_servers": [
+      "http://bad-c2.example/collectPK"
+    ],
+    "suspicious_strings": [
+      "otp",
+      "steal",
+      "exfil",
+      "keylog",
+      "intercept",
+      "credential",
+      "com.fake.bank.secure"
+    ],
+    "plain_english_summary": "This application is a highly dangerous Banking Trojan disguised as a secure bank update. It requests the 'Accessibility Service' permission, which is a common tactic used by malware to intercept screen content and automate user actions without consent. The app is specifically designed to steal One-Time Passwords (OTPs) via SMS reading, log keystrokes, and exfiltrate sensitive credentials to a hardcoded command-and-control (C2) server. The package name 'com.fake.bank.secure' explicitly confirms its intent to impersonate a legitimate financial institution.",
+    "apk_analysis": {
+      "artifact_type": "apk_analysis",
+      "file_name": "malicious_like-bank_secure_update.apk",
+      "sha256": "331c8706c1e5d5ae3c0d01ebf2508b8d573cfaa8c2f8d2194467267ef413ccb0",
+      "package_name": "classes.dexcom.fake.bank.secure",
+      "app_name": "malicious_like-bank_secure_update",
+      "version_name": "",
+      "version_code": 0,
+      "min_sdk": null,
+      "target_sdk": null,
+      "signing": {
+        "is_debug": false,
+        "cert_subject": "",
+        "cert_issuer": "",
+        "cert_sha256": ""
+      },
+      "permissions": {
+        "all": [
+          "READ_SMS",
+          "SEND_SMS",
+          "RECORD_AUDIO",
+          "BIND_ACCESSIBILITY_SERVICE",
+          "REQUEST_INSTALL_PACKAGES"
+        ],
+        "dangerous": [
+          "READ_SMS",
+          "SEND_SMS",
+          "RECORD_AUDIO",
+          "BIND_ACCESSIBILITY_SERVICE"
+        ],
+        "suspicious": [
+          "BIND_ACCESSIBILITY_SERVICE",
+          "REQUEST_INSTALL_PACKAGES"
+        ]
+      },
+      "components": {
+        "exported_activities": [],
+        "exported_services": [],
+        "exported_receivers": [],
+        "deep_links": []
+      },
+      "network_indicators": {
+        "urls": [
+          "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+          "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure"
+        ],
+        "domains": [
+          "bad-c2.example"
+        ],
+        "ip_literals": []
+      },
+      "code_indicators": {
+        "hardcoded_secrets": [],
+        "crypto_issues": [],
+        "webview_risks": [],
+        "root_detection": false,
+        "anti_analysis": false
+      },
+      "behavioral_flags": [
+        {
+          "flag": "uses_read_sms",
+          "severity": "high",
+          "evidence": "Manifest/string references android.permission.READ_SMS"
+        },
+        {
+          "flag": "uses_send_sms",
+          "severity": "high",
+          "evidence": "Manifest/string references android.permission.SEND_SMS"
+        },
+        {
+          "flag": "uses_record_audio",
+          "severity": "high",
+          "evidence": "Manifest/string references android.permission.RECORD_AUDIO"
+        },
+        {
+          "flag": "uses_bind_accessibility_service",
+          "severity": "medium",
+          "evidence": "Manifest/string references android.permission.BIND_ACCESSIBILITY_SERVICE"
+        },
+        {
+          "flag": "suspicious_network_endpoints",
+          "severity": "high",
+          "evidence": "Found 2 non-trusted hardcoded URL(s)"
+        }
+      ],
+      "identity_clues": {
+        "labels": [
+          "malicious_like-bank_secure_update"
+        ],
+        "author_strings": [],
+        "repo_links": [],
+        "emails": []
+      },
+      "identity_assessment": {
+        "likely_known_project": false,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "unknown"
+      },
+      "analysis_summary": "APK shows elevated risk markers consistent with potentially malicious behavior.",
+      "confidence": 0.98,
+      "is_malicious": true,
+      "malware_type": "Credential Harvester",
+      "risk_level": "CRITICAL",
+      "dangerous_permissions": [
+        "READ_SMS",
+        "SEND_SMS",
+        "RECORD_AUDIO",
+        "BIND_ACCESSIBILITY_SERVICE"
+      ],
+      "c2_servers": [
+        "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+        "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure"
+      ],
+      "suspicious_strings": [
+        "otp",
+        "steal",
+        "exfil",
+        "keylog",
+        "intercept",
+        "credential"
+      ],
+      "plain_english_summary": "APK shows elevated risk markers consistent with potentially malicious behavior.",
+      "victim_advice": "Treat this APK as untrusted on your personal phone. Remove it and avoid entering real credentials."
+    },
+    "osint": {
+      "indicators_investigated": [
+        "http://bad-c2.example/collectPK",
+        "bad-c2.example",
+        "malicious_like-bank_secure_update",
+        "com.fake.bank.secure",
+        "classes.dexcom.fake.bank.secure"
+      ],
+      "domains": {
+        "bad-c2.example": {
+          "domain_age_days": 0,
+          "registrar": "Unknown",
+          "hosting_country": "Unknown",
+          "ssl": {
+            "present": false,
+            "issuer": "",
+            "valid_to": ""
+          },
+          "notes": "The domain '.example' is a reserved top-level domain for documentation and examples. It is not a live routable domain on the public internet."
+        }
+      },
+      "ips": {},
+      "urls": {
+        "http://bad-c2.example/collectPK": {
+          "verdict": "SUSPICIOUS",
+          "web_risk_verdict": "SAFE",
+          "red_flags": [
+            "URL contains binary/ZIP header fragments (PK\\x01\\x02)",
+            "Path '/collectPK' suggests data exfiltration or C2 collection",
+            "Associated with suspicious package name 'com.fake.bank.secure'"
+          ],
+          "notes": "The URL contains raw byte sequences typical of a ZIP file structure, often seen in automated exfiltration of Android APK components or data."
+        }
+      },
+      "threat_summary": "The indicators point to a simulated or training-based Android malware campaign. The use of the '.example' TLD and the package name 'com.fake.bank.secure' strongly suggests a lab environment, CTF, or security training exercise rather than an active wild threat. However, the structure of the indicators (C2 collection paths, binary headers in URLs, and bank-impersonating package names) mimics real-world banking trojan behavior, specifically data exfiltration and credential harvesting.",
+      "overall_threat_score": 3,
+      "red_flags": [
+        "SEARCH: com.fake.bank.secure — Identified as a common placeholder in security training and malware analysis labs.",
+        "URL_CONTEXT: http://bad-c2.example/collectPK — Contains ZIP file central directory headers (PK\\x01\\x02), indicating file upload/exfiltration.",
+        "Domain uses reserved '.example' TLD, preventing public resolution.",
+        "Impersonation of a 'secure bank update' in the metadata."
+      ],
+      "recommendations": [
+        "Treat as a training/simulation indicator; no immediate action required for production environments.",
+        "If found in internal logs, investigate for unauthorized security testing or lab activity.",
+        "Monitor for similar patterns using legitimate TLDs (e.g., .com, .net) which would indicate a live campaign."
+      ],
+      "sources": [
+        "whois",
+        "web_risk",
+        "iana_reserved_domains",
+        "apk_metadata_analysis"
+      ]
+    },
+    "osint_enrichment": {
+      "artifact_type": "osint_enrichment",
+      "queries_used": [
+        "http://bad-c2.example/collectPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000",
+        "http://bad-c2.example/collectPK\u0003\u0004\u0014\u0000\u0000\u0000\u0000\u0000}\u0010\\¿ë\u0010\u0001\u0000\u0000\u0010\u0001\u0000\u0000\u0013\u0000\u0000\u0000AndroidManifest.xmlcom.fake.bank.secure",
+        "bad-c2.example",
+        "malicious_like-bank_secure_update",
+        "malicious_like-bank_secure_update android app",
+        "classes.dexcom.fake.bank.secure"
+      ],
+      "identity_assessment": {
+        "likely_known_project": false,
+        "likely_official_project": false,
+        "likely_repack_or_tampered": "unknown"
+      },
+      "public_matches": [
+        {
+          "type": "package_hint",
+          "title": "classes.dexcom.fake.bank.secure",
+          "url": "",
+          "relevance": "medium",
+          "note": "Package identifier extracted from APK"
+        }
+      ],
+      "reputation_signals": {
+        "benign_signals": [
+          "App label observed: malicious_like-bank_secure_update"
+        ],
+        "risk_signals": [
+          "APK requests sensitive permissions: READ_SMS, SEND_SMS, RECORD_AUDIO, BIND_ACCESSIBILITY_SERVICE"
+        ],
+        "unknowns": [
+          "Official publisher authenticity is not yet confirmed",
+          "Repack/tamper status remains uncertain without signature baseline"
+        ]
+      },
+      "osint_summary": "The indicators point to a simulated or training-based Android malware campaign. The use of the '.example' TLD and the package name 'com.fake.bank.secure' strongly suggests a lab environment, CTF, or security training exercise rather than an active wild threat. However, the structure of the indicators (C2 collection paths, binary headers in URLs, and bank-impersonating package names) mimics real-world banking trojan behavior, specifically data exfiltration and credential harvesting.",
+      "confidence": 0.03
+    },
+    "response_mode": "proactive_warning",
+    "verdict": "Likely training or simulation APK",
+    "category": "Educational/Training Tool",
+    "chat_reply": "This APK appears to be a security training tool or a lab exercise rather than a real-world attack. It uses a reserved '.example' web address that does not function on the public internet, meaning it cannot send your data to an actual attacker. While it mimics the behavior of a banking trojan for educational purposes, there is no sign of an active compromise. You should still delete it to maintain good security hygiene.",
+    "summary": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+    "conversational_reply": "It looks like you have encountered a training tool. Since it uses non-functional web addresses, your data is not at risk of being sent to a real attacker.",
+    "evidence": [],
+    "why_this_decision": [
+      "Uses a reserved '.example' web domain that doesn't work on the real internet",
+      "Package name is a known placeholder for security research",
+      "No active connection to real-world malicious servers",
+      "Designed to demonstrate how permissions are abused in a controlled environment"
+    ],
+    "recommended_actions": [
+      "Delete the APK file from your downloads folder",
+      "Uninstall the application if it was installed",
+      "Stick to official app stores for all banking needs",
+      "Keep your phone's security software updated"
+    ],
+    "action_steps": [
+      "Delete the APK file from your downloads folder",
+      "Uninstall the application if it was installed",
+      "Stick to official app stores for all banking needs",
+      "Keep your phone's security software updated"
+    ],
+    "requires_reporting": false,
+    "requires_emergency": false,
+    "requires_financial_blocking": false,
+    "requires_account_block": false,
+    "requires_device_cleanup": true,
+    "likely_app_identity": "known_training_app",
+    "uncertainty_note": "The package name and domain are standard placeholders for security documentation and lab environments.",
+    "reporting_recommendation": {
+      "should_report_now": false,
+      "reason": "The application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+    },
+    "requires_mcp": false,
+    "mcp_plan": {
+      "create_calendar": false,
+      "create_tasks": false,
+      "create_gmail_draft": false,
+      "create_case_report_doc": false
+    },
+    "presentation_sections": {
+      "headline": "Training Tool Detected",
+      "status_line": "No active risk detected; likely educational material.",
+      "primary_actions_title": "What to do now",
+      "actions_title": "What to do now",
+      "evidence_title": "Why it looks suspicious"
+    },
+    "presentation": {
+      "headline": "Security Training Tool Identified",
+      "summary_paragraph": "The APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.",
+      "evidence_bullets": [
+        "Uses a reserved '.example' web domain that doesn't work on the real internet",
+        "Package name is a known placeholder for security research",
+        "No active connection to real-world malicious servers",
+        "Designed to demonstrate how permissions are abused in a controlled environment"
+      ],
+      "actions": [
+        "Delete the APK file from your downloads folder",
+        "Uninstall the application if it was installed",
+        "Stick to official app stores for all banking needs",
+        "Keep your phone's security software updated"
+      ],
+      "reporting_note": "The application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+    },
+    "debug": {
+      "risk_level": "LOW",
+      "confidence": 0.98,
+      "similar_cases": 3,
+      "patterns": [
+        "training_app_indicators",
+        "reserved_tld_usage"
+      ]
+    },
+    "presentation_markdown": "## What this looks like\nThe APK contains markers typical of a security training exercise or lab environment, such as non-routable domains and placeholder package names.\n\n## Why I'm saying that\n- Uses a reserved '.example' web domain that doesn't work on the real internet\n- Package name is a known placeholder for security research\n- No active connection to real-world malicious servers\n- Designed to demonstrate how permissions are abused in a controlled environment\n\n## What to do now\n1. Delete the APK file from your downloads folder\n2. Uninstall the application if it was installed\n3. Stick to official app stores for all banking needs\n4. Keep your phone's security software updated\n\n## Reporting\nThe application uses a non-routable .example domain and appears to be a harmless simulation for educational or testing purposes rather than a live scam."
+  }
+}

@@ -32,6 +32,11 @@ except Exception:
     apk_analyzer_agent = None
 
 try:
+    from agents.apk_analyzer.agent import build_apk_analysis_contract  # type: ignore
+except Exception:
+    build_apk_analysis_contract = None  # type: ignore
+
+try:
     from agents.golden_hour import build_golden_hour_agent  # type: ignore
 except Exception:
     build_golden_hour_agent = None
@@ -46,6 +51,7 @@ from db.sessions_repo import get_google_oauth
 from tools.google_workspace import (
     build_google_credentials,
     create_case_report_doc,
+    create_golden_hour_calendar_events,
     create_gmail_draft,
     create_golden_hour_tasks,
 )
@@ -73,6 +79,74 @@ DEFAULT_PRIORITY_ACTIONS = [
     "Preserve the suspicious message or file as evidence.",
     "Escalate only if reporting or emergency is explicitly recommended.",
 ]
+
+
+def _is_quota_or_capacity_error(message: str) -> bool:
+    text = str(message or "").lower()
+    if not text:
+        return False
+    signals = [
+        "resource_exhausted",
+        "resource exhausted",
+        "quota exceeded",
+        "check quota",
+        "429",
+        "capacity",
+        "rate limit",
+    ]
+    return any(token in text for token in signals)
+
+CHAT_REPLY_STYLE_BLOCK = """
+CHAT_REPLY STYLE RULES
+
+Write chat_reply like a calm, sharp human assistant speaking directly to the user.
+
+Goals:
+- Sound natural, not bureaucratic.
+- Sound reassuring when there is no confirmed compromise.
+- Sound urgent only when the user describes real damage or active compromise.
+- Keep it to 2-4 sentences.
+- Use plain English and natural contractions.
+- Speak as one person, not like a stitched report.
+
+Do:
+- Say clearly whether compromise is confirmed or not.
+- Reduce panic when the case is preventive only.
+- Mention the most important action in a natural way.
+- Sound conversational, but still trustworthy.
+
+Do not:
+- sound like a police notice
+- sound like a compliance template
+- stack abstract phrases like "preventive safety steps" or "direct compromise indicators"
+- repeat the same sentence structure every time
+- restate labels like risk/confidence/category in the prose unless truly needed
+
+Prefer wording like:
+- "This looks more like a bait message than an actual compromise."
+- "From what you've told me, there's no sign they got into your account."
+- "So you don't need to panic, but definitely don't click that link."
+- "This APK looks more like an intentionally insecure demo app than outright malware."
+
+Bad:
+- "Your answers do not indicate direct compromise yet. Follow preventive safety steps."
+- "This case appears to be a likely phishing attempt."
+- "Analysis indicates no current compromise."
+- "Proceed with the following recommendations."
+
+Good examples:
+
+Example 1 - preventive SMS:
+"This looks like a scam lure trying to bait you with a fake reward link. From what you've told me, there's no sign of actual compromise right now, so you don't need to panic. Just avoid the link, block the sender, and mark it as spam."
+
+Example 2 - informational APK:
+"This APK doesn't look outright malicious from what I can see. It feels more like an intentionally insecure or educational testing app, so no need to panic. Just don't put any real personal, banking, or login details into it."
+
+Example 3 - real compromise:
+"This is more serious because you entered sensitive details and money was already debited. Treat it like an active compromise right now: secure the affected account immediately and start the reporting/recovery steps without waiting."
+
+chat_reply must be original each time, but it should stay within this tone.
+""".strip()
 
 
 def generate_ack_id() -> str:
@@ -145,6 +219,8 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
     recovery_answers = _normalize_recovery_answers(payload if isinstance(payload, dict) else {})
     result["recovery_answers"] = recovery_answers
 
+    degraded_mode = False
+
     try:
         primary_agent = _select_detection_agent(input_type)
         attachments: list[genai_types.Part] = []
@@ -179,12 +255,27 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                 result[key] = value
 
         result["extracted_entities"] = _normalize_entities(result.get("extracted_entities", {}))
+
+        if input_type == "apk":
+            apk_analysis = _normalize_apk_analysis(result=result, payload=payload)
+            if apk_analysis:
+                result["apk_analysis"] = apk_analysis
+                net = apk_analysis.get("network_indicators") if isinstance(apk_analysis.get("network_indicators"), dict) else {}
+                merged_entities = result.get("extracted_entities") if isinstance(result.get("extracted_entities"), dict) else {}
+                merged_entities["urls"] = _as_list(merged_entities.get("urls")) + _as_list(net.get("urls"))
+                merged_entities["domains"] = _as_list(merged_entities.get("domains")) + _as_list(net.get("domains"))
+                result["extracted_entities"] = _normalize_entities(merged_entities)
+                pipeline_stages.append("apk_static_analysis")
+
         detection_handoff["status"] = "completed"
         pipeline_stages.append("detection")
     except Exception as e:
         logger.error(f"Stage 1 detection failed: {e}")
         pipeline_stages.append("detection_failed")
         result["error"] = str(e)
+        degraded_mode = True
+        if _is_quota_or_capacity_error(str(e)):
+            pipeline_stages.append("quota_degraded")
 
     # Enrich with pattern intelligence regardless of scam decision.
     text_for_similarity = payload.get("text", "")
@@ -206,7 +297,9 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
             ]
 
     indicators = _collect_indicators(result.get("extracted_entities", {}))
-    can_run_osint = osint_agent is not None and len(indicators) > 0
+    apk_osint_queries = _collect_apk_osint_queries(result.get("apk_analysis") if isinstance(result.get("apk_analysis"), dict) else {})
+    indicators = list(dict.fromkeys(indicators + apk_osint_queries))
+    can_run_osint = osint_agent is not None and len(indicators) > 0 and not degraded_mode
 
     parallel_tasks: dict[str, asyncio.Task] = {}
 
@@ -235,7 +328,7 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
         google_oauth = get_google_oauth(session_id or "")
 
     golden_hour_agent = None
-    if build_golden_hour_agent is not None:
+    if not degraded_mode and build_golden_hour_agent is not None:
         try:
             golden_hour_agent = build_golden_hour_agent(google_oauth=google_oauth, session_id=session_id)
         except Exception:
@@ -282,6 +375,13 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                 extra_flags = output.get("red_flags") or []
                 if isinstance(extra_flags, list):
                     result["red_flags"] = list(dict.fromkeys((result.get("red_flags") or []) + extra_flags))
+                if input_type == "apk":
+                    result["osint_enrichment"] = _normalize_osint_enrichment(
+                        osint_output=output,
+                        queries_used=indicators,
+                        apk_analysis=result.get("apk_analysis") if isinstance(result.get("apk_analysis"), dict) else {},
+                        payload=payload if isinstance(payload, dict) else {},
+                    )
                 pipeline_stages.append("osint")
             elif key == "golden_hour":
                 result["priority_actions"] = output.get("priority_actions", [])
@@ -305,6 +405,14 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                             result["calendar_event"].get("start_time"),
                         )
                 pipeline_stages.append("golden_hour")
+
+    if input_type == "apk" and not isinstance(result.get("osint_enrichment"), dict):
+        result["osint_enrichment"] = _normalize_osint_enrichment(
+            osint_output={},
+            queries_used=indicators,
+            apk_analysis=result.get("apk_analysis") if isinstance(result.get("apk_analysis"), dict) else {},
+            payload=payload if isinstance(payload, dict) else {},
+        )
 
     # Ensure the pipeline always carries a usable FIR/NCRP-ready body even if
     # the Golden Hour agent returns an empty or too-short template.
@@ -332,28 +440,128 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
 
     # Final manager decision contract (AI-generated): route, verdict, evidence,
     # action steps, reporting decision, and MCP plan.
-    decision_contract = await _generate_manager_decision_contract(
-        input_type=input_type,
-        payload=payload if isinstance(payload, dict) else {},
-        base_result=result,
-        recovery_answers=recovery_answers,
-    )
+    if degraded_mode:
+        decision_contract = _sanitize_manager_contract({}, result, recovery_answers)
+        pipeline_stages.append("manager_contract_fallback")
+    else:
+        try:
+            decision_timeout_s = float(os.getenv("SATARK_MANAGER_DECISION_TIMEOUT_S", "6"))
+        except Exception:
+            decision_timeout_s = 6.0
+
+        try:
+            decision_contract = await asyncio.wait_for(
+                _generate_manager_decision_contract(
+                    input_type=input_type,
+                    payload=payload if isinstance(payload, dict) else {},
+                    base_result=result,
+                    recovery_answers=recovery_answers,
+                ),
+                timeout=max(1.0, decision_timeout_s),
+            )
+        except Exception:
+            decision_contract = _sanitize_manager_contract({}, result, recovery_answers)
+            pipeline_stages.append("manager_contract_timeout_fallback")
     result.update(decision_contract)
     if isinstance(result.get("action_steps"), list) and result.get("action_steps"):
         result["priority_actions"] = list(result.get("action_steps") or [])
 
     # Deterministic MCP execution based on manager decision contract.
-    trigger_mcp_actions = bool(result.get("requires_mcp", False))
+    payload_options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+    minutes_since_incident = None
+    try:
+        if isinstance(recovery_answers, dict) and recovery_answers.get("minutes_since_incident") is not None:
+            minutes_since_incident = int(float(recovery_answers.get("minutes_since_incident")))
+    except Exception:
+        minutes_since_incident = None
+
+    money_lost_signal = False
+    if isinstance(recovery_answers, dict):
+        try:
+            amount_lost_value = float(recovery_answers.get("amount_lost") or 0)
+        except Exception:
+            amount_lost_value = 0.0
+        money_lost_signal = bool(
+            recovery_answers.get("did_lose_money")
+            or recovery_answers.get("did_lose_money_or_share_bank_details")
+            or amount_lost_value > 0
+        )
+
+    # Demo-critical deterministic override: if user confirms money loss and MCP
+    # triggering is requested, always enable calendar/tasks workflow.
+    if bool(payload_options.get("trigger_mcp_actions", False)) and money_lost_signal:
+        result["requires_mcp"] = True
+        result["requires_reporting"] = True
+        result["requires_financial_blocking"] = True
+        if minutes_since_incident is not None and minutes_since_incident <= 60:
+            result["golden_hour_active"] = True
+            result["requires_emergency"] = True
+
+        deterministic_plan = result.get("mcp_plan") if isinstance(result.get("mcp_plan"), dict) else {}
+        deterministic_plan["create_calendar"] = True
+        deterministic_plan["create_tasks"] = True
+        deterministic_plan["create_case_report_doc"] = False
+        deterministic_plan["create_gmail_draft"] = False
+        result["mcp_plan"] = deterministic_plan
+
+        if not isinstance(result.get("action_steps"), list) or not result.get("action_steps"):
+            result["action_steps"] = [
+                "Call 1930 immediately and share transaction details.",
+                "Contact your bank and request an urgent hold/freeze.",
+                "Secure exposed credentials from a trusted device.",
+                "Preserve screenshots, UTR, and fraud contact evidence.",
+            ]
+            result["priority_actions"] = list(result.get("action_steps") or [])
+
+    trigger_mcp_requested = bool(payload_options.get("trigger_mcp_actions", False))
+    recovery_answers_opt = payload_options.get("recovery_answers") if isinstance(payload_options, dict) else {}
+    recovery_answers_opt = recovery_answers_opt if isinstance(recovery_answers_opt, dict) else {}
+    explicit_fir_generation = bool(
+        recovery_answers_opt.get("generate_fir_docs") is True
+        or payload_options.get("generate_report") is True
+    )
+    trigger_mcp_actions = bool((result.get("requires_mcp", False) or explicit_fir_generation) and trigger_mcp_requested)
+    result["mcp_execution_requested"] = trigger_mcp_requested
+    result["mcp_execution_enabled"] = trigger_mcp_actions
     mcp_plan = _normalize_mcp_plan(
         requires_mcp=trigger_mcp_actions,
         raw_plan=result.get("mcp_plan") if isinstance(result.get("mcp_plan"), dict) else None,
         requires_reporting=bool(result.get("requires_reporting", False)),
     )
     result["mcp_plan"] = mcp_plan
-    create_calendar = bool(mcp_plan.get("create_calendar"))
-    create_tasks = bool(mcp_plan.get("create_tasks"))
-    create_gmail_draft = bool(mcp_plan.get("create_gmail_draft"))
-    create_case_report_doc = bool(mcp_plan.get("create_case_report_doc"))
+    should_create_calendar = bool(mcp_plan.get("create_calendar"))
+    should_create_tasks = bool(mcp_plan.get("create_tasks"))
+    should_create_gmail_draft = bool(mcp_plan.get("create_gmail_draft"))
+    should_create_case_report_doc = bool(mcp_plan.get("create_case_report_doc"))
+
+    if trigger_mcp_requested and explicit_fir_generation:
+        should_create_case_report_doc = True
+        should_create_gmail_draft = True
+        mcp_plan["create_case_report_doc"] = True
+        mcp_plan["create_gmail_draft"] = True
+        result["mcp_plan"] = mcp_plan
+
+    narrative_ready = _has_detailed_incident_story(payload if isinstance(payload, dict) else {})
+    reporting_artifacts_pending_narrative = bool(
+        trigger_mcp_actions
+        and bool(result.get("requires_reporting", False))
+        and (should_create_gmail_draft or should_create_case_report_doc)
+        and not narrative_ready
+    )
+    if explicit_fir_generation:
+        reporting_artifacts_pending_narrative = False
+    if reporting_artifacts_pending_narrative:
+        should_create_gmail_draft = False
+        should_create_case_report_doc = False
+        mcp_plan["create_gmail_draft"] = False
+        mcp_plan["create_case_report_doc"] = False
+        result["mcp_plan"] = mcp_plan
+        if not str(result.get("narrative_followup_message") or "").strip():
+            result["narrative_followup_message"] = (
+                "After urgent blocking steps, send a detailed incident timeline with amount, "
+                "transaction IDs, numbers, links, and timestamps. I will then generate the case report doc and Gmail draft."
+            )
+    result["reporting_artifacts_pending_narrative"] = reporting_artifacts_pending_narrative
 
     has_oauth_tokens = False
     if isinstance(google_oauth, dict):
@@ -367,7 +575,7 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
 
     should_schedule_calendar = (
         should_trigger_workspace_actions
-        and create_calendar
+        and should_create_calendar
         and schedule_golden_hour_calendar_events is not None
     )
 
@@ -376,111 +584,157 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
         try:
             creds = build_google_credentials(google_oauth)
         except Exception:
-            if should_schedule_calendar:
-                try:
-                    calendar_event = await schedule_golden_hour_calendar_events(
-                        google_oauth=google_oauth,
-                        session_id=session_id,
-                        case_id=str(result.get("case_id") or ack_id),
-                        scam_type=str(result.get("scam_type") or "Cyber Fraud"),
-                        minutes_elapsed=payload.get("minutes_since_fraud"),
+            creds = None
+
+    minutes_elapsed = (
+        recovery_answers.get("minutes_since_incident")
+        if isinstance(recovery_answers, dict)
+        else payload.get("minutes_since_fraud")
+    )
+
+    if should_schedule_calendar:
+        try:
+            calendar_event = await schedule_golden_hour_calendar_events(
+                google_oauth=google_oauth,
+                session_id=session_id,
+                case_id=str(result.get("case_id") or ack_id),
+                scam_type=str(result.get("scam_type") or "Cyber Fraud"),
+                minutes_elapsed=minutes_elapsed,
+            )
+            if isinstance(calendar_event, dict):
+                result["calendar_event"] = {
+                    "attempted": bool(calendar_event.get("attempted", False)),
+                    "created": bool(calendar_event.get("created", False)),
+                    "title": str(calendar_event.get("title", "")),
+                    "event_id": str(calendar_event.get("event_id", "")),
+                    "start_time": str(calendar_event.get("start_time", "")),
+                    "description": str(calendar_event.get("description", "")),
+                    "error": str(calendar_event.get("error", "")),
+                }
+                if bool(result["calendar_event"].get("created")):
+                    logger.info(
+                        "golden_hour.calendar_event scheduled event_id=%s start_time=%s",
+                        result["calendar_event"].get("event_id"),
+                        result["calendar_event"].get("start_time"),
                     )
-                    if isinstance(calendar_event, dict):
-                        result["calendar_event"] = {
-                            "attempted": bool(calendar_event.get("attempted", False)),
-                            "created": bool(calendar_event.get("created", False)),
-                            "title": str(calendar_event.get("title", "")),
-                            "event_id": str(calendar_event.get("event_id", "")),
-                            "start_time": str(calendar_event.get("start_time", "")),
-                            "description": str(calendar_event.get("description", "")),
-                            "error": str(calendar_event.get("error", "")),
-                        }
-                        if bool(result["calendar_event"].get("created")):
-                            logger.info(
-                                "golden_hour.calendar_event scheduled event_id=%s start_time=%s",
-                                result["calendar_event"].get("event_id"),
-                                result["calendar_event"].get("start_time"),
-                            )
-                    pipeline_stages.append("calendar_scheduled")
-                except Exception as e:
+            pipeline_stages.append("calendar_scheduled")
+        except Exception as e:
+            result["calendar_event"] = {
+                "attempted": True,
+                "created": False,
+                "title": str(result["calendar_event"].get("title", "")) if isinstance(result.get("calendar_event"), dict) else "",
+                "event_id": "",
+                "start_time": "",
+                "description": str(result["calendar_event"].get("description", "")) if isinstance(result.get("calendar_event"), dict) else "",
+                "error": str(e),
+            }
+            pipeline_stages.append("calendar_failed")
+
+    if should_trigger_workspace_actions and should_create_calendar:
+        calendar_state = result.get("calendar_event") if isinstance(result.get("calendar_event"), dict) else {}
+        if not bool(calendar_state.get("created", False)) and creds is not None:
+            try:
+                direct_calendar = await asyncio.to_thread(
+                    create_golden_hour_calendar_events,
+                    creds,
+                    case_id=str(result.get("case_id") or ack_id),
+                    scam_type=str(result.get("scam_type") or "Cyber Fraud"),
+                    minutes_elapsed=minutes_elapsed,
+                )
+                if isinstance(direct_calendar, dict):
+                    result["calendar_event"] = {
+                        "attempted": bool(direct_calendar.get("attempted", False)),
+                        "created": bool(direct_calendar.get("created", False)),
+                        "title": str(direct_calendar.get("title", "")),
+                        "event_id": str(direct_calendar.get("event_id", "")),
+                        "start_time": str(direct_calendar.get("start_time", "")),
+                        "description": str(direct_calendar.get("description", "")),
+                        "error": str(direct_calendar.get("error", "")),
+                    }
+                    pipeline_stages.append(
+                        "calendar_scheduled" if bool(result["calendar_event"].get("created")) else "calendar_attempted"
+                    )
+            except Exception as e:
+                if not isinstance(result.get("calendar_event"), dict):
                     result["calendar_event"] = {
                         "attempted": True,
                         "created": False,
-                        "title": str(result["calendar_event"].get("title", "")) if isinstance(result.get("calendar_event"), dict) else "",
+                        "title": "",
                         "event_id": "",
                         "start_time": "",
-                        "description": str(result["calendar_event"].get("description", "")) if isinstance(result.get("calendar_event"), dict) else "",
+                        "description": "",
                         "error": str(e),
                     }
-                    pipeline_stages.append("calendar_failed")
 
-            # Google Tasks checklist (best-effort, manager-directed).
-            if should_trigger_workspace_actions and create_tasks:
-                if creds is None:
-                    result["google_tasks"] = {
-                        "attempted": False,
-                        "created": False,
-                        "tasklist_id": "",
-                        "tasks_created": 0,
-                        "task_ids": [],
-                        "task_url": "",
-                        "error": "google_oauth_not_connected" if not has_oauth_tokens else "credentials_unavailable",
-                    }
-                else:
-                    try:
-                        tasks_result = await asyncio.to_thread(
-                            create_golden_hour_tasks,
-                            creds,
-                            case_id=str(result.get("case_id") or ack_id),
-                            scam_type=str(result.get("scam_type") or "Cyber Fraud"),
-                            complaint_text=result.get("fir_template") or "",
-                        )
-                        if isinstance(tasks_result, dict):
-                            result["google_tasks"] = tasks_result
-                        pipeline_stages.append(
-                            "tasks_created" if isinstance(tasks_result, dict) and bool(tasks_result.get("created")) else "tasks_attempted"
-                        )
-                    except Exception as e:
-                        result["google_tasks"] = {
-                            "attempted": True,
-                            "created": False,
-                            "tasklist_id": "",
-                            "tasks_created": 0,
-                            "task_ids": [],
-                            "task_url": "",
-                            "error": str(e),
-                        }
-                        pipeline_stages.append("tasks_failed")
-            elif trigger_mcp_actions and not create_tasks:
+    # Google Tasks checklist (best-effort, manager-directed).
+    if should_trigger_workspace_actions and should_create_tasks:
+        if creds is None:
+            result["google_tasks"] = {
+                "attempted": False,
+                "created": False,
+                "tasklist_id": "",
+                "tasks_created": 0,
+                "task_ids": [],
+                "task_url": "",
+                "error": "google_oauth_not_connected" if not has_oauth_tokens else "credentials_unavailable",
+            }
+        else:
+            try:
+                tasks_result = await asyncio.to_thread(
+                    create_golden_hour_tasks,
+                    creds,
+                    case_id=str(result.get("case_id") or ack_id),
+                    scam_type=str(result.get("scam_type") or "Cyber Fraud"),
+                    complaint_text=result.get("fir_template") or "",
+                )
+                if isinstance(tasks_result, dict):
+                    result["google_tasks"] = tasks_result
+                pipeline_stages.append(
+                    "tasks_created" if isinstance(tasks_result, dict) and bool(tasks_result.get("created")) else "tasks_attempted"
+                )
+            except Exception as e:
                 result["google_tasks"] = {
-                    "attempted": False,
+                    "attempted": True,
                     "created": False,
                     "tasklist_id": "",
                     "tasks_created": 0,
                     "task_ids": [],
                     "task_url": "",
-                    "error": "not_requested",
+                    "error": str(e),
                 }
+                pipeline_stages.append("tasks_failed")
+    elif trigger_mcp_actions and not should_create_tasks:
+        result["google_tasks"] = {
+            "attempted": False,
+            "created": False,
+            "tasklist_id": "",
+            "tasks_created": 0,
+            "task_ids": [],
+            "task_url": "",
+            "error": "not_requested",
+        }
 
     # If the caller asked us to trigger MCP actions but we didn't schedule a calendar
     # event, keep evidence explicitly unattempted (the LLM output is not authoritative).
-    if trigger_mcp_actions and create_calendar and not should_schedule_calendar:
+    if trigger_mcp_actions and should_create_calendar and not isinstance(result.get("calendar_event"), dict):
         if not should_trigger_workspace_actions:
             calendar_error = "not_applicable"
         elif not has_oauth_tokens:
             calendar_error = "google_oauth_not_connected"
+        elif creds is None:
+            calendar_error = "credentials_unavailable"
         else:
             calendar_error = "calendar_scheduler_unavailable"
         result["calendar_event"] = {
             "attempted": False,
             "created": False,
-            "title": str(result["calendar_event"].get("title", "")) if isinstance(result.get("calendar_event"), dict) else "",
+            "title": "",
             "event_id": "",
             "start_time": "",
-            "description": str(result["calendar_event"].get("description", "")) if isinstance(result.get("calendar_event"), dict) else "",
+            "description": "",
             "error": calendar_error,
         }
-    elif trigger_mcp_actions and not create_calendar:
+    elif trigger_mcp_actions and not should_create_calendar:
         result["calendar_event"] = {
             "attempted": False,
             "created": False,
@@ -508,27 +762,30 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
             "error": "not_applicable",
         }
 
-    if trigger_mcp_actions and should_trigger_workspace_actions and not create_case_report_doc:
+    case_doc_skip_reason = "narrative_pending" if reporting_artifacts_pending_narrative else "not_requested"
+    gmail_skip_reason = "narrative_pending" if reporting_artifacts_pending_narrative else "not_requested"
+
+    if trigger_mcp_actions and should_trigger_workspace_actions and not should_create_case_report_doc:
         result["case_report_doc"] = {
             "attempted": False,
             "created": False,
             "doc_id": "",
             "doc_url": "",
-            "error": "not_requested",
+            "error": case_doc_skip_reason,
         }
 
-    if trigger_mcp_actions and should_trigger_workspace_actions and not create_gmail_draft:
+    if trigger_mcp_actions and should_trigger_workspace_actions and not should_create_gmail_draft:
         result["gmail_draft"] = {
             "attempted": False,
             "created": False,
             "draft_id": "",
             "draft_url": "",
-            "error": "not_requested",
+            "error": gmail_skip_reason,
         }
 
     if should_trigger_workspace_actions:
         if creds is None:
-            if create_case_report_doc:
+            if should_create_case_report_doc:
                 result["case_report_doc"] = {
                     "attempted": False,
                     "created": False,
@@ -536,7 +793,7 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                     "doc_url": "",
                     "error": "google_oauth_not_connected" if not has_oauth_tokens else "credentials_unavailable",
                 }
-            if create_gmail_draft:
+            if should_create_gmail_draft:
                 result["gmail_draft"] = {
                     "attempted": False,
                     "created": False,
@@ -581,7 +838,7 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                     f"ACKNOWLEDGMENT ID: {case_id}\n"
                 )
 
-                if create_case_report_doc:
+                if should_create_case_report_doc:
                     doc_result = await asyncio.to_thread(
                         create_case_report_doc,
                         creds,
@@ -605,7 +862,7 @@ async def run_pipeline(input_type: str, payload: dict) -> dict:
                     f"{summary or '(not available)'}\n\n"
                     "I request immediate assistance and acknowledgement.\n"
                 )
-                if create_gmail_draft:
+                if should_create_gmail_draft:
                     gmail_result = await asyncio.to_thread(
                         create_gmail_draft,
                         creds,
@@ -1079,6 +1336,8 @@ def _select_detection_agent(input_type: str):
 def _build_osint_prompt(indicators: list[str]) -> str:
     return (
         "Investigate these indicators using OSINT tools and return STRICT JSON only (no prose, no markdown).\n"
+        "Indicators can include URLs/domains/IPs and APK identity clues (app name, package id, cert hints, repo/email strings).\n"
+        "If clues point to a known training app identity, state that explicitly in red_flags/notes without forcing a malware verdict.\n"
         "\n"
         "Indicators:\n"
         f"{json.dumps(indicators)}\n"
@@ -1220,13 +1479,25 @@ def _normalize_recovery_answers(payload: dict) -> dict[str, Any]:
 
     provided = bool(raw)
 
+    amount_lost_value = raw.get("amount_lost")
+    try:
+        amount_lost = float(amount_lost_value or 0)
+    except Exception:
+        amount_lost = 0.0
+    amount_lost = max(0.0, amount_lost)
+
+    amount_lost_bucket = str(raw.get("amount_lost_bucket") or "").strip().lower() or None
     did_lose_money = bool(
         raw.get("did_lose_money")
         or raw.get("did_lose_money_or_share_bank_details")
+        or amount_lost > 0
+        or amount_lost_bucket in {"under_10k", "between_10k_50k", "between_50k_100k", "over_100k"}
     )
     clicked_link = bool(raw.get("clicked_link") or raw.get("opened_link"))
     shared_personal_details = bool(
-        raw.get("shared_personal_details")
+        raw.get("shared_sensitive_data")
+        or raw.get("shared_otp_or_pin")
+        or raw.get("shared_personal_details")
         or raw.get("shared_sensitive_details")
         or raw.get("shared_identity_details")
         or raw.get("shared_aadhaar")
@@ -1248,14 +1519,30 @@ def _normalize_recovery_answers(payload: dict) -> dict[str, Any]:
     )
     explicit_report_request = bool(raw.get("explicit_report_request"))
 
-    try:
-        amount_lost = float(raw.get("amount_lost") or 0)
-    except Exception:
-        amount_lost = 0.0
-    amount_lost = max(0.0, amount_lost)
+    minutes_since_incident = None
+    for candidate in [raw.get("minutes_since_incident"), raw.get("minutes_since_fraud")]:
+        try:
+            if candidate is None:
+                continue
+            parsed = int(float(candidate))
+            if parsed >= 0:
+                minutes_since_incident = parsed
+                break
+        except Exception:
+            continue
 
     time_bucket_raw = str(raw.get("time_bucket") or "").strip().lower()
-    time_bucket = time_bucket_raw if time_bucket_raw in {"minutes", "hours", "days"} else None
+    allowed_buckets = {
+        "minutes",
+        "hours",
+        "days",
+        "within_15_min",
+        "15_30_min",
+        "30_60_min",
+        "over_1_hour",
+        "over_1_day",
+    }
+    time_bucket = time_bucket_raw if time_bucket_raw in allowed_buckets else None
 
     return {
         "provided": provided,
@@ -1266,7 +1553,9 @@ def _normalize_recovery_answers(payload: dict) -> dict[str, Any]:
         "installed_apk": installed_apk,
         "account_compromise": account_compromise,
         "amount_lost": amount_lost,
+        "amount_lost_bucket": amount_lost_bucket,
         "time_bucket": time_bucket,
+        "minutes_since_incident": minutes_since_incident,
         "explicit_report_request": explicit_report_request,
         "reactive_recovery": bool(
             did_lose_money
@@ -1275,6 +1564,53 @@ def _normalize_recovery_answers(payload: dict) -> dict[str, Any]:
             or account_compromise
         ),
     }
+
+def _extract_incident_story_text(payload: dict[str, Any]) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+    preprocessed = payload.get("preprocessed_context") if isinstance(payload.get("preprocessed_context"), dict) else {}
+    if not preprocessed and isinstance(options.get("preprocessed_context"), dict):
+        preprocessed = options.get("preprocessed_context")
+
+    candidates = [
+        payload.get("incident_story"),
+        payload.get("incident_narrative"),
+        options.get("incident_story"),
+        options.get("incident_narrative"),
+        preprocessed.get("incident_story") if isinstance(preprocessed, dict) else None,
+        preprocessed.get("incident_narrative") if isinstance(preprocessed, dict) else None,
+        payload.get("text"),
+    ]
+
+    best = ""
+    for item in candidates:
+        text = str(item or "").strip()
+        if len(text) > len(best):
+            best = text
+    return best
+
+
+def _has_detailed_incident_story(payload: dict[str, Any]) -> bool:
+    text = _extract_incident_story_text(payload)
+    if len(text) < 180:
+        return False
+
+    markers = 0
+    marker_patterns = [
+        r"\b(utr|txn|transaction|reference\s*id)\b",
+        r"\b(bank|upi|account|wallet)\b",
+        r"\b(call(ed)?|sms|whatsapp|telegram|email)\b",
+        r"\b(otp|pin|password|cvv|aadhaar|pan)\b",
+        r"\b(rupees|rs\.?|inr|₹|amount)\b",
+        r"\b(\d{1,2}:\d{2}|am|pm|minute|hour|today|yesterday)\b",
+    ]
+    lower = text.lower()
+    for pattern in marker_patterns:
+        if re.search(pattern, lower):
+            markers += 1
+    return markers >= 3
+
 
 
 def _is_generic_verdict(value: str) -> bool:
@@ -1319,8 +1655,8 @@ def _normalize_mcp_plan(requires_mcp: bool, raw_plan: dict[str, Any] | None, req
     defaults = {
         "create_calendar": True,
         "create_tasks": True,
-        "create_gmail_draft": bool(requires_reporting),
-        "create_case_report_doc": bool(requires_reporting),
+        "create_gmail_draft": False,
+        "create_case_report_doc": False,
     }
 
     # Accept common alias keys from model outputs.
@@ -1448,7 +1784,89 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
     requires_financial_blocking = bool(
         contract.get("requires_financial_blocking", contract.get("requires_account_block", False))
     )
+    requires_device_cleanup = bool(
+        contract.get("requires_device_cleanup", False)
+        or recovery_answers.get("installed_apk")
+    )
     golden_hour_active = bool(contract.get("golden_hour_active", base.get("golden_hour_active", False)))
+
+    base_apk = base.get("apk_analysis") if isinstance(base.get("apk_analysis"), dict) else {}
+    base_osint_enrichment = base.get("osint_enrichment") if isinstance(base.get("osint_enrichment"), dict) else {}
+    identity_raw = str(contract.get("likely_app_identity") or "").strip().lower()
+    if not identity_raw:
+        identity_assessment = base_osint_enrichment.get("identity_assessment") if isinstance(base_osint_enrichment.get("identity_assessment"), dict) else {}
+        if bool(identity_assessment.get("likely_known_project")):
+            identity_raw = "known_training_app"
+        elif str(identity_assessment.get("likely_repack_or_tampered") or "").strip().lower() in {"possible", "true", "yes"}:
+            identity_raw = "possible_repack_or_tampered"
+        elif bool(base_apk.get("is_malicious")):
+            identity_raw = "likely_malicious"
+        else:
+            identity_raw = "unknown"
+    allowed_identity = {
+        "known_training_app",
+        "likely_legitimate",
+        "possible_repack_or_tampered",
+        "likely_malicious",
+        "unknown",
+    }
+    likely_app_identity = identity_raw if identity_raw in allowed_identity else "unknown"
+
+    uncertainty_note = str(contract.get("uncertainty_note") or "").strip()
+    if not uncertainty_note and likely_app_identity in {"known_training_app", "unknown", "possible_repack_or_tampered"}:
+        uncertainty_note = "Identity clues are informative, but source integrity should be verified before trusting this APK on a personal device."
+
+    needs_clarification = bool(contract.get("needs_clarification", False))
+    clarification_raw = contract.get("clarification") if isinstance(contract.get("clarification"), dict) else {}
+    clarification_question_id = str(
+        clarification_raw.get("question_id")
+        or contract.get("question_id")
+        or ""
+    ).strip()
+    clarification_question_text = str(
+        clarification_raw.get("question_text")
+        or contract.get("question_text")
+        or ""
+    ).strip()
+    clarification_why_needed = str(
+        clarification_raw.get("why_needed")
+        or contract.get("clarification_reason")
+        or ""
+    ).strip()
+
+    raw_options = clarification_raw.get("options") if isinstance(clarification_raw.get("options"), list) else contract.get("options")
+    clarification_options: list[dict[str, str]] = []
+    if isinstance(raw_options, list):
+        for item in raw_options[:6]:
+            if isinstance(item, dict):
+                option_id = str(item.get("id") or "").strip().lower()
+                option_label = str(item.get("label") or "").strip()
+            else:
+                option_id = str(item or "").strip().lower()
+                option_label = str(item or "").strip()
+            if not option_id or not option_label:
+                continue
+            clarification_options.append({"id": option_id, "label": option_label})
+
+    if needs_clarification:
+        if not clarification_question_id:
+            clarification_question_id = "clarification_needed"
+        if not clarification_question_text:
+            clarification_question_text = "I need one quick clarification before finalizing next steps."
+        if not clarification_options:
+            clarification_options = [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ]
+        if not clarification_why_needed:
+            clarification_why_needed = "This changes the risk level and next steps."
+
+        # Clarification turn should avoid premature escalation and preserve calm UX.
+        requires_reporting = False
+        requires_emergency = False
+        requires_financial_blocking = False
+        golden_hour_active = False
 
     if not chat_reply:
         chat_reply = conversational_reply or summary
@@ -1459,6 +1877,7 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
     reporting_note = str(presentation_raw.get("reporting_note") or "").strip()
     reporting_reason = str(raw_reporting.get("reason") or reporting_note or "").strip()
     reporting_should_report_now = bool(raw_reporting.get("should_report_now", requires_reporting))
+    narrative_followup_message = str(contract.get("narrative_followup_message") or "").strip()
 
     # Hard rule: if rationale is missing, suppress reporting-oriented output.
     if not reporting_reason:
@@ -1491,6 +1910,12 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
                 "This looks like a scam lure, but from what you reported there is no sign of direct compromise right now. "
                 "So you do not need to panic, just avoid the link and block the sender."
             )
+
+    if not narrative_followup_message and requires_reporting:
+        narrative_followup_message = (
+            "Once you finish the urgent blocking steps, send me a detailed timeline with amounts, "
+            "transaction IDs, numbers, links, and timestamps. I will then generate your final complaint document and Gmail draft."
+        )
 
     if not chat_reply:
         chat_reply = conversational_reply or summary
@@ -1590,8 +2015,21 @@ def _sanitize_manager_contract(contract: dict[str, Any], base: dict[str, Any], r
         "requires_emergency": requires_emergency,
         "requires_financial_blocking": requires_financial_blocking,
         "requires_account_block": requires_financial_blocking,
+        "requires_device_cleanup": requires_device_cleanup,
         "golden_hour_active": bool(golden_hour_active),
+        "needs_clarification": bool(needs_clarification),
+        "clarification": {
+            "question_id": clarification_question_id,
+            "question_text": clarification_question_text,
+            "options": clarification_options,
+            "why_needed": clarification_why_needed,
+        }
+        if needs_clarification
+        else None,
+        "likely_app_identity": likely_app_identity,
+        "uncertainty_note": uncertainty_note,
         "reporting_recommendation": reporting_recommendation,
+        "narrative_followup_message": narrative_followup_message,
         "requires_mcp": requires_mcp,
         "mcp_plan": mcp_plan,
         "presentation_sections": presentation_sections,
@@ -1620,6 +2058,8 @@ async def _generate_manager_decision_contract(
             "filename": payload.get("filename"),
             "mime_type": payload.get("mime_type"),
             "apk_static_summary": payload.get("static_results"),
+            "apk_analysis": base_result.get("apk_analysis"),
+            "osint_enrichment": base_result.get("osint_enrichment"),
         },
         "preprocessed_context": preprocessed_context,
         "recovery_answers": recovery_answers,
@@ -1632,6 +2072,8 @@ async def _generate_manager_decision_contract(
             "red_flags": base_result.get("red_flags"),
             "pattern_matches": base_result.get("pattern_matches"),
             "osint": base_result.get("osint"),
+            "osint_enrichment": base_result.get("osint_enrichment"),
+            "apk_analysis": base_result.get("apk_analysis"),
             "entities": base_result.get("extracted_entities"),
         },
     }
@@ -1653,6 +2095,16 @@ async def _generate_manager_decision_contract(
         "3. Did the user share OTP, password, CVV, UPI PIN, bank details, Aadhaar, PAN, or other sensitive details?\n"
         "4. Is there account compromise, active unauthorized access, or an ongoing attack?\n"
         "5. Is there only an unsolicited scam attempt that was ignored?\n\n"
+        "CLARIFICATION RULE (STRICT)\n"
+        "If the risk classification materially depends on a missing user action\n"
+        "(clicked, replied, paid, shared details, installed app, granted permissions), do not assume.\n"
+        "Return a single clarification MCQ instead of a final verdict.\n"
+        "Only ask one question at a time.\n"
+        "When needs_clarification is true:\n"
+        "- Set requires_reporting = false\n"
+        "- Set requires_emergency = false\n"
+        "- Keep action steps minimal and non-alarmist\n"
+        "- Fill clarification payload with question_id/question_text/options/why_needed\n\n"
         "MANDATORY DECISION POLICY\n"
         "A) If user says:\n"
         "- no money lost\n"
@@ -1686,6 +2138,11 @@ async def _generate_manager_decision_contract(
         "- give exact response steps in priority order\n\n"
         "D) Risk level and confidence DO NOT automatically trigger reporting or emergency.\n"
         "A CRITICAL model score without user harm or exposure does NOT justify hotline/report filing instructions.\n\n"
+        "APK-SPECIFIC DECISION RULES\n"
+        "- For APK uploads, combine apk_analysis + osint_enrichment + user context before final verdict.\n"
+        "- Distinguish known training app identity vs unknown/tampered APK.\n"
+        "- If clues match a known insecure training app, explain that calmly with uncertainty notes when provenance is weak.\n"
+        "- If install source is informal (e.g., Telegram) or authenticity is unclear, recommend device cleanup without forced emergency reporting.\n\n"
         "WHAT TO DO NOW QUALITY RULES\n"
         "- Return exactly 4 actions.\n"
         "- Each action must begin with a verb.\n"
@@ -1712,22 +2169,21 @@ async def _generate_manager_decision_contract(
         "- Exposure/loss cases: urgent, direct\n"
         "- Do not use panic wording unless the facts justify it\n\n"
         "WRITING QUALITY RULES\n"
-        "- Write chat_reply in 2 to 4 full sentences.\n"
         "- Write summary as one short neutral sentence.\n"
-        "- Sound like a calm fraud advisor, not a classifier.\n"
         "- Do not repeat the same sentence in headline, guide, and summary.\n"
         "- If reporting is not needed, explain that in one natural sentence.\n"
         "- Never place internal scoring fields inside citizen presentation text.\n\n"
-        "CHAT REPLY RULES\n"
-        "- chat_reply must be natural prose, not bullets.\n"
-        "- Use plain conversational English and natural contractions when appropriate.\n"
-        "- If there is no confirmed compromise, say that clearly and reduce panic naturally.\n"
-        "- If risk is severe, be direct and urgent but still human.\n"
-        "- Do not use robotic policy phrases like 'analysis indicates' or 'follow preventive safety steps'.\n\n"
+        "REPORTING ARTIFACTS RULES\n"
+        "- Calendar + tasks can be immediate when requires_mcp is true.\n"
+        "- Gmail draft and case-report doc should be deferred until a detailed user narrative is available.\n"
+        "- When reporting is needed, include narrative_followup_message asking for timeline + amount + transaction ids + contact numbers + links.\n\n"
+        f"{CHAT_REPLY_STYLE_BLOCK}\n\n"
         "OUTPUT REQUIREMENTS\n"
         "Return valid JSON only.\n"
         "Required schema:\n"
         "{\n"
+        '  "needs_clarification": true/false,\n'
+        '  "clarification": {"question_id": "clicked_link|shared_personal_details|did_lose_money_or_share_bank_details|...", "question_text": "One clear multiple-choice question", "options": [{"id": "yes", "label": "Yes"}, {"id": "no", "label": "No"}, {"id": "not_sure", "label": "Not sure"}], "why_needed": "This changes the risk level and next steps."} or null,\n'
         '  "verdict": "...",\n'
         '  "risk_level": "LOW|MEDIUM|HIGH|CRITICAL",\n'
         '  "confidence": 0.0,\n'
@@ -1739,7 +2195,10 @@ async def _generate_manager_decision_contract(
         '  "requires_reporting": true,\n'
         '  "requires_emergency": false,\n'
         '  "requires_financial_blocking": false,\n'
+        '  "requires_device_cleanup": true/false,\n'
         '  "golden_hour_active": false,\n'
+        '  "likely_app_identity": "known_training_app|likely_legitimate|possible_repack_or_tampered|likely_malicious|unknown",\n'
+        '  "uncertainty_note": "One short uncertainty sentence if identity is not fully confirmed.",\n'
         '  "reporting_recommendation": {"should_report_now": false, "reason": "..."},\n'
         '  "why_this_decision": ["..."],\n'
         '  "presentation": {\n'
@@ -1753,7 +2212,8 @@ async def _generate_manager_decision_contract(
         '  "debug": {"risk_level": "...", "confidence": 0.98, "similar_cases": 3, "patterns": []},\n'
         '  "presentation_sections": {"headline": "...", "status_line": "...", "actions_title": "What to do now", "evidence_title": "Why it looks suspicious"},\n'
         '  "requires_mcp": true/false,\n'
-        '  "mcp_plan": {"create_calendar": true/false, "create_tasks": true/false, "create_gmail_draft": true/false, "create_case_report_doc": true/false}\n'
+        '  "mcp_plan": {"create_calendar": true/false, "create_tasks": true/false, "create_gmail_draft": true/false, "create_case_report_doc": true/false},\n'
+        '  "narrative_followup_message": "If reporting is needed, ask for a detailed timeline and evidence fields before generating final docs"\n'
         "}\n\n"
         "SELF-CHECK BEFORE FINALIZING\n"
         "- Did I treat user harm/exposure as more important than scam pattern labels?\n"
@@ -1821,10 +2281,12 @@ async def _generate_manager_decision_contract(
     except Exception as exc:
         logger.warning("manager.decision_contract_failed error=%s", exc)
 
-    contract = await _audit_manager_decision_contract(
-        candidate_contract=contract,
-        context=context,
-    )
+    decision_audit_enabled = str(os.getenv("SATARK_ENABLE_DECISION_AUDIT", "0")).strip().lower() in {"1", "true", "yes", "on"}
+    if decision_audit_enabled:
+        contract = await _audit_manager_decision_contract(
+            candidate_contract=contract,
+            context=context,
+        )
 
     return _sanitize_manager_contract(contract, base_result, recovery_answers)
 
@@ -1907,6 +2369,193 @@ def _normalize_entities(entities: dict) -> dict:
         "domains": list(dict.fromkeys(domains)),
         "upi_ids": list(dict.fromkeys(upi_ids)),
         "account_numbers": list(dict.fromkeys(account_numbers)),
+    }
+
+
+def _normalize_apk_analysis(*, result: dict, payload: dict) -> dict[str, Any]:
+    candidate = result.get("apk_analysis") if isinstance(result.get("apk_analysis"), dict) else {}
+    if candidate.get("artifact_type") == "apk_analysis":
+        return candidate
+
+    if candidate:
+        return {
+            "artifact_type": "apk_analysis",
+            **candidate,
+        }
+
+    static = result.get("static_analysis") if isinstance(result.get("static_analysis"), dict) else {}
+    if not static:
+        static = payload.get("static_results") if isinstance(payload.get("static_results"), dict) else {}
+
+    if build_apk_analysis_contract is not None and static:
+        try:
+            return build_apk_analysis_contract(static, filename=payload.get("filename"))
+        except Exception:
+            pass
+
+    if not static:
+        return {}
+
+    return {
+        "artifact_type": "apk_analysis",
+        "file_name": str(payload.get("filename") or "uploaded.apk"),
+        "sha256": str(static.get("apk_hash") or ""),
+        "analysis_summary": str(static.get("summary") or "Static APK analysis complete."),
+        "permissions": {
+            "all": _as_list(static.get("permissions")),
+            "dangerous": _as_list(static.get("dangerous_permissions")),
+            "suspicious": _as_list(static.get("dangerous_permissions")),
+        },
+        "network_indicators": {
+            "urls": _as_list(static.get("hardcoded_urls")),
+            "domains": [_extract_domain(u) for u in _as_list(static.get("hardcoded_urls")) if _extract_domain(u)],
+            "ip_literals": _as_list(static.get("hardcoded_ips")),
+        },
+        "identity_clues": {
+            "labels": _as_list(static.get("labels") or static.get("app_name")),
+            "author_strings": [],
+            "repo_links": [],
+            "emails": [],
+        },
+        "identity_assessment": {
+            "likely_known_project": False,
+            "likely_official_project": False,
+            "likely_repack_or_tampered": "unknown",
+        },
+        "confidence": 0.5,
+    }
+
+
+def _collect_apk_osint_queries(apk_analysis: dict[str, Any]) -> list[str]:
+    if not isinstance(apk_analysis, dict):
+        return []
+
+    identity = apk_analysis.get("identity_clues") if isinstance(apk_analysis.get("identity_clues"), dict) else {}
+    signing = apk_analysis.get("signing") if isinstance(apk_analysis.get("signing"), dict) else {}
+    network = apk_analysis.get("network_indicators") if isinstance(apk_analysis.get("network_indicators"), dict) else {}
+
+    queries: list[str] = []
+    queries.extend(_as_list(identity.get("labels")))
+    queries.extend(_as_list(identity.get("author_strings")))
+    queries.extend(_as_list(identity.get("repo_links")))
+    queries.extend(_as_list(identity.get("emails")))
+    queries.extend(_as_list(network.get("domains")))
+    queries.extend(_as_list(network.get("urls")))
+
+    pkg = str(apk_analysis.get("package_name") or "").strip()
+    app_name = str(apk_analysis.get("app_name") or "").strip()
+    cert_subject = str(signing.get("cert_subject") or "").strip()
+    cert_sha256 = str(signing.get("cert_sha256") or "").strip()
+
+    if app_name:
+        queries.append(app_name)
+        queries.append(f"{app_name} android app")
+    if pkg:
+        queries.append(pkg)
+    if cert_subject:
+        queries.append(cert_subject)
+    if cert_sha256:
+        queries.append(f"apk cert {cert_sha256}")
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for query in queries:
+        value = str(query or "").strip()
+        if not value:
+            continue
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(value)
+    return deduped[:25]
+
+
+def _normalize_osint_enrichment(
+    *,
+    osint_output: dict[str, Any],
+    queries_used: list[str],
+    apk_analysis: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    raw = osint_output if isinstance(osint_output, dict) else {}
+    identity = apk_analysis.get("identity_assessment") if isinstance(apk_analysis.get("identity_assessment"), dict) else {}
+    labels_blob = " ".join(_as_list((apk_analysis.get("identity_clues") or {}).get("labels") if isinstance(apk_analysis.get("identity_clues"), dict) else [])).lower()
+    app_name = str(apk_analysis.get("app_name") or "").strip()
+    package_name = str(apk_analysis.get("package_name") or "").strip()
+    install_source = str((payload.get("text") or "") if isinstance(payload, dict) else "").lower()
+
+    known_training = bool(identity.get("likely_known_project")) or ("insecurebankv2" in labels_blob)
+    likely_official = bool(identity.get("likely_official_project"))
+    repack_state = str(identity.get("likely_repack_or_tampered") or "unknown")
+
+    public_matches = []
+    if known_training:
+        public_matches.append(
+            {
+                "type": "knowledge_base",
+                "title": "InsecureBankv2",
+                "url": "https://github.com/dineshshetty/Android-InsecureBankv2",
+                "relevance": "high",
+                "note": "Known intentionally vulnerable Android training app",
+            }
+        )
+
+    if package_name and not public_matches:
+        public_matches.append(
+            {
+                "type": "package_hint",
+                "title": package_name,
+                "url": "",
+                "relevance": "medium",
+                "note": "Package identifier extracted from APK",
+            }
+        )
+
+    benign_signals = []
+    risk_signals = []
+    unknowns = []
+
+    if known_training:
+        benign_signals.append("Identity clues match a known vulnerable training app profile")
+    if app_name:
+        benign_signals.append(f"App label observed: {app_name}")
+    if "telegram" in install_source:
+        risk_signals.append("APK appears to be shared through Telegram or an informal channel")
+    dangerous_perms = _as_list(((apk_analysis.get("permissions") or {}).get("dangerous") if isinstance(apk_analysis.get("permissions"), dict) else []))
+    if dangerous_perms:
+        risk_signals.append("APK requests sensitive permissions: " + ", ".join(dangerous_perms[:4]))
+    if not likely_official:
+        unknowns.append("Official publisher authenticity is not yet confirmed")
+    if repack_state == "unknown":
+        unknowns.append("Repack/tamper status remains uncertain without signature baseline")
+
+    osint_summary = str(raw.get("threat_summary") or raw.get("osint_summary") or "").strip()
+    if not osint_summary:
+        if known_training:
+            osint_summary = (
+                "Public identity clues are consistent with a known insecure training APK profile, "
+                "but install-source trust and integrity still require caution."
+            )
+        else:
+            osint_summary = "Public identity confidence is limited; treat the APK as untrusted until provenance is verified."
+
+    return {
+        "artifact_type": "osint_enrichment",
+        "queries_used": queries_used,
+        "identity_assessment": {
+            "likely_known_project": known_training,
+            "likely_official_project": likely_official,
+            "likely_repack_or_tampered": repack_state,
+        },
+        "public_matches": public_matches,
+        "reputation_signals": {
+            "benign_signals": benign_signals,
+            "risk_signals": risk_signals,
+            "unknowns": unknowns,
+        },
+        "osint_summary": osint_summary,
+        "confidence": float(raw.get("overall_threat_score") or 0) / 100.0 if raw.get("overall_threat_score") is not None else (0.75 if known_training else 0.45),
     }
 
 

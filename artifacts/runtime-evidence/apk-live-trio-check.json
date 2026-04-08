@@ -1,0 +1,468 @@
+{
+  "generated_at": "2026-04-07T20:21:20Z",
+  "base_url": "http://127.0.0.1:8101",
+  "cases": [
+    {
+      "case": "known_training",
+      "run_id": "run_22542337841b",
+      "case_id": "case_ff3ce33a2184",
+      "screenshot": "artifacts/runtime-evidence/apk-live-known_training-ui.png",
+      "manager_contract_path": "artifacts/runtime-evidence/apk-live-known_training-api-result.json",
+      "ui": {
+        "main": "This APK isn't a malicious scam targeting you; it's actually a well-known 'InsecureBank' app used by students to learn about cyber-security. Since you haven't installed it or shared any details, there is no risk to your device or accounts. You can safely ignore or delete the file if you aren't using it for security practice.",
+        "notes": [
+          "Confidence: 95%",
+          "Why this verdict: Matches known 'InsecureBankv2' educational project Contains internal labels for 'OWASP training'",
+          "The package name and internal strings match the OWASP InsecureBankv2 project exactly."
+        ],
+        "detailsPresent": true,
+        "detailsOpen": false,
+        "flags": [],
+        "chips": []
+      },
+      "agent_events": [
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "audio_analyzer",
+          "state": "done",
+          "label": "skipped",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775592992984
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Manager selected execution graph",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775592992985
+        },
+        {
+          "agent": "scam_detector",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593062177
+        },
+        {
+          "agent": "osint",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593062177
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593062178
+        },
+        {
+          "agent": "golden_hour",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593062178
+        },
+        {
+          "agent": "manager",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593062178
+        }
+      ],
+      "checks": {
+        "progress_stage_order_ok": false,
+        "progress_stage_indices": {
+          "inspect_apk": 4,
+          "search_public_refs": 3,
+          "prepare_verdict": 0
+        },
+        "chat_reply_first_ok": true,
+        "evidence_note_present": true,
+        "uncertainty_note_present_if_provided": true,
+        "technical_details_secondary": true,
+        "no_unwanted_escalation": true,
+        "apk_osint_influence_present": true
+      },
+      "quality_note": "Perplexity/Gemini-grade"
+    },
+    {
+      "case": "malicious_like",
+      "run_id": "run_fa03208a0fb5",
+      "case_id": "case_113efe90ecda",
+      "screenshot": "artifacts/runtime-evidence/apk-live-malicious_like-ui.png",
+      "manager_contract_path": "artifacts/runtime-evidence/apk-live-malicious_like-api-result.json",
+      "ui": {
+        "main": "This APK is definitely malicious and is designed to steal your bank details and intercept your SMS messages. Since you haven't installed it yet, you're safe, but you should delete the file immediately. Don't try to open it or grant it any permissions on your phone.",
+        "notes": [
+          "Confidence: 98%",
+          "Why this verdict: Requests permission to read and send your SMS messages Contains hidden code to record audio and intercept keystrokes",
+          "The package name and internal strings explicitly reference credential theft and fake banking services."
+        ],
+        "detailsPresent": true,
+        "detailsOpen": false,
+        "flags": [],
+        "chips": []
+      },
+      "agent_events": [
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593064370
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593064371
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775593064371
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593064371
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593064371
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775593064371
+        },
+        {
+          "agent": "audio_analyzer",
+          "state": "done",
+          "label": "skipped",
+          "ts": 1775593064372
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593064372
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Manager selected execution graph",
+          "ts": 1775593064372
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775593064372
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593064373
+        },
+        {
+          "agent": "scam_detector",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593188037
+        },
+        {
+          "agent": "osint",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593188037
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593188038
+        },
+        {
+          "agent": "golden_hour",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593188038
+        },
+        {
+          "agent": "manager",
+          "state": "done",
+          "label": "done",
+          "ts": 1775593188038
+        }
+      ],
+      "checks": {
+        "progress_stage_order_ok": false,
+        "progress_stage_indices": {
+          "inspect_apk": 4,
+          "search_public_refs": 3,
+          "prepare_verdict": 0
+        },
+        "chat_reply_first_ok": true,
+        "evidence_note_present": true,
+        "uncertainty_note_present_if_provided": true,
+        "technical_details_secondary": true,
+        "no_unwanted_escalation": true,
+        "apk_osint_influence_present": true
+      },
+      "quality_note": "Perplexity/Gemini-grade"
+    },
+    {
+      "case": "benign_like",
+      "run_id": "run_ddc22fc0f342",
+      "case_id": "case_2c9ee6c71fcf",
+      "screenshot": "artifacts/runtime-evidence/apk-live-benign_like-ui.png",
+      "manager_contract_path": "artifacts/runtime-evidence/apk-live-benign_like-api-result.json",
+      "ui": {
+        "main": "This APK looks like a simple notes app and doesn't show any signs of malicious behavior or data theft. Since you haven't installed it or shared any details, there's no risk to your device right now. I'd recommend just deleting the file and sticking to official apps from the Play Store.",
+        "notes": [
+          "Confidence: 85%",
+          "Why this verdict: Only requests basic internet access permission. No evidence of credential or OTP theft found.",
+          "The app identity matches a generic template often used for development or training purposes."
+        ],
+        "detailsPresent": true,
+        "detailsOpen": false,
+        "flags": [],
+        "chips": []
+      },
+      "agent_events": [
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593190105
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593190106
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775593190106
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593190106
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593190106
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775593190106
+        },
+        {
+          "agent": "audio_analyzer",
+          "state": "done",
+          "label": "skipped",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Manager selected execution graph",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "scam_detector",
+          "state": "running",
+          "label": "Analyzing scam indicators...",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593190107
+        },
+        {
+          "agent": "golden_hour",
+          "state": "running",
+          "label": "Preparing response plan...",
+          "ts": 1775593190108
+        },
+        {
+          "agent": "apk_analyzer",
+          "state": "running",
+          "label": "Inspecting APK structure...",
+          "ts": 1775593190108
+        },
+        {
+          "agent": "osint",
+          "state": "running",
+          "label": "Searching public references...",
+          "ts": 1775593190108
+        },
+        {
+          "agent": "manager",
+          "state": "running",
+          "label": "Preparing verdict...",
+          "ts": 1775593190108
+        }
+      ],
+      "checks": {
+        "progress_stage_order_ok": false,
+        "progress_stage_indices": {
+          "inspect_apk": 4,
+          "search_public_refs": 3,
+          "prepare_verdict": 0
+        },
+        "chat_reply_first_ok": true,
+        "evidence_note_present": true,
+        "uncertainty_note_present_if_provided": true,
+        "technical_details_secondary": true,
+        "no_unwanted_escalation": true,
+        "apk_osint_influence_present": true
+      },
+      "quality_note": "Perplexity/Gemini-grade"
+    }
+  ],
+  "overall": {
+    "all_chat_reply_first": true,
+    "all_progress_order_ok": false,
+    "all_evidence_note_present": true,
+    "all_technical_secondary": true
+  }
+}

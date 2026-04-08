@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-04-07T20:55:10Z",
+  "base_url": "http://127.0.0.1:8101",
+  "mode": "single",
+  "cases": [
+    {
+      "case": "known_training",
+      "run_id": "run_5940450e6803",
+      "case_id": "case_a19afb93f116",
+      "stalled_phase": "completed",
+      "checks": {
+        "progress_stage_order_ok": true,
+        "progress_stage_indices": {
+          "inspect_apk": 9,
+          "search_public_refs": 10,
+          "prepare_verdict": 11
+        },
+        "chat_reply_present": true,
+        "evidence_present": true,
+        "uncertainty_present_if_needed": true,
+        "no_unwanted_escalation": true,
+        "apk_osint_influence_present": true,
+        "technical_details_secondary": true,
+        "chat_reply_first_ok": false
+      },
+      "quality_note": "Perplexity/Gemini-grade",
+      "screenshot": "artifacts/runtime-evidence/apk-live-known_training-ui.png",
+      "manager_contract_path": "artifacts/runtime-evidence/apk-live-known_training-api-result.json"
+    }
+  ],
+  "overall": {
+    "all_chat_reply_present": true,
+    "all_progress_order_ok": true,
+    "all_apk_osint_influence_present": true
+  }
+}

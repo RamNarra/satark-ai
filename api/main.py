@@ -17,6 +17,13 @@ import mimetypes
 import uuid
 import logging
 import re
+import time
+import hashlib
+import threading
+import subprocess
+import tempfile
+from collections import OrderedDict
+from contextlib import contextmanager
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect, Request
@@ -40,7 +47,7 @@ from db.client import get_db
 from fastapi.staticfiles import StaticFiles
 import base64
 from urllib.parse import urlparse
-from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL
+from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL, MODEL_FLASH
 from api.workflow_api import router as workflow_router
 
 from db.sessions_repo import (
@@ -50,6 +57,11 @@ from db.sessions_repo import (
     get_google_oauth_pkce,
     clear_google_oauth_pkce,
     clear_google_oauth,
+)
+from tools.google_workspace import (
+    build_google_credentials,
+    create_golden_hour_calendar_events,
+    create_golden_hour_tasks,
 )
 
 logger = logging.getLogger("uvicorn.error")
@@ -69,12 +81,148 @@ LIVE_STREAM_INSTRUCTION = (
     "Do not force escalation unless concrete compromise evidence is present."
 )
 
+ANALYSIS_CONTRACT_VERSION = "2026-04-two-phase-v1"
+ANALYSIS_STAGE_VERSION = 1
+ARTIFACT_STAGE_VERSION = "2026-04-profiler-v1"
+ARTIFACT_CACHE_MAX_ITEMS = max(32, int(os.getenv("SATARK_ARTIFACT_CACHE_MAX_ITEMS", "128")))
+
+
+class RunTimingCollector:
+    def __init__(self, *, enabled: bool = True) -> None:
+        self.enabled = bool(enabled)
+        self._spans_ms: dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    @contextmanager
+    def span(self, name: str):
+        if not self.enabled:
+            yield
+            return
+        started = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.add_ms(name, (time.perf_counter() - started) * 1000.0)
+
+    def add_ms(self, name: str, duration_ms: float) -> None:
+        if not self.enabled:
+            return
+        delta = max(0.0, float(duration_ms or 0.0))
+        with self._lock:
+            self._spans_ms[name] = self._spans_ms.get(name, 0.0) + delta
+
+    def set_ms(self, name: str, duration_ms: float) -> None:
+        if not self.enabled:
+            return
+        with self._lock:
+            self._spans_ms[name] = max(0.0, float(duration_ms or 0.0))
+
+    def snapshot_ms(self) -> dict[str, int]:
+        if not self.enabled:
+            return {}
+        with self._lock:
+            return {k: int(round(v)) for k, v in sorted(self._spans_ms.items(), key=lambda item: item[0])}
+
+    def top_slowest(self, limit: int = 3) -> list[dict[str, Any]]:
+        if not self.enabled:
+            return []
+        with self._lock:
+            ranked = sorted(self._spans_ms.items(), key=lambda item: item[1], reverse=True)
+        top = ranked[: max(0, int(limit))]
+        return [{"span": k, "ms": int(round(v))} for k, v in top]
+
+
+_ARTIFACT_CACHE: "OrderedDict[str, Any]" = OrderedDict()
+_ARTIFACT_CACHE_LOCK = threading.Lock()
+
+
+def _artifact_cache_get(key: str) -> Any:
+    with _ARTIFACT_CACHE_LOCK:
+        value = _ARTIFACT_CACHE.get(key)
+        if value is not None:
+            _ARTIFACT_CACHE.move_to_end(key)
+        return value
+
+
+def _artifact_cache_set(key: str, value: Any) -> None:
+    with _ARTIFACT_CACHE_LOCK:
+        _ARTIFACT_CACHE[key] = value
+        _ARTIFACT_CACHE.move_to_end(key)
+        while len(_ARTIFACT_CACHE) > ARTIFACT_CACHE_MAX_ITEMS:
+            _ARTIFACT_CACHE.popitem(last=False)
+
+
+def _normalized_b64_payload(data: str) -> str:
+    clean = (data or "").strip()
+    if "," in clean and ";base64" in clean.split(",", 1)[0]:
+        clean = clean.split(",", 1)[1]
+    return clean
+
+
+def _content_hash(data: str) -> str:
+    clean = _normalized_b64_payload(data)
+    return hashlib.sha256(clean.encode("utf-8", errors="ignore")).hexdigest()
+
 
 live_client = (
     genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
     if genai is not None
     else None
 )
+
+
+def _extract_image_ocr_hints(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict[str, Any]:
+    """Fast local OCR path for screenshot uploads.
+
+    Uses system tesseract directly to avoid expensive model-image inference latency.
+    """
+    ext = ".png"
+    if "jpeg" in str(mime_type or "").lower() or "jpg" in str(mime_type or "").lower():
+        ext = ".jpg"
+    elif "webp" in str(mime_type or "").lower():
+        ext = ".webp"
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=True) as tmp:
+            tmp.write(image_bytes)
+            tmp.flush()
+            proc = subprocess.run(
+                ["tesseract", tmp.name, "stdout", "-l", "eng", "--psm", "6", "quiet"],
+                capture_output=True,
+                text=True,
+                timeout=8,
+            )
+            text = str(proc.stdout or "").strip()
+            if not text and proc.returncode != 0:
+                return {
+                    "ocr_text": "",
+                    "ocr_confidence": 0,
+                    "evidence_text": [],
+                    "status": "error",
+                }
+
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            evidence = []
+            for ln in lines:
+                if re.search(r"https?://|bit\.ly|tinyurl|cutt\.ly|otp|upi|rs\.?\s*\d+|\+?91[\s-]?[6-9]\d{9}", ln, re.IGNORECASE):
+                    evidence.append(ln)
+                if len(evidence) >= 10:
+                    break
+
+            conf = 78 if text else 0
+            return {
+                "ocr_text": text,
+                "ocr_confidence": conf,
+                "evidence_text": evidence,
+                "status": "ok" if text else "empty",
+            }
+    except Exception:
+        return {
+            "ocr_text": "",
+            "ocr_confidence": 0,
+            "evidence_text": [],
+            "status": "error",
+        }
 
 app = FastAPI(
     title="SATARK AI",
@@ -549,7 +697,10 @@ class AnalyzeUserContext(BaseModel):
 
 class AnalyzeOptions(BaseModel):
     stream: bool = True
-    generate_report: bool = True
+    generate_report: bool = False
+    deep_analysis: bool = False
+    fast_first: Optional[bool] = None
+    clarification_followup: bool = False
     trigger_mcp_actions: bool = False
     recovery_answers: dict[str, Any] = Field(default_factory=dict)
     preprocessed_context: dict[str, Any] = Field(default_factory=dict)
@@ -560,6 +711,13 @@ class AnalyzeRequestV1(BaseModel):
     user_input: AnalyzeUserInput
     user_context: AnalyzeUserContext = Field(default_factory=AnalyzeUserContext)
     options: AnalyzeOptions = Field(default_factory=AnalyzeOptions)
+
+
+class DeepAnalyzeRequest(BaseModel):
+    source_run_id: str
+    generate_report: bool = False
+    trigger_mcp_actions: bool = False
+    stream: bool = True
 
 
 class PreprocessRequest(BaseModel):
@@ -576,10 +734,95 @@ class RecoveryFinalizeRequest(BaseModel):
 
 
 RUN_STORE: dict[str, dict] = {}
+STARTUP_WARMUP_STATE: dict[str, Any] = {
+    "enabled": str(os.getenv("SATARK_STARTUP_WARMUP", "1")).strip().lower() not in {"0", "false", "no", "off"},
+    "done": False,
+    "duration_ms": None,
+    "error": None,
+    "completed_at": None,
+}
+STARTUP_WARMUP_LOCK = asyncio.Lock()
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+async def _run_startup_warmup_once() -> None:
+    if not STARTUP_WARMUP_STATE.get("enabled", True):
+        return
+
+    async with STARTUP_WARMUP_LOCK:
+        if STARTUP_WARMUP_STATE.get("done"):
+            return
+
+        loop = asyncio.get_running_loop()
+        started = loop.time()
+        try:
+            base_request_options = {
+                "recovery_answers": {},
+                "preprocessed_context": {
+                    "text_excerpt": "hey i received this, is it legit",
+                    "file_hints": {
+                        "kind": "image",
+                        "image_summary": "Suspicious SMS screenshot with bait wording.",
+                        "signals_found": ["Possible phishing lure screenshot"],
+                    },
+                },
+            }
+            user_input = {
+                "text": "hey i received this, is it legit",
+                "files": [{"file_name": "image.png", "file_type": "image/png"}],
+            }
+
+            pipeline_result = _build_fast_path_pipeline_result(user_input, base_request_options) or _build_timeout_guard_pipeline_result(
+                user_input,
+                base_request_options,
+            )
+            pipeline_result["timings_ms"] = {
+                "classify_ms": 0,
+                "vector_lookup_ms": 0,
+                "pipeline_ms": 0,
+                "total_ms": 0,
+                "fast_path": True,
+            }
+            guarded, _ = _apply_unknown_click_clarification_guard(
+                user_input=user_input,
+                request_options=base_request_options,
+                pipeline_result=pipeline_result,
+            )
+
+            run_ctx = {
+                "run_id": "warmup_run",
+                "case_id": "warmup_case",
+                "status": "completed",
+                "created_at": _utc_now(),
+                "completed_at": _utc_now(),
+                "request": {
+                    "user_input": user_input,
+                    "options": base_request_options,
+                },
+                "similar_patterns_count": 0,
+                "similar_patterns": [],
+            }
+
+            _build_result_document(run_ctx, guarded, "text_image", ["manager", "scam_detector", "golden_hour"])
+
+            followup_options = {
+                "recovery_answers": {"clicked_link": False},
+                "preprocessed_context": base_request_options["preprocessed_context"],
+            }
+            _build_fast_path_pipeline_result(user_input, followup_options)
+
+            STARTUP_WARMUP_STATE["done"] = True
+            STARTUP_WARMUP_STATE["duration_ms"] = int(round((loop.time() - started) * 1000.0))
+            STARTUP_WARMUP_STATE["completed_at"] = _utc_now()
+            STARTUP_WARMUP_STATE["error"] = None
+            logger.info("startup_warmup.complete duration_ms=%s", STARTUP_WARMUP_STATE["duration_ms"])
+        except Exception as exc:
+            STARTUP_WARMUP_STATE["error"] = str(exc)
+            STARTUP_WARMUP_STATE["completed_at"] = _utc_now()
+            logger.warning("startup_warmup.failed error=%s", exc)
 
 
 def _new_id(prefix: str) -> str:
@@ -646,10 +889,10 @@ def _classify_flow(user_input: dict) -> tuple[str, list[str], list[tuple[str, st
     else:
         skipped_agents.append(("apk_analyzer", "no file uploaded"))
 
-    if has_url:
+    if has_url or has_apk:
         selected_agents.insert(2, "osint")
     else:
-        skipped_agents.append(("osint", "no URL found in input"))
+        skipped_agents.append(("osint", "no URL or APK identity clues found in input"))
 
     deduped = []
     for agent in selected_agents:
@@ -669,6 +912,52 @@ def _decode_b64(data: str) -> bytes:
     if padding:
         clean += "=" * (4 - padding)
     return base64.b64decode(clean)
+
+
+def _decode_b64_cached(data: str, timings: RunTimingCollector | None = None) -> bytes:
+    clean = _normalized_b64_payload(data)
+    if not clean:
+        return b""
+    digest = hashlib.sha256(clean.encode("utf-8", errors="ignore")).hexdigest()
+    cache_key = f"decoded:{ARTIFACT_STAGE_VERSION}:{digest}"
+    cached = _artifact_cache_get(cache_key)
+    if isinstance(cached, bytes):
+        return cached
+
+    if timings is not None:
+        with timings.span("t_file_decode_ms"):
+            raw = _decode_b64(clean)
+    else:
+        raw = _decode_b64(clean)
+
+    _artifact_cache_set(cache_key, raw)
+    return raw
+
+
+async def _run_apk_static_cached(
+    raw: bytes,
+    file_name: str,
+    *,
+    content_b64: str,
+    timings: RunTimingCollector | None = None,
+) -> dict[str, Any]:
+    digest = _content_hash(content_b64)
+    cache_key = f"apk_static:{ARTIFACT_STAGE_VERSION}:{digest}"
+    cached = _artifact_cache_get(cache_key)
+    if isinstance(cached, dict):
+        return dict(cached)
+
+    from agents.apk_analyzer.agent import run_static_analysis
+
+    if timings is not None:
+        with timings.span("t_apk_static_ms"):
+            result = await asyncio.to_thread(run_static_analysis, raw, file_name)
+    else:
+        result = await asyncio.to_thread(run_static_analysis, raw, file_name)
+
+    payload = dict(result or {})
+    _artifact_cache_set(cache_key, payload)
+    return payload
 
 
 def _select_best_file(files: list[dict]) -> Optional[dict]:
@@ -706,9 +995,28 @@ def _normalize_preprocessed_context(raw: Any) -> dict[str, Any]:
     return normalized
 
 
+def _extract_ocr_text_from_options(options: dict[str, Any] | None) -> str:
+    opts = options if isinstance(options, dict) else {}
+    pre = opts.get("preprocessed_context") if isinstance(opts.get("preprocessed_context"), dict) else {}
+    hints = pre.get("file_hints") if isinstance(pre.get("file_hints"), dict) else {}
+    ocr_text = str(hints.get("ocr_text") or hints.get("image_summary") or "").strip()
+    return _truncate_text(ocr_text, 4000)
+
+
 def _extract_text_indicators(text: str) -> dict[str, Any]:
     body = str(text or "")
     url_matches = re.findall(r"https?://[^\s'\"]+", body, flags=re.IGNORECASE)
+    bare_shortlinks = re.findall(
+        r"\b(?:bit\.ly|cutt\.ly|tinyurl\.com|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at)/[A-Za-z0-9\-_/]+\b",
+        body,
+        flags=re.IGNORECASE,
+    )
+    if bare_shortlinks:
+        seen = {u.lower() for u in url_matches}
+        for link in bare_shortlinks:
+            if link.lower() not in seen:
+                url_matches.append(link)
+                seen.add(link.lower())
     phone_matches = re.findall(r"\b(?:\+?91[-\s]?)?[6-9]\d{9}\b", body)
     upi_matches = re.findall(r"\b[\w.\-]{2,}@[a-zA-Z]{2,}\b", body)
     return {
@@ -722,6 +1030,7 @@ def _extract_text_indicators(text: str) -> dict[str, Any]:
 
 
 async def _build_preprocessed_context(user_input: dict[str, Any]) -> dict[str, Any]:
+    timings = RunTimingCollector(enabled=True)
     text = str(user_input.get("text") or "").strip()
     files = user_input.get("files") or []
     selected = _select_best_file(files)
@@ -733,6 +1042,7 @@ async def _build_preprocessed_context(user_input: dict[str, Any]) -> dict[str, A
         "text_hints": _extract_text_indicators(text),
         "file_hints": {},
         "notes": [],
+        "timings_ms": {},
     }
 
     if not selected:
@@ -751,16 +1061,15 @@ async def _build_preprocessed_context(user_input: dict[str, Any]) -> dict[str, A
         context["notes"].append("File content unavailable; used metadata-only preprocessing.")
         return context
 
-    raw = _decode_b64(str(content_b64))
+    with timings.span("t_file_decode_ms"):
+        raw = _decode_b64_cached(str(content_b64))
     if not raw:
         context["notes"].append("Uploaded file was empty after decoding.")
         return context
 
     try:
         if file_name.lower().endswith(".apk") or file_type == "application/vnd.android.package-archive":
-            from agents.apk_analyzer.agent import run_static_analysis
-
-            static_results = await asyncio.to_thread(run_static_analysis, raw, file_name)
+            static_results = await _run_apk_static_cached(raw, file_name, content_b64=str(content_b64), timings=timings)
             context["file_hints"].update(
                 {
                     "kind": "apk",
@@ -774,12 +1083,14 @@ async def _build_preprocessed_context(user_input: dict[str, Any]) -> dict[str, A
                     },
                 }
             )
+            context["timings_ms"] = timings.snapshot_ms()
             return context
 
         if file_type.startswith("audio/") or file_name.lower().endswith((".mp3", ".wav", ".m4a", ".ogg")):
             from agents.audio_analyzer.agent import analyze_audio_file
 
-            audio_result = await asyncio.to_thread(analyze_audio_file, raw, file_type)
+            with timings.span("t_stt_ms"):
+                audio_result = await asyncio.to_thread(analyze_audio_file, raw, file_type)
             entities = audio_result.get("extracted_entities") if isinstance(audio_result.get("extracted_entities"), dict) else {}
             context["file_hints"].update(
                 {
@@ -795,32 +1106,67 @@ async def _build_preprocessed_context(user_input: dict[str, Any]) -> dict[str, A
                     },
                 }
             )
+            context["timings_ms"] = timings.snapshot_ms()
             return context
 
-        from agents.scam_detector.agent import analyze_image
+        with timings.span("t_ocr_ms"):
+            ocr_hints = await asyncio.to_thread(_extract_image_ocr_hints, raw, file_type)
+        ocr_text = _truncate_text(ocr_hints.get("ocr_text") or "", 2400)
+        ocr_confidence = int(ocr_hints.get("ocr_confidence") or 0)
+        evidence_text = _as_string_list(ocr_hints.get("evidence_text"))[:10]
+        ocr_entities = _extract_text_indicators(ocr_text)
 
-        image_result = await asyncio.to_thread(analyze_image, raw, file_type)
-        entities = image_result.get("extracted_entities") if isinstance(image_result.get("extracted_entities"), dict) else {}
         context["file_hints"].update(
             {
                 "kind": "image",
-                "image_summary": _truncate_text(image_result.get("summary") or image_result.get("victim_advice") or "", 400),
-                "risk_level": str(image_result.get("risk_level") or "").upper(),
-                "confidence": image_result.get("confidence"),
-                "scam_type": image_result.get("scam_type"),
-                "signals_found": _as_string_list(image_result.get("signals_found")),
+                "ocr_text": ocr_text,
+                "ocr_confidence": ocr_confidence,
+                "evidence_text": evidence_text,
+                "vision_summary": "",
+                "evidence_visual": [],
+                "image_summary": _truncate_text(ocr_text, 400),
+                "risk_level": "UNKNOWN",
+                "confidence": ocr_confidence,
+                "scam_type": "UNKNOWN",
+                "signals_found": evidence_text[:8],
                 "entities": {
-                    "urls": _as_string_list(entities.get("urls")),
-                    "phones": _as_string_list(entities.get("phone_numbers") or entities.get("phones")),
-                    "amounts": _as_string_list(entities.get("amounts")),
-                    "bank_names": _as_string_list(entities.get("bank_names")),
+                    "urls": _as_string_list(ocr_entities.get("urls")),
+                    "phones": _as_string_list(ocr_entities.get("phones")),
+                    "amounts": [],
+                    "bank_names": [],
                 },
             }
         )
+
+        run_vision_secondary = str(os.getenv("SATARK_IMAGE_VISION_SECONDARY", "0")).strip().lower() in {"1", "true", "yes", "on"}
+        if run_vision_secondary:
+            from agents.scam_detector.agent import analyze_image
+
+            with timings.span("t_model_reason_ms"):
+                image_result = await asyncio.to_thread(analyze_image, raw, file_type)
+            entities = image_result.get("extracted_entities") if isinstance(image_result.get("extracted_entities"), dict) else {}
+            context["file_hints"].update(
+                {
+                    "image_summary": _truncate_text(image_result.get("summary") or image_result.get("victim_advice") or "", 400),
+                    "vision_summary": _truncate_text(image_result.get("summary") or "", 240),
+                    "risk_level": str(image_result.get("risk_level") or "").upper() or context["file_hints"].get("risk_level", "UNKNOWN"),
+                    "confidence": image_result.get("confidence") if image_result.get("confidence") is not None else context["file_hints"].get("confidence"),
+                    "scam_type": image_result.get("scam_type") or context["file_hints"].get("scam_type", "UNKNOWN"),
+                    "signals_found": _as_string_list(image_result.get("signals_found")) or context["file_hints"].get("signals_found", []),
+                    "evidence_visual": _as_string_list(image_result.get("signals_found"))[:8],
+                    "entities": {
+                        "urls": _as_string_list(entities.get("urls")) or context["file_hints"]["entities"].get("urls", []),
+                        "phones": _as_string_list(entities.get("phone_numbers") or entities.get("phones")) or context["file_hints"]["entities"].get("phones", []),
+                        "amounts": _as_string_list(entities.get("amounts")),
+                        "bank_names": _as_string_list(entities.get("bank_names")),
+                    },
+                }
+            )
     except Exception as exc:
         context["status"] = "partial"
         context["notes"].append(f"Preprocessing failed: {exc}")
 
+    context["timings_ms"] = timings.snapshot_ms()
     return context
 
 
@@ -839,7 +1185,28 @@ def _build_similarity_context(similar: list[dict]) -> str:
     return "Similar known patterns:\n" + "\n".join(lines)
 
 
-def _build_pipeline_call(
+def _merge_similarity_text(text: str, similar: Optional[list[dict]] = None) -> str:
+    similarity_context = _build_similarity_context(similar or [])
+    if not similarity_context:
+        return text
+    return f"{text}\n\n{similarity_context}" if text else similarity_context
+
+
+def _run_apk_static_cached_sync(raw: bytes, file_name: str, *, content_b64: str) -> dict[str, Any]:
+    digest = _content_hash(content_b64)
+    cache_key = f"apk_static:{ARTIFACT_STAGE_VERSION}:{digest}"
+    cached = _artifact_cache_get(cache_key)
+    if isinstance(cached, dict):
+        return dict(cached)
+
+    from agents.apk_analyzer.agent import run_static_analysis
+
+    result = dict(run_static_analysis(raw, file_name) or {})
+    _artifact_cache_set(cache_key, result)
+    return result
+
+
+async def _build_pipeline_call_async(
     user_input: dict,
     similar: Optional[list[dict]] = None,
     *,
@@ -848,14 +1215,15 @@ def _build_pipeline_call(
     user_context: dict | None = None,
     fraud_amount: float = 0,
     minutes_since_fraud: int | None = None,
+    timings: RunTimingCollector | None = None,
 ) -> tuple[str, dict]:
     text = str(user_input.get("text") or "").strip()
     files = user_input.get("files") or []
     selected = _select_best_file(files)
-    similarity_context = _build_similarity_context(similar or [])
-    effective_text = text
-    if similarity_context:
-        effective_text = f"{text}\n\n{similarity_context}" if text else similarity_context
+    effective_text = _merge_similarity_text(text, similar)
+    recovery_answers = _hydrate_recovery_answers(
+        (options or {}).get("recovery_answers") if isinstance((options or {}).get("recovery_answers"), dict) else {}
+    )
 
     payload = {
         "text": effective_text,
@@ -864,7 +1232,7 @@ def _build_pipeline_call(
         "session_id": session_id,
         "options": options or {},
         "user_context": user_context or {},
-        "recovery_answers": (options or {}).get("recovery_answers", {}),
+        "recovery_answers": recovery_answers,
         "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
     }
 
@@ -876,15 +1244,16 @@ def _build_pipeline_call(
     content_b64 = selected.get("content_base64")
 
     if not content_b64:
-        # Metadata-only file (e.g. cloud URI). Keep analysis text-first while preserving flow classification.
         return "text", payload
 
-    raw = _decode_b64(str(content_b64))
+    if timings is not None:
+        with timings.span("t_pre_extract_ms"):
+            raw = _decode_b64_cached(str(content_b64), timings=timings)
+    else:
+        raw = _decode_b64_cached(str(content_b64))
 
     if file_name.lower().endswith(".apk") or file_type == "application/vnd.android.package-archive":
-        from agents.apk_analyzer.agent import run_static_analysis
-
-        static_results = run_static_analysis(raw, file_name)
+        static_results = await _run_apk_static_cached(raw, file_name, content_b64=str(content_b64), timings=timings)
         return "apk", {
             "filename": file_name,
             "static_results": static_results,
@@ -894,7 +1263,7 @@ def _build_pipeline_call(
             "session_id": session_id,
             "options": options or {},
             "user_context": user_context or {},
-            "recovery_answers": (options or {}).get("recovery_answers", {}),
+            "recovery_answers": recovery_answers,
             "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
         }
 
@@ -909,21 +1278,126 @@ def _build_pipeline_call(
             "session_id": session_id,
             "options": options or {},
             "user_context": user_context or {},
-            "recovery_answers": (options or {}).get("recovery_answers", {}),
+            "recovery_answers": recovery_answers,
             "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
         }
 
-    return "image", {
-        "image_b64": base64.b64encode(raw).decode("utf-8"),
-        "filename": file_name,
-        "mime_type": file_type,
+    ocr_text = _extract_ocr_text_from_options(options or {})
+    if not ocr_text:
+        try:
+            ocr_hints = await asyncio.to_thread(_extract_image_ocr_hints, raw, file_type)
+            ocr_text = _truncate_text(ocr_hints.get("ocr_text") or "", 4000)
+        except Exception:
+            ocr_text = ""
+
+    text_payload = effective_text
+    if ocr_text:
+        text_payload = f"{effective_text}\n\nOCR from uploaded screenshot:\n{ocr_text}" if effective_text else f"OCR from uploaded screenshot:\n{ocr_text}"
+
+    return "text", {
+        "text": text_payload,
+        "fraud_amount": max(0.0, float(fraud_amount or 0)),
+        "minutes_since_fraud": minutes_since_fraud,
+        "session_id": session_id,
+        "options": options or {},
+        "user_context": user_context or {},
+        "recovery_answers": recovery_answers,
+        "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
+    }
+
+
+def _build_pipeline_call(
+    user_input: dict,
+    similar: Optional[list[dict]] = None,
+    *,
+    session_id: str | None = None,
+    options: dict | None = None,
+    user_context: dict | None = None,
+    fraud_amount: float = 0,
+    minutes_since_fraud: int | None = None,
+) -> tuple[str, dict]:
+    text = str(user_input.get("text") or "").strip()
+    files = user_input.get("files") or []
+    selected = _select_best_file(files)
+    effective_text = _merge_similarity_text(text, similar)
+    recovery_answers = _hydrate_recovery_answers(
+        (options or {}).get("recovery_answers") if isinstance((options or {}).get("recovery_answers"), dict) else {}
+    )
+
+    payload = {
         "text": effective_text,
         "fraud_amount": max(0.0, float(fraud_amount or 0)),
         "minutes_since_fraud": minutes_since_fraud,
         "session_id": session_id,
         "options": options or {},
         "user_context": user_context or {},
-        "recovery_answers": (options or {}).get("recovery_answers", {}),
+        "recovery_answers": recovery_answers,
+        "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
+    }
+
+    if not selected:
+        return "text", payload
+
+    file_name = str(selected.get("file_name") or "evidence.bin")
+    file_type = str(selected.get("file_type") or mimetypes.guess_type(file_name)[0] or "application/octet-stream")
+    content_b64 = selected.get("content_base64")
+
+    if not content_b64:
+        # Metadata-only file (e.g. cloud URI). Keep analysis text-first while preserving flow classification.
+        return "text", payload
+
+    raw = _decode_b64_cached(str(content_b64))
+
+    if file_name.lower().endswith(".apk") or file_type == "application/vnd.android.package-archive":
+        static_results = _run_apk_static_cached_sync(raw, file_name, content_b64=str(content_b64))
+        return "apk", {
+            "filename": file_name,
+            "static_results": static_results,
+            "text": effective_text,
+            "fraud_amount": max(0.0, float(fraud_amount or 0)),
+            "minutes_since_fraud": minutes_since_fraud,
+            "session_id": session_id,
+            "options": options or {},
+            "user_context": user_context or {},
+            "recovery_answers": recovery_answers,
+            "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
+        }
+
+    if file_type.startswith("audio/") or file_name.lower().endswith((".mp3", ".wav", ".m4a", ".ogg")):
+        return "audio", {
+            "audio_b64": base64.b64encode(raw).decode("utf-8"),
+            "filename": file_name,
+            "mime_type": file_type,
+            "text": effective_text,
+            "fraud_amount": max(0.0, float(fraud_amount or 0)),
+            "minutes_since_fraud": minutes_since_fraud,
+            "session_id": session_id,
+            "options": options or {},
+            "user_context": user_context or {},
+            "recovery_answers": recovery_answers,
+            "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
+        }
+
+    ocr_text = _extract_ocr_text_from_options(options or {})
+    if not ocr_text:
+        try:
+            ocr_hints = _extract_image_ocr_hints(raw, file_type)
+            ocr_text = _truncate_text(ocr_hints.get("ocr_text") or "", 4000)
+        except Exception:
+            ocr_text = ""
+
+    text_payload = effective_text
+    if ocr_text:
+        text_payload = f"{effective_text}\n\nOCR from uploaded screenshot:\n{ocr_text}" if effective_text else f"OCR from uploaded screenshot:\n{ocr_text}"
+
+    return "text", {
+        "text": text_payload,
+        "fraud_amount": max(0.0, float(fraud_amount or 0)),
+        "minutes_since_fraud": minutes_since_fraud,
+        "session_id": session_id,
+        "options": options or {},
+        "user_context": user_context or {},
+        "recovery_answers": recovery_answers,
         "preprocessed_context": _normalize_preprocessed_context((options or {}).get("preprocessed_context")),
     }
 
@@ -972,13 +1446,334 @@ def _looks_like_educational_apk(pipeline_result: dict, files: list[dict]) -> boo
 
 def _bucket_to_minutes(time_bucket: str | None) -> int | None:
     key = str(time_bucket or "").strip().lower()
-    if key == "minutes":
+    if not key:
+        return None
+    if key in {"minutes", "within_15_min"}:
         return 15
+    if key == "15_30_min":
+        return 25
+    if key == "30_60_min":
+        return 45
+    if key == "over_1_hour":
+        return 90
     if key == "hours":
         return 180
-    if key == "days":
+    if key in {"days", "over_1_day"}:
         return 1440
+    if key.endswith("_min"):
+        try:
+            parsed = int(key.replace("_min", ""))
+            if parsed >= 0:
+                return parsed
+        except Exception:
+            return None
+    if key.isdigit():
+        try:
+            parsed = int(key)
+            if parsed >= 0:
+                return parsed
+        except Exception:
+            return None
     return None
+
+
+def _resolve_minutes_since_fraud(request_options: dict[str, Any]) -> int | None:
+    options = request_options if isinstance(request_options, dict) else {}
+    recovery_answers = options.get("recovery_answers") if isinstance(options.get("recovery_answers"), dict) else {}
+
+    for candidate in [
+        options.get("minutes_since_fraud"),
+        options.get("minutes_since_incident"),
+        recovery_answers.get("minutes_since_fraud"),
+        recovery_answers.get("minutes_since_incident"),
+    ]:
+        try:
+            if candidate is None:
+                continue
+            parsed = int(float(candidate))
+            if parsed >= 0:
+                return parsed
+        except Exception:
+            continue
+
+    for bucket in [
+        recovery_answers.get("time_bucket"),
+        options.get("time_bucket"),
+    ]:
+        parsed = _bucket_to_minutes(str(bucket or ""))
+        if parsed is not None:
+            return parsed
+
+    return None
+
+
+def _is_urgent_money_loss_mcp_case(request_options: dict[str, Any]) -> bool:
+    options = request_options if isinstance(request_options, dict) else {}
+    if not bool(options.get("trigger_mcp_actions", False)):
+        return False
+
+    answers = options.get("recovery_answers") if isinstance(options.get("recovery_answers"), dict) else {}
+
+    money_markers = [
+        answers.get("did_lose_money"),
+        answers.get("did_lose_money_or_share_bank_details"),
+        answers.get("money_lost"),
+    ]
+    money_lost = any(_tri_state(value) is True for value in money_markers) or _has_amount_loss_signal(answers)
+    if not money_lost:
+        return False
+
+    minutes_since = _resolve_minutes_since_fraud(options)
+    return minutes_since is not None and minutes_since <= 60
+
+
+def _has_amount_loss_signal(answers: dict[str, Any]) -> bool:
+    if not isinstance(answers, dict):
+        return False
+    bucket = str(answers.get("amount_lost_bucket") or "").strip().lower()
+    if bucket in {"under_10k", "between_10k_50k", "between_50k_100k", "over_100k"}:
+        return True
+    try:
+        return float(answers.get("amount_lost") or 0) > 0
+    except Exception:
+        return False
+
+
+def _has_timing_signal(answers: dict[str, Any]) -> bool:
+    if not isinstance(answers, dict):
+        return False
+    return _resolve_minutes_since_fraud({"recovery_answers": answers}) is not None
+
+
+def _default_amount_from_bucket(bucket: str) -> float | None:
+    mapping = {
+        "under_10k": 5000.0,
+        "between_10k_50k": 25000.0,
+        "between_50k_100k": 75000.0,
+        "over_100k": 150000.0,
+    }
+    return mapping.get(str(bucket or "").strip().lower())
+
+
+def _hydrate_recovery_answers(recovery_answers: dict[str, Any]) -> dict[str, Any]:
+    answers = recovery_answers if isinstance(recovery_answers, dict) else {}
+    hydrated = dict(answers)
+
+    try:
+        amount_lost = float(hydrated.get("amount_lost") or 0)
+    except Exception:
+        amount_lost = 0.0
+    if amount_lost <= 0:
+        default_amount = _default_amount_from_bucket(str(hydrated.get("amount_lost_bucket") or ""))
+        if default_amount is not None:
+            hydrated["amount_lost"] = default_amount
+
+    if hydrated.get("minutes_since_incident") is None:
+        resolved = _resolve_minutes_since_fraud({"recovery_answers": hydrated})
+        if resolved is not None:
+            hydrated["minutes_since_incident"] = resolved
+
+    return hydrated
+
+
+async def _ensure_direct_golden_hour_actions(
+    *,
+    pipeline_result: dict[str, Any],
+    request_options: dict[str, Any],
+    session_id: str | None,
+    case_id: str,
+    scam_type: str,
+) -> dict[str, Any]:
+    """Force calendar/tasks creation when money loss is confirmed within 60 minutes.
+
+    This fallback protects demo-critical integrations when model-dependent manager logic
+    degrades (timeouts, quota spikes, or partial pipeline outputs).
+    """
+    if not isinstance(pipeline_result, dict):
+        return pipeline_result
+    if bool(pipeline_result.get("needs_clarification")):
+        return pipeline_result
+    if not _bool_from_any((request_options or {}).get("trigger_mcp_actions"), False):
+        return pipeline_result
+
+    answers_raw = (request_options or {}).get("recovery_answers") if isinstance((request_options or {}).get("recovery_answers"), dict) else {}
+    answers = _hydrate_recovery_answers(answers_raw)
+    money_loss_confirmed = bool(
+        _bool_from_any(answers.get("did_lose_money_or_share_bank_details"), False)
+        or _bool_from_any(answers.get("did_lose_money"), False)
+        or _bool_from_any(answers.get("money_lost"), False)
+        or _has_amount_loss_signal(answers)
+    )
+    if not money_loss_confirmed:
+        return pipeline_result
+
+    minutes_request = dict(request_options or {})
+    minutes_request["recovery_answers"] = answers
+    minutes_since = _resolve_minutes_since_fraud(minutes_request)
+    if minutes_since is None or minutes_since > 60:
+        return pipeline_result
+
+    calendar_existing = pipeline_result.get("calendar_event") if isinstance(pipeline_result.get("calendar_event"), dict) else {}
+    tasks_existing = pipeline_result.get("google_tasks") if isinstance(pipeline_result.get("google_tasks"), dict) else {}
+    calendar_already_done = bool(calendar_existing.get("created") or calendar_existing.get("attempted"))
+    tasks_already_done = bool(tasks_existing.get("created") or tasks_existing.get("attempted"))
+
+    pipeline_result["requires_mcp"] = True
+    pipeline_result["mcp_execution_requested"] = True
+    pipeline_result["mcp_plan"] = {
+        "create_calendar": True,
+        "create_tasks": True,
+        "create_gmail_draft": False,
+        "create_case_report_doc": False,
+    }
+    pipeline_result["golden_hour_active"] = True
+    pipeline_result["requires_reporting"] = True
+    pipeline_result["requires_emergency"] = True
+    pipeline_result["requires_financial_blocking"] = True
+
+    oauth = get_google_oauth(session_id) if session_id else None
+    if not isinstance(oauth, dict):
+        if not calendar_already_done:
+            pipeline_result["calendar_event"] = {
+                "attempted": False,
+                "created": False,
+                "title": "",
+                "event_id": "",
+                "start_time": "",
+                "description": "",
+                "error": "google_oauth_not_connected",
+            }
+        if not tasks_already_done:
+            pipeline_result["google_tasks"] = {
+                "attempted": False,
+                "created": False,
+                "tasklist_id": "",
+                "tasks_created": 0,
+                "task_ids": [],
+                "task_url": "",
+                "error": "google_oauth_not_connected",
+            }
+        pipeline_result["mcp_execution_enabled"] = False
+        return pipeline_result
+
+    creds = build_google_credentials(oauth)
+    if creds is None:
+        if not calendar_already_done:
+            pipeline_result["calendar_event"] = {
+                "attempted": False,
+                "created": False,
+                "title": "",
+                "event_id": "",
+                "start_time": "",
+                "description": "",
+                "error": "credentials_unavailable",
+            }
+        if not tasks_already_done:
+            pipeline_result["google_tasks"] = {
+                "attempted": False,
+                "created": False,
+                "tasklist_id": "",
+                "tasks_created": 0,
+                "task_ids": [],
+                "task_url": "",
+                "error": "credentials_unavailable",
+            }
+        pipeline_result["mcp_execution_enabled"] = False
+        return pipeline_result
+
+    calendar_task: asyncio.Task[Any] | None = None
+    tasks_task: asyncio.Task[Any] | None = None
+
+    if not calendar_already_done:
+        calendar_task = asyncio.create_task(
+            asyncio.to_thread(
+                create_golden_hour_calendar_events,
+                creds,
+                case_id=str(case_id or pipeline_result.get("case_id") or ""),
+                scam_type=str(scam_type or pipeline_result.get("scam_type") or "Cyber Fraud"),
+                minutes_elapsed=minutes_since,
+            )
+        )
+
+    if not tasks_already_done:
+        tasks_task = asyncio.create_task(
+            asyncio.to_thread(
+                create_golden_hour_tasks,
+                creds,
+                case_id=str(case_id or pipeline_result.get("case_id") or ""),
+                scam_type=str(scam_type or pipeline_result.get("scam_type") or "Cyber Fraud"),
+                complaint_text=str(pipeline_result.get("fir_template") or ""),
+            )
+        )
+
+    if calendar_task is not None and tasks_task is not None:
+        cal_res, tks_res = await asyncio.gather(calendar_task, tasks_task, return_exceptions=True)
+    elif calendar_task is not None:
+        cal_res = await calendar_task
+        tks_res = None
+    elif tasks_task is not None:
+        cal_res = None
+        tks_res = await tasks_task
+    else:
+        cal_res = None
+        tks_res = None
+
+    if calendar_task is not None:
+        if isinstance(cal_res, Exception):
+            pipeline_result["calendar_event"] = {
+                "attempted": True,
+                "created": False,
+                "title": "",
+                "event_id": "",
+                "start_time": "",
+                "description": "",
+                "error": str(cal_res),
+            }
+        elif isinstance(cal_res, dict):
+            cal_url = str(cal_res.get("event_url") or cal_res.get("deep_link") or cal_res.get("url") or "").strip()
+            pipeline_result["calendar_event"] = {
+                "attempted": bool(cal_res.get("attempted", True)),
+                "created": bool(cal_res.get("created", False)),
+                "title": str(cal_res.get("title") or ""),
+                "event_id": str(cal_res.get("event_id") or ""),
+                "start_time": str(cal_res.get("start_time") or ""),
+                "description": str(cal_res.get("description") or ""),
+                "error": str(cal_res.get("error") or ""),
+                "event_url": cal_url,
+                "deep_link": cal_url,
+            }
+
+    if tasks_task is not None:
+        if isinstance(tks_res, Exception):
+            pipeline_result["google_tasks"] = {
+                "attempted": True,
+                "created": False,
+                "tasklist_id": "",
+                "tasks_created": 0,
+                "task_ids": [],
+                "task_url": "",
+                "error": str(tks_res),
+            }
+        elif isinstance(tks_res, dict):
+            pipeline_result["google_tasks"] = {
+                "attempted": bool(tks_res.get("attempted", True)),
+                "created": bool(tks_res.get("created", False)),
+                "tasklist_id": str(tks_res.get("tasklist_id") or ""),
+                "tasks_created": int(tks_res.get("tasks_created") or 0),
+                "task_ids": tks_res.get("task_ids") if isinstance(tks_res.get("task_ids"), list) else [],
+                "task_url": str(tks_res.get("task_url") or ""),
+                "error": str(tks_res.get("error") or ""),
+            }
+
+    calendar_final = pipeline_result.get("calendar_event") if isinstance(pipeline_result.get("calendar_event"), dict) else {}
+    tasks_final = pipeline_result.get("google_tasks") if isinstance(pipeline_result.get("google_tasks"), dict) else {}
+    pipeline_result["mcp_execution_enabled"] = bool(
+        calendar_final.get("created")
+        or calendar_final.get("attempted")
+        or tasks_final.get("created")
+        or tasks_final.get("attempted")
+    )
+    return pipeline_result
 
 
 def _build_legacy_input(user_input: dict) -> dict:
@@ -1014,6 +1809,91 @@ def _needs_legacy_fallback(pipeline_result: dict) -> bool:
     return False
 
 
+def _has_recovery_answers(request_options: dict[str, Any]) -> bool:
+    answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
+    return bool(answers)
+
+
+def _looks_like_insufficient_info_response(pipeline_result: dict[str, Any]) -> bool:
+    if not isinstance(pipeline_result, dict):
+        return False
+    corpus = "\n".join(
+        [
+            str(pipeline_result.get("verdict") or ""),
+            str(pipeline_result.get("summary") or ""),
+            str(pipeline_result.get("chat_reply") or ""),
+            str(pipeline_result.get("conversational_reply") or ""),
+        ]
+    ).lower()
+    if not corpus.strip():
+        return False
+    patterns = [
+        r"full\s+content\s+of\s+the\s+sms",
+        r"provide\s+the\s+full\s+content",
+        r"not\s+enough\s+information",
+        r"insufficient\s+information",
+        r"unable\s+to\s+determine",
+    ]
+    return any(re.search(pattern, corpus, re.IGNORECASE) for pattern in patterns)
+
+
+def _hydrate_clarification_followup_request(req_payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(req_payload, dict):
+        return req_payload
+
+    options = req_payload.get("options") if isinstance(req_payload.get("options"), dict) else {}
+    user_input = req_payload.get("user_input") if isinstance(req_payload.get("user_input"), dict) else {}
+    if not options or not user_input:
+        return req_payload
+
+    if not _has_recovery_answers(options):
+        return req_payload
+
+    options["clarification_followup"] = True
+    files = user_input.get("files") if isinstance(user_input.get("files"), list) else []
+    pre = options.get("preprocessed_context") if isinstance(options.get("preprocessed_context"), dict) else {}
+    if files and pre:
+        return req_payload
+
+    session_id = str(req_payload.get("session_id") or "").strip()
+    if not session_id:
+        return req_payload
+
+    best_prev: Optional[dict[str, Any]] = None
+    best_created = ""
+    for item in RUN_STORE.values():
+        if not isinstance(item, dict):
+            continue
+        prev_req = item.get("request") if isinstance(item.get("request"), dict) else {}
+        if str(prev_req.get("session_id") or "").strip() != session_id:
+            continue
+        prev_input = prev_req.get("user_input") if isinstance(prev_req.get("user_input"), dict) else {}
+        prev_files = prev_input.get("files") if isinstance(prev_input.get("files"), list) else []
+        if not prev_files:
+            continue
+        created_at = str(item.get("created_at") or "")
+        if created_at >= best_created:
+            best_created = created_at
+            best_prev = prev_req
+
+    if not best_prev:
+        return req_payload
+
+    prev_input = best_prev.get("user_input") if isinstance(best_prev.get("user_input"), dict) else {}
+    prev_options = best_prev.get("options") if isinstance(best_prev.get("options"), dict) else {}
+    prev_files = prev_input.get("files") if isinstance(prev_input.get("files"), list) else []
+    prev_pre = prev_options.get("preprocessed_context") if isinstance(prev_options.get("preprocessed_context"), dict) else {}
+
+    if not files and prev_files:
+        user_input["files"] = json.loads(json.dumps(prev_files))
+    if not pre and prev_pre:
+        options["preprocessed_context"] = json.loads(json.dumps(prev_pre))
+
+    req_payload["user_input"] = user_input
+    req_payload["options"] = options
+    return req_payload
+
+
 def _event_line(event_name: str, data: dict) -> str:
     return f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=True)}\n\n"
 
@@ -1023,7 +1903,20 @@ async def _emit_event(run_id: str, event_name: str, payload: dict) -> None:
     if not run:
         return
 
-    merged = {"run_id": run_id, "timestamp": _utc_now(), **payload}
+    analysis_stage = str(payload.get("analysis_stage") or run.get("analysis_stage") or "").strip().lower()
+    base_payload: dict[str, Any] = {
+        "run_id": run_id,
+        "timestamp": _utc_now(),
+        "contract_version": ANALYSIS_CONTRACT_VERSION,
+        "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+    }
+    if analysis_stage:
+        base_payload["analysis_stage"] = analysis_stage
+    source_run_id = str(payload.get("source_run_id") or run.get("source_run_id") or "").strip()
+    if source_run_id:
+        base_payload["source_run_id"] = source_run_id
+
+    merged = {**base_payload, **payload}
     event = {"event": event_name, "data": merged}
     run.setdefault("events", []).append(event)
     for q in list(run.get("subscribers", [])):
@@ -1144,7 +2037,7 @@ def _infer_exposure_from_text(text: str) -> dict[str, bool]:
     )
     clicked_link = bool(
         re.search(
-            r"\b(clicked|opened|visited|tap(?:ped)?)\b.{0,30}\b(link|url|website|site)\b",
+            r"\b(i|we|my|me)\b.{0,20}\b(clicked|opened|visited|tapped)\b.{0,35}\b(link|url|website|site|page)\b",
             source,
             re.IGNORECASE,
         )
@@ -1154,6 +2047,1085 @@ def _infer_exposure_from_text(text: str) -> dict[str, bool]:
         "money_lost": money_lost,
         "shared_sensitive": shared_sensitive,
         "clicked_link": clicked_link,
+    }
+
+
+def _tri_state(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    normalized = str(value or "").strip().lower()
+    if normalized in {"yes", "y", "true", "1", "clicked", "shared", "lost"}:
+        return True
+    if normalized in {"no", "n", "false", "0", "not_clicked", "did_not_click"}:
+        return False
+    return None
+
+
+def _bool_from_any(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "on", "y"}:
+        return True
+    if normalized in {"0", "false", "no", "off", "n"}:
+        return False
+    return default
+
+
+def _is_fast_first_mode(request_options: dict[str, Any]) -> bool:
+    env_default = str(os.getenv("SATARK_FAST_FIRST_DEFAULT", "1")).strip().lower() not in {"0", "false", "no", "off"}
+    if not isinstance(request_options, dict):
+        return env_default
+
+    deep_analysis = _bool_from_any(request_options.get("deep_analysis"), False)
+    if deep_analysis:
+        return False
+
+    if "fast_first" in request_options:
+        return _bool_from_any(request_options.get("fast_first"), env_default)
+
+    return env_default
+
+
+def _enforce_triage_request_contract(req_payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(req_payload, dict):
+        return req_payload
+
+    options = req_payload.get("options") if isinstance(req_payload.get("options"), dict) else {}
+    options.setdefault("deep_analysis", False)
+    options.setdefault("fast_first", False)
+    options.setdefault("generate_report", False)
+    options.setdefault("trigger_mcp_actions", False)
+    req_payload["options"] = options
+    return req_payload
+
+
+def _looks_like_simple_sms_lure(text: str) -> bool:
+    src = str(text or "").strip().lower()
+    if len(src) < 8:
+        return False
+    lure_patterns = [
+        r"\bkyc\b",
+        r"\bverify\s+account\b",
+        r"\baccount\s+(?:blocked|suspended|freeze|frozen)\b",
+        r"\bclick\b.{0,25}\blink\b",
+        r"\bupdate\s+pan\b",
+        r"\bupdate\s+aadhaar\b",
+        r"\bupi\b.{0,25}\bblocked\b",
+        r"\belectricity\s+bill\b",
+        r"\bdelivery\s+failed\b",
+        r"\bcourier\b.{0,25}\bfee\b",
+        r"\bcustomer\s+care\b",
+        r"\bloan\s+approval\b",
+        r"\bpart[-\s]?time\s+job\b",
+        r"\binvest\b.{0,25}\bguaranteed\b",
+        r"\bwin\b.{0,25}\bprize\b",
+        r"\btelegram\b.{0,25}\bprofit\b",
+        r"\bvip\b.{0,25}\bgift\b",
+        r"\bwithdraw\b.{0,30}\bbefore\b.{0,15}\bgone\b",
+        r"\btap\b.{0,15}\b(?:bit\.ly|cutt\.ly|tinyurl|t\.co|rb\.gy)\b",
+        r"\b(?:rs|inr|₹)\s*\d+[\d,]*\b.{0,25}\b(?:gift|reward|bonus|credit)\b",
+    ]
+    if re.search(r"https?://", src):
+        return True
+    if re.search(r"\b(?:bit\.ly|cutt\.ly|tinyurl\.com|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at)/[a-z0-9\-_/]+\b", src, re.IGNORECASE):
+        return True
+    return any(re.search(pattern, src, re.IGNORECASE) for pattern in lure_patterns)
+
+
+def _contains_link_indicator(text: str) -> bool:
+    src = str(text or "").strip().lower()
+    if not src:
+        return False
+    if re.search(r"https?://", src, re.IGNORECASE):
+        return True
+    if re.search(
+        r"\b(?:bit\.ly|cutt\.ly|tinyurl\.com|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at|lnkd\.in|wa\.me|t\.me)/[a-z0-9\-_/]+\b",
+        src,
+        re.IGNORECASE,
+    ):
+        return True
+    if re.search(
+        r"\b(?:bit\.ly|cutt\.ly|tinyurl\.com|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at|lnkd\.in|wa\.me|t\.me)\b",
+        src,
+        re.IGNORECASE,
+    ):
+        return True
+    if re.search(r"\b[a-z0-9.-]+\.[a-z]{2,}/[a-z0-9\-_/]+\b", src, re.IGNORECASE):
+        return True
+    return False
+
+
+def _has_apk_attachment(files: list[dict[str, Any]]) -> bool:
+    if not files:
+        return False
+    for item in files:
+        if not isinstance(item, dict):
+            continue
+        file_name = str(item.get("file_name") or "").strip().lower()
+        file_type = str(item.get("file_type") or "").strip().lower()
+        if file_name.endswith(".apk") or file_type == "application/vnd.android.package-archive":
+            return True
+    return False
+
+
+def _is_context_rich_user_text(text: str) -> bool:
+    src = str(text or "").strip().lower()
+    if not src:
+        return False
+
+    if re.search(
+        r"\b(i|i'm|i\s+am|my|me|we|our|friend|mom|dad|brother|sister|wife|husband)\b",
+        src,
+        re.IGNORECASE,
+    ) and re.search(
+        r"\b(clicked|opened|visited|shared|entered|typed|lost|debited|paid|transferred|received|got|happened|scammed|fell\s+for)\b",
+        src,
+        re.IGNORECASE,
+    ):
+        return True
+
+    if re.search(
+        r"\b(is\s+this\s+safe|is\s+this\s+scam|what\s+should\s+i\s+do|can\s+you\s+help|please\s+help|need\s+help)\b",
+        src,
+        re.IGNORECASE,
+    ):
+        return True
+
+    return False
+
+
+def _looks_like_blind_pasted_sms_with_link(text: str) -> bool:
+    src = str(text or "").strip()
+    if len(src) < 18:
+        return False
+    if _is_context_rich_user_text(src):
+        return False
+    if not _contains_link_indicator(src):
+        return False
+    return _looks_like_simple_sms_lure(src)
+
+
+def _resolve_forced_mcq_mode(
+    *,
+    user_input: dict[str, Any],
+    request_options: dict[str, Any],
+    pipeline_result: Optional[dict[str, Any]] = None,
+) -> str | None:
+    files = user_input.get("files") if isinstance(user_input.get("files"), list) else []
+    text = str(user_input.get("text") or "").strip()
+    context_text = _collect_fastpath_context_text(request_options)
+    merged_text = "\n".join([part for part in [text, context_text] if part]).strip()
+
+    if _has_apk_attachment(files):
+        return "apk"
+
+    if _is_image_only_fastpath_candidate(files) and _contains_link_indicator(merged_text):
+        return "phishing"
+
+    if _looks_like_blind_pasted_sms_with_link(text):
+        return "phishing"
+
+    if pipeline_result and _is_image_only_fastpath_candidate(files) and _is_phishing_candidate_from_pipeline(pipeline_result):
+        # Keep this narrow to avoid forcing MCQs when user already gave rich context.
+        if not _is_context_rich_user_text(text) and _contains_link_indicator(merged_text):
+            return "phishing"
+
+    return None
+
+
+def _extract_fastpath_signals(text: str, recovery_answers: dict[str, Any]) -> dict[str, Optional[bool]]:
+    src = str(text or "")
+    exposure = _infer_exposure_from_text(src)
+
+    clicked = _tri_state(recovery_answers.get("clicked_link"))
+    shared = _tri_state(
+        recovery_answers.get("shared_sensitive_data")
+        if recovery_answers.get("shared_sensitive_data") is not None
+        else (
+            recovery_answers.get("shared_personal_details")
+            if recovery_answers.get("shared_personal_details") is not None
+            else recovery_answers.get("shared_otp_or_pin")
+        )
+    )
+    if shared is None:
+        shared = _tri_state(recovery_answers.get("shared_bank_details"))
+    money = _tri_state(
+        recovery_answers.get("did_lose_money_or_share_bank_details")
+        if recovery_answers.get("did_lose_money_or_share_bank_details") is not None
+        else recovery_answers.get("did_lose_money")
+    )
+
+    if clicked is None:
+        if re.search(r"\b(did\s*not|didn't|never)\s+click\b", src, re.IGNORECASE) or re.search(
+            r"\b(i\s+)?(ignored|deleted)\s+(it|the\s+message|message|sms|text)\b"
+            r"|\b(i\s+)?(blocked|muted)\s+(the\s+)?(sender|number|contact)\b",
+            src,
+            re.IGNORECASE,
+        ):
+            clicked = False
+        elif exposure.get("clicked_link"):
+            clicked = True
+
+    if shared is None:
+        if re.search(r"\b(did\s*not|didn't|never)\s+(share|give|provide)\b", src, re.IGNORECASE):
+            shared = False
+        elif exposure.get("shared_sensitive"):
+            shared = True
+
+    if money is None:
+        if re.search(r"\bno\s+money\s+lost\b|\bnot\s+debited\b|\bdid\s*not\s+lose\b", src, re.IGNORECASE):
+            money = False
+        elif exposure.get("money_lost"):
+            money = True
+
+    return {
+        "clicked_link": clicked,
+        "shared_sensitive": shared,
+        "money_lost": money,
+    }
+
+
+def _build_fastpath_clarification_question(
+    recovery_answers: dict[str, Any],
+    *,
+    mode: str = "phishing",
+) -> Optional[dict[str, Any]]:
+    answers = _hydrate_recovery_answers(recovery_answers if isinstance(recovery_answers, dict) else {})
+
+    if mode == "apk":
+        installed = _tri_state(
+            answers.get("installed_apk")
+            if answers.get("installed_apk") is not None
+            else answers.get("downloaded_apk")
+        )
+        shared = _tri_state(
+            answers.get("shared_sensitive_data")
+            if answers.get("shared_sensitive_data") is not None
+            else answers.get("shared_personal_details")
+        )
+        if shared is None:
+            shared = _tri_state(answers.get("shared_bank_details"))
+        money = _tri_state(
+            answers.get("did_lose_money_or_share_bank_details")
+            if answers.get("did_lose_money_or_share_bank_details") is not None
+            else answers.get("did_lose_money")
+        )
+
+        if installed is None:
+            return {
+                "question_id": "installed_apk",
+                "question_text": "Did you install or open this APK on your phone?",
+                "options": [
+                    {"id": "yes", "label": "Yes"},
+                    {"id": "no", "label": "No"},
+                    {"id": "not_sure", "label": "Not sure"},
+                ],
+                "why_needed": "If it was installed, the response must shift from preventive to recovery.",
+            }
+
+        if installed is False:
+            return None
+
+        if shared is None:
+            return {
+                "question_id": "shared_personal_details",
+                "question_text": "After installing/opening it, did you enter any personal or banking details?",
+                "options": [
+                    {"id": "yes", "label": "Yes"},
+                    {"id": "no", "label": "No"},
+                    {"id": "not_sure", "label": "Not sure"},
+                ],
+                "why_needed": "This decides whether we should initiate account protection and reporting steps.",
+            }
+
+        if money is None:
+            return {
+                "question_id": "did_lose_money_or_share_bank_details",
+                "question_text": "Did any money leave your account after this incident?",
+                "options": [
+                    {"id": "yes", "label": "Yes"},
+                    {"id": "no", "label": "No"},
+                    {"id": "not_sure", "label": "Not sure"},
+                ],
+                "why_needed": "Money loss triggers immediate emergency and reporting actions.",
+            }
+
+        if money is True and not _has_amount_loss_signal(answers):
+            return {
+                "question_id": "amount_lost_bucket",
+                "question_text": "Roughly how much money was lost?",
+                "options": [
+                    {"id": "under_10k", "label": "Under INR 10,000"},
+                    {"id": "between_10k_50k", "label": "INR 10,000 to 50,000"},
+                    {"id": "between_50k_100k", "label": "INR 50,000 to 1,00,000"},
+                    {"id": "over_100k", "label": "Over INR 1,00,000"},
+                    {"id": "not_sure", "label": "Not sure"},
+                ],
+                "why_needed": "The amount helps prioritize the exact escalation and recovery checklist.",
+            }
+
+        if money is True and not _has_timing_signal(answers):
+            return {
+                "question_id": "time_bucket",
+                "question_text": "When did the money loss happen?",
+                "options": [
+                    {"id": "within_15_min", "label": "Within the last 15 minutes"},
+                    {"id": "15_30_min", "label": "15 to 30 minutes ago"},
+                    {"id": "30_60_min", "label": "30 to 60 minutes ago"},
+                    {"id": "over_1_hour", "label": "More than 1 hour ago"},
+                    {"id": "over_1_day", "label": "More than 1 day ago"},
+                    {"id": "not_sure", "label": "Not sure"},
+                ],
+                "why_needed": "Time since loss determines Golden Hour urgency and the next actions.",
+            }
+
+        return None
+
+    clicked = _tri_state(answers.get("clicked_link") if answers.get("clicked_link") is not None else answers.get("opened_link"))
+    shared = _tri_state(
+        answers.get("shared_sensitive_data")
+        if answers.get("shared_sensitive_data") is not None
+        else (
+            answers.get("shared_personal_details")
+            if answers.get("shared_personal_details") is not None
+            else answers.get("shared_otp_or_pin")
+        )
+    )
+    if shared is None:
+        shared = _tri_state(answers.get("shared_bank_details"))
+    money = _tri_state(
+        answers.get("did_lose_money_or_share_bank_details")
+        if answers.get("did_lose_money_or_share_bank_details") is not None
+        else answers.get("did_lose_money")
+    )
+
+    if clicked is None:
+        return {
+            "question_id": "clicked_link",
+            "question_text": "Did you tap the link?",
+            "options": [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "This changes urgency and the exact recovery steps.",
+        }
+    if clicked is False:
+        return None
+
+    if shared is None:
+        return {
+            "question_id": "shared_personal_details",
+            "question_text": "Did you share any OTP, PIN, password, Aadhaar, PAN, or bank details?",
+            "options": [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "This decides whether we stay preventive or switch to recovery mode.",
+        }
+
+    if money is None:
+        return {
+            "question_id": "did_lose_money_or_share_bank_details",
+            "question_text": "Did any money leave your account after this incident?",
+            "options": [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "Money loss triggers immediate emergency and reporting actions.",
+        }
+
+    if money is True and not _has_amount_loss_signal(answers):
+        return {
+            "question_id": "amount_lost_bucket",
+            "question_text": "Roughly how much money was lost?",
+            "options": [
+                {"id": "under_10k", "label": "Under INR 10,000"},
+                {"id": "between_10k_50k", "label": "INR 10,000 to 50,000"},
+                {"id": "between_50k_100k", "label": "INR 50,000 to 1,00,000"},
+                {"id": "over_100k", "label": "Over INR 1,00,000"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "The amount helps prioritize the exact escalation and recovery checklist.",
+        }
+
+    if money is True and not _has_timing_signal(answers):
+        return {
+            "question_id": "time_bucket",
+            "question_text": "When did the money loss happen?",
+            "options": [
+                {"id": "within_15_min", "label": "Within the last 15 minutes"},
+                {"id": "15_30_min", "label": "15 to 30 minutes ago"},
+                {"id": "30_60_min", "label": "30 to 60 minutes ago"},
+                {"id": "over_1_hour", "label": "More than 1 hour ago"},
+                {"id": "over_1_day", "label": "More than 1 day ago"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "Time since loss determines Golden Hour urgency and the next actions.",
+        }
+
+    return None
+
+
+def _collect_fastpath_context_text(request_options: dict[str, Any]) -> str:
+    pre = request_options.get("preprocessed_context") if isinstance(request_options.get("preprocessed_context"), dict) else {}
+    file_hints = pre.get("file_hints") if isinstance(pre.get("file_hints"), dict) else {}
+    entities = file_hints.get("entities") if isinstance(file_hints.get("entities"), dict) else {}
+
+    parts: list[str] = []
+    for value in [
+        pre.get("text_excerpt"),
+        file_hints.get("image_summary"),
+        file_hints.get("ocr_text"),
+        file_hints.get("vision_summary"),
+        file_hints.get("scam_type"),
+    ]:
+        text = str(value or "").strip()
+        if text:
+            parts.append(text)
+
+    for key in ["signals_found", "urls", "phones", "bank_names"]:
+        parts.extend(_as_string_list(file_hints.get(key)))
+    for key in ["evidence_text", "evidence_visual"]:
+        parts.extend(_as_string_list(file_hints.get(key)))
+    for key in ["urls", "phones", "amounts", "bank_names"]:
+        parts.extend(_as_string_list(entities.get(key)))
+
+    return "\n".join([p for p in parts if p])
+
+
+def _is_image_only_fastpath_candidate(files: list[dict[str, Any]]) -> bool:
+    if not files:
+        return False
+    for item in files:
+        if not isinstance(item, dict):
+            return False
+        file_type = str(item.get("file_type") or "")
+        file_name = str(item.get("file_name") or "").lower()
+        if file_name.endswith(".apk") or file_type == "application/vnd.android.package-archive":
+            return False
+        if file_type.startswith("audio/") or file_name.endswith((".mp3", ".wav", ".m4a", ".ogg")):
+            return False
+        if not file_type.startswith("image/"):
+            return False
+    return True
+
+
+def _looks_like_sms_screenshot_lure(text: str, files: list[dict[str, Any]]) -> bool:
+    src = str(text or "").strip().lower()
+    if _looks_like_simple_sms_lure(src):
+        return True
+
+    if files and src:
+        # Users often paste screenshots with short intent text like
+        # "is this legit" without transcribing scam content.
+        intent_hint = bool(
+            re.search(
+                r"\b(is\s+this\s+legit|is\s+this\s+safe|received\s+this|got\s+this|is\s+this\s+a\s+scam|scam\?)\b",
+                src,
+                re.IGNORECASE,
+            )
+        )
+        if intent_hint and len(src) <= 140:
+            return True
+
+    file_blob = " ".join([str((f or {}).get("file_name") or "") for f in files]).lower()
+    screenshot_hint = bool(re.search(r"screenshot|screen[_\-\s]?shot|whatsapp|message|sms|img[_-]?\d+", file_blob, re.IGNORECASE))
+    lure_text_hint = bool(
+        re.search(
+            r"\b(sms|message|kyc|otp|bank|verify|click|tap|upi|delivery|prize|reward|suspended|blocked)\b",
+            src,
+            re.IGNORECASE,
+        )
+    )
+    link_hint = bool(
+        re.search(
+            r"https?://|bit\.ly|cutt\.ly|tinyurl|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at|t\.me|wa\.me",
+            src,
+            re.IGNORECASE,
+        )
+    )
+
+    if screenshot_hint and not src:
+        return True
+    if screenshot_hint and (lure_text_hint or link_hint):
+        return True
+    return False
+
+
+def _is_phishing_candidate_from_pipeline(pipeline_result: dict[str, Any]) -> bool:
+    fields: list[str] = [
+        str(pipeline_result.get("scam_type") or ""),
+        str(pipeline_result.get("category") or ""),
+        str(pipeline_result.get("official_category") or ""),
+        str(pipeline_result.get("verdict") or ""),
+        str(pipeline_result.get("summary") or ""),
+        str(pipeline_result.get("chat_reply") or ""),
+        str(pipeline_result.get("conversational_reply") or ""),
+    ]
+    fields.extend(_as_string_list(pipeline_result.get("signals_found")))
+    corpus = "\n".join(fields).lower()
+    return bool(
+        re.search(
+            r"phish|impersonat|kyc|otp|bank|upi|sms|scam\s+lure|fake\s+link|suspicious\s+message",
+            corpus,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _strip_exposure_claims(text: str) -> str:
+    source = str(text or "").strip()
+    if not source:
+        return source
+    sentences = re.split(r"(?<=[.!?])\s+", source)
+    blocked = [
+        r"\byou\s+haven['’]?t\s+clicked\b",
+        r"\byou\s+did\s+not\s+click\b",
+        r"\bno\s+compromise\b",
+        r"\bno\s+details\s+were\s+shared\b",
+        r"\byou\s+did\s+not\s+share\b",
+        r"\byou\s+are\s+safe\b",
+    ]
+    kept: list[str] = []
+    for sentence in sentences:
+        line = str(sentence or "").strip()
+        if not line:
+            continue
+        if any(re.search(pattern, line, re.IGNORECASE) for pattern in blocked):
+            continue
+        kept.append(line)
+    if kept:
+        return " ".join(kept)
+    return "This looks suspicious. I need one quick check before finalizing your safest next steps."
+
+
+def _apply_unknown_click_clarification_guard(
+    *,
+    user_input: dict[str, Any],
+    request_options: dict[str, Any],
+    pipeline_result: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    if not isinstance(pipeline_result, dict):
+        return pipeline_result, False
+
+    if bool(pipeline_result.get("needs_clarification")):
+        return pipeline_result, False
+
+    mode = _resolve_forced_mcq_mode(
+        user_input=user_input,
+        request_options=request_options,
+        pipeline_result=pipeline_result,
+    )
+    if not mode:
+        guarded = dict(pipeline_result)
+        for field in ["chat_reply", "conversational_reply", "summary"]:
+            if field in guarded:
+                guarded[field] = _strip_exposure_claims(str(guarded.get(field) or ""))
+        return guarded, False
+
+    recovery_answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
+    clarification = _build_fastpath_clarification_question(recovery_answers, mode=mode)
+    if clarification is None:
+        return pipeline_result, False
+
+    guarded = dict(pipeline_result)
+    signals = _as_string_list(guarded.get("signals_found"))
+    marker = "Clarification required before exposure verdict" if mode == "phishing" else "Clarification required before APK exposure verdict"
+    if marker not in signals:
+        signals.append(marker)
+
+    intro = "This looks like a suspicious scam lure." if mode == "phishing" else "This APK may be unsafe."
+    guarded.update(
+        {
+            "needs_clarification": True,
+            "clarification": clarification,
+            "response_mode": "clarification",
+            "verdict": "Awaiting one clarification before final verdict",
+            "summary": "I need one quick check before finalizing your safest next steps.",
+            "chat_reply": f"{intro} {str(clarification.get('question_text') or 'I need one quick check before finalizing your safest next steps.').strip()}",
+            "conversational_reply": f"{intro} {str(clarification.get('question_text') or 'I need one quick check before finalizing your safest next steps.').strip()}",
+            "requires_reporting": False,
+            "requires_emergency": False,
+            "requires_financial_blocking": False,
+            "requires_account_block": False,
+            "requires_device_cleanup": False,
+            "reporting_recommendation": {
+                "should_report_now": False,
+                "reason": "Waiting for one clarification to avoid incorrect exposure assumptions.",
+            },
+            "signals_found": signals,
+        }
+    )
+    return guarded, True
+
+
+def _build_fast_path_pipeline_result(user_input: dict[str, Any], request_options: dict[str, Any]) -> Optional[dict[str, Any]]:
+    files = user_input.get("files") or []
+    text = str(user_input.get("text") or "").strip()
+    context_text = _collect_fastpath_context_text(request_options)
+    merged_text = "\n".join([part for part in [text, context_text] if part]).strip()
+
+    mode = _resolve_forced_mcq_mode(
+        user_input=user_input,
+        request_options=request_options,
+        pipeline_result=None,
+    )
+    if not mode:
+        return None
+
+    recovery_answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
+    trigger_mcp_actions = bool(request_options.get("trigger_mcp_actions", False))
+    signals = _extract_fastpath_signals(merged_text or text, recovery_answers)
+
+    shared = signals.get("shared_sensitive")
+    money = signals.get("money_lost")
+
+    if mode == "apk":
+        installed = _tri_state(
+            recovery_answers.get("installed_apk")
+            if recovery_answers.get("installed_apk") is not None
+            else recovery_answers.get("downloaded_apk")
+        )
+        if installed is None:
+            apk_text = str(merged_text or text)
+            if re.search(r"\b(did\s*not|didn't|never)\s+(install|open|download)\b", apk_text, re.IGNORECASE):
+                installed = False
+            elif re.search(r"\b(installed|install|opened|open|downloaded|download)\b", apk_text, re.IGNORECASE):
+                installed = True
+        clicked = installed
+    else:
+        clicked = signals.get("clicked_link")
+
+    clarification = _build_fastpath_clarification_question(recovery_answers, mode=mode)
+
+    if mode == "apk":
+        base_signals = [
+            "APK attachment detected",
+            "App installation state determines recovery urgency",
+        ]
+    else:
+        base_signals = [
+            "Suspicious message with link detected",
+            "User should avoid interacting with unknown senders and links",
+        ]
+
+    if clarification is not None:
+        has_short_link = bool(re.search(r"\b(?:bit\.ly|cutt\.ly|tinyurl\.com|t\.co|rb\.gy|is\.gd|goo\.gl|shorturl\.at)/[A-Za-z0-9\-_/]+\b", merged_text or text, re.IGNORECASE))
+        if mode == "apk":
+            intro = "This APK may be unsafe."
+            scam_type = "Malicious APK / Fake App"
+        else:
+            intro = "This looks like a phishing SMS with a shortened link." if has_short_link else "This looks like a suspicious link-based scam message."
+            scam_type = "Phishing / Impersonation"
+        return {
+            "needs_clarification": True,
+            "clarification": clarification,
+            "verdict": "Awaiting one clarification before final verdict",
+            "summary": f"{intro} I need one quick check before finalizing your safest next steps.",
+            "chat_reply": f"{intro} {str(clarification.get('question_text') or 'I need one quick check before finalizing your safest next steps.').strip()}",
+            "conversational_reply": f"{intro} {str(clarification.get('question_text') or 'I need one quick check before finalizing your safest next steps.').strip()}",
+            "scam_type": scam_type,
+            "risk_level": "MEDIUM",
+            "confidence": 78,
+            "response_mode": "clarification",
+            "requires_reporting": False,
+            "requires_emergency": False,
+            "requires_financial_blocking": False,
+            "requires_device_cleanup": False,
+            "reporting_recommendation": {
+                "should_report_now": False,
+                "reason": "Waiting for one clarification to avoid over- or under-escalation.",
+            },
+            "action_steps": (
+                [
+                    "Do not install or open APK files from unknown sources",
+                    "Keep Play Protect and system updates enabled",
+                    "Wait for one quick clarification so guidance matches your exact exposure",
+                ]
+                if mode == "apk"
+                else [
+                    "Do not click any link in that message",
+                    "Do not share OTP, PIN, password, or bank details",
+                    "Block or mute the sender until we confirm your exposure",
+                ]
+            ),
+            "signals_found": base_signals,
+            "why_this_decision": base_signals,
+        }
+
+    if money:
+        # For confirmed money-loss with workflow trigger enabled, route to the full
+        # manager pipeline so calendar/tasks integrations run instead of fast-path short-circuit.
+        minutes_since = _resolve_minutes_since_fraud({"recovery_answers": recovery_answers})
+        if trigger_mcp_actions and minutes_since is not None and minutes_since <= 60:
+            return None
+
+        summary = "Money appears to be lost in a scam incident. Start emergency recovery steps now."
+        actions = [
+            "Call 1930 immediately and share the transaction details",
+            "Contact your bank/UPI provider and request urgent hold or reversal",
+            "Report on cybercrime.gov.in and keep screenshots, UTR, and account details ready",
+            "Change affected passwords and enable 2FA from a trusted device",
+        ]
+        return {
+            "needs_clarification": False,
+            "clarification": None,
+            "verdict": "Emergency recovery required",
+            "summary": summary,
+            "chat_reply": summary,
+            "conversational_reply": summary,
+            "scam_type": "Malicious APK / Financial Scam" if mode == "apk" else "Phishing / Impersonation",
+            "risk_level": "CRITICAL",
+            "confidence": 86,
+            "response_mode": "reactive_recovery",
+            "requires_reporting": True,
+            "requires_emergency": True,
+            "requires_financial_blocking": True,
+            "requires_device_cleanup": bool(clicked),
+            "reporting_recommendation": {
+                "should_report_now": True,
+                "reason": "Money loss was reported, so immediate reporting and bank action are required.",
+            },
+            "action_steps": actions,
+            "signals_found": base_signals + ["User reported money loss"],
+            "why_this_decision": base_signals + ["User reported money loss"],
+        }
+
+    if shared:
+        summary = "You may have shared sensitive details in a scam flow. Protect accounts immediately."
+        return {
+            "needs_clarification": False,
+            "clarification": None,
+            "verdict": "Sensitive data exposure suspected",
+            "summary": summary,
+            "chat_reply": summary,
+            "conversational_reply": summary,
+            "scam_type": "Malicious APK / Credential Theft" if mode == "apk" else "Phishing / Impersonation",
+            "risk_level": "HIGH",
+            "confidence": 84,
+            "response_mode": "reactive_recovery",
+            "requires_reporting": True,
+            "requires_emergency": False,
+            "requires_financial_blocking": True,
+            "requires_device_cleanup": bool(clicked),
+            "reporting_recommendation": {
+                "should_report_now": True,
+                "reason": "Sensitive credentials may have been exposed.",
+            },
+            "action_steps": [
+                "Change affected passwords immediately from a trusted device",
+                "Enable 2FA and remove unknown linked sessions/devices",
+                "Contact bank/support if banking details were entered",
+                "Report on cybercrime.gov.in if suspicious activity starts",
+            ],
+            "signals_found": base_signals + ["Sensitive details may have been shared"],
+            "why_this_decision": base_signals + ["Sensitive details may have been shared"],
+        }
+
+    if clicked:
+        summary = (
+            "You interacted with suspicious content, but no data sharing or money loss is reported yet."
+            if mode == "phishing"
+            else "You installed or opened a suspicious APK, but no data sharing or money loss is reported yet."
+        )
+        return {
+            "needs_clarification": False,
+            "clarification": None,
+            "verdict": "Exposure without confirmed compromise",
+            "summary": summary,
+            "chat_reply": summary,
+            "conversational_reply": summary,
+            "scam_type": "Malicious APK / Fake App" if mode == "apk" else "Phishing / Impersonation",
+            "risk_level": "MEDIUM",
+            "confidence": 80,
+            "response_mode": "containment",
+            "requires_reporting": False,
+            "requires_emergency": False,
+            "requires_financial_blocking": False,
+            "requires_device_cleanup": True,
+            "reporting_recommendation": {
+                "should_report_now": False,
+                "reason": "No money loss or sensitive-data sharing is reported at this stage.",
+            },
+            "action_steps": (
+                [
+                    "Uninstall the APK if installed and restart the phone",
+                    "Run a trusted mobile security scan and check app permissions",
+                    "Change key passwords from a known-safe device",
+                    "Watch bank/SMS activity closely for the next 48 hours",
+                ]
+                if mode == "apk"
+                else [
+                    "Clear browser cache and close all active sessions",
+                    "Do not open that link again and block the sender",
+                    "Monitor SMS/UPI/email for unexpected OTPs or login alerts",
+                    "Change passwords if the page asked for any credentials",
+                ]
+            ),
+            "signals_found": base_signals + ["User interacted with suspicious content"],
+            "why_this_decision": base_signals + ["User interacted with suspicious content"],
+        }
+
+    calm_summary = (
+        "Good move. You did not install or open the APK, so current risk is low."
+        if mode == "apk"
+        else "This looks like a scam lure, but you did not interact with it. You are likely safe right now."
+    )
+    return {
+        "needs_clarification": False,
+        "clarification": None,
+        "verdict": "Likely scam attempt avoided",
+        "summary": calm_summary,
+        "chat_reply": calm_summary,
+        "conversational_reply": calm_summary,
+        "scam_type": "Malicious APK / Fake App" if mode == "apk" else "Phishing / Impersonation",
+        "risk_level": "LOW",
+        "confidence": 82,
+        "response_mode": "proactive_warning",
+        "requires_reporting": False,
+        "requires_emergency": False,
+        "requires_financial_blocking": False,
+        "requires_device_cleanup": False,
+        "reporting_recommendation": {
+            "should_report_now": False,
+            "reason": "No interaction or compromise signal detected.",
+        },
+        "action_steps": (
+            [
+                "Delete the APK and keep unknown app installs disabled",
+                "Install apps only from official stores",
+                "Block the sender/source and keep this file for evidence",
+            ]
+            if mode == "apk"
+            else [
+                "Delete the message and block the sender",
+                "Do not click similar links in future",
+                "Enable spam filtering in your SMS/chat app",
+            ]
+        ),
+        "signals_found": base_signals + ["No compromise signal detected from user inputs"],
+        "why_this_decision": base_signals + ["No compromise signal detected from user inputs"],
+    }
+
+
+def _build_generic_fast_triage_pipeline_result(
+    primary_type: str,
+    user_input: dict[str, Any],
+    request_options: dict[str, Any],
+) -> dict[str, Any]:
+    text = str(user_input.get("text") or "").strip()
+    context_text = _collect_fastpath_context_text(request_options)
+    merged_text = "\n".join([part for part in [text, context_text] if part]).strip()
+    indicators = _extract_text_indicators(merged_text)
+
+    recovery_answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
+    signals = _extract_fastpath_signals(merged_text or text, recovery_answers)
+    clicked = signals.get("clicked_link")
+    shared = signals.get("shared_sensitive")
+    money = signals.get("money_lost")
+    compromise = bool(clicked or shared or money)
+
+    modality = primary_type
+    base_signal = "Initial analysis response generated with currently available evidence"
+    uncertainty_note = "This is an initial assessment. Extra context can improve confidence and next-step precision."
+
+    if modality == "apk":
+        verdict = "Potentially unsafe APK detected"
+        summary = "Treat this APK as unsafe until deep scan confirms otherwise. Do not install or open it."
+        scam_type = "Malicious APK / Fake App"
+        risk_level = "HIGH"
+        confidence = 68
+        action_steps = [
+            "Do not install or open this APK",
+            "Disable unknown app installs for your device",
+            "Install apps only from trusted stores",
+            "Run deep analysis to inspect permissions, trackers, and malware signals",
+        ]
+        modality_signals = ["APK submitted for malware-risk triage"]
+    elif modality == "audio":
+        verdict = "Suspicious audio scam pattern detected"
+        summary = "This audio may involve impersonation or social engineering. Verify identity before acting."
+        scam_type = "Voice Scam / Impersonation"
+        risk_level = "MEDIUM"
+        confidence = 62
+        action_steps = [
+            "Do not share OTP, PIN, passwords, or banking details over calls",
+            "Hang up and verify using an official number",
+            "Block or report repeated suspicious callers",
+            "Run deep analysis for transcript-level evidence extraction",
+        ]
+        modality_signals = ["Audio evidence received for scam triage"]
+    elif modality in {"image", "text_image"}:
+        verdict = "Suspicious message/image detected"
+        summary = "This appears risky. Avoid links, attachments, and sharing sensitive details."
+        scam_type = "Phishing / Social Engineering"
+        risk_level = "MEDIUM"
+        confidence = 64
+        action_steps = [
+            "Do not click links or open unknown attachments",
+            "Do not share OTP, PIN, passwords, or bank details",
+            "Block the sender and preserve screenshot evidence",
+            "Run deep analysis for richer OCR/OSINT correlation",
+        ]
+        modality_signals = ["Image/text evidence matched suspicious communication patterns"]
+    else:
+        suspicious_text = _looks_like_simple_sms_lure(merged_text)
+        has_link = bool(indicators.get("url_count", 0))
+        if suspicious_text or has_link:
+            verdict = "Suspicious text scam indicators detected"
+            summary = "This message looks risky. Treat it as a likely scam until fully verified."
+            scam_type = "Phishing / Social Engineering"
+            risk_level = "MEDIUM"
+            confidence = 66
+            modality_signals = ["Text contains known lure/link indicators"]
+        else:
+            verdict = "No high-confidence scam signature in fast triage"
+            summary = "I cannot confirm this confidently from one message yet. Share one more detail so I can avoid a wrong verdict."
+            scam_type = "Suspicious Communication"
+            risk_level = "LOW"
+            confidence = 56
+            modality_signals = ["Fast triage found limited high-confidence indicators"]
+        action_steps = [
+            "Do not share OTP, PIN, passwords, or banking details",
+            "Verify sender identity through official channels",
+            "Avoid clicking unknown links",
+            "Run deep analysis if you want full forensic confidence",
+        ]
+
+    requires_reporting = False
+    requires_emergency = False
+    requires_financial_blocking = False
+    requires_device_cleanup = False
+    reporting_reason = "No immediate compromise detected in fast triage."
+
+    if compromise:
+        risk_level = "CRITICAL" if money else "HIGH"
+        verdict = "Possible compromise detected"
+        summary = "Your inputs indicate possible interaction with scam content. Start immediate protective actions now."
+        requires_reporting = True
+        requires_emergency = bool(money)
+        requires_financial_blocking = True
+        requires_device_cleanup = bool(clicked)
+        reporting_reason = "Possible compromise indicators are present."
+        action_steps = [
+            "Call 1930 immediately if money was debited or account access is at risk",
+            "Contact your bank and request temporary hold/block on risky transactions",
+            "Change account passwords from a trusted device and enable 2FA",
+            "Report on cybercrime.gov.in and keep screenshots/transaction IDs ready",
+        ]
+        uncertainty_note = "Initial analysis indicates possible compromise. Additional evidence can add forensic detail."
+
+    combined_signals = [base_signal, *modality_signals]
+    if compromise:
+        combined_signals.append("Possible user interaction with scam content")
+
+    return {
+        "needs_clarification": False,
+        "clarification": None,
+        "verdict": verdict,
+        "summary": summary,
+        "chat_reply": summary,
+        "conversational_reply": summary,
+        "scam_type": scam_type,
+        "risk_level": risk_level,
+        "confidence": confidence,
+        "response_mode": "triage_first" if not compromise else "reactive_recovery",
+        "requires_reporting": requires_reporting,
+        "requires_emergency": requires_emergency,
+        "requires_financial_blocking": requires_financial_blocking,
+        "requires_device_cleanup": requires_device_cleanup,
+        "uncertainty_note": uncertainty_note,
+        "reporting_recommendation": {
+            "should_report_now": requires_reporting,
+            "reason": reporting_reason,
+        },
+        "action_steps": action_steps,
+        "signals_found": combined_signals,
+        "why_this_decision": combined_signals,
+    }
+
+
+def _build_first_pass_pipeline_result(
+    primary_type: str,
+    user_input: dict[str, Any],
+    request_options: dict[str, Any],
+) -> dict[str, Any]:
+    fast_specific = _build_fast_path_pipeline_result(user_input, request_options)
+    if isinstance(fast_specific, dict):
+        return fast_specific
+    return _build_generic_fast_triage_pipeline_result(primary_type, user_input, request_options)
+
+
+def _is_demo_latency_sensitive_case(primary_type: str, user_input: dict[str, Any], request_options: dict[str, Any]) -> bool:
+    files = user_input.get("files") if isinstance(user_input.get("files"), list) else []
+    text = str(user_input.get("text") or "").strip()
+    context_text = _collect_fastpath_context_text(request_options)
+    merged_text = "\n".join([part for part in [text, context_text] if part]).strip()
+
+    image_candidate = _is_image_only_fastpath_candidate(files) and _looks_like_sms_screenshot_lure(merged_text, files)
+    text_candidate = _looks_like_simple_sms_lure(merged_text)
+
+    return primary_type in {"text", "text_image", "image"} and (image_candidate or text_candidate)
+
+
+def _build_timeout_guard_pipeline_result(
+    user_input: dict[str, Any],
+    request_options: dict[str, Any],
+    primary_type: Optional[str] = None,
+) -> dict[str, Any]:
+    resolved_primary_type = primary_type or _classify_flow(user_input)[0]
+    fast = _build_first_pass_pipeline_result(resolved_primary_type, user_input, request_options)
+    if isinstance(fast, dict):
+        fast_copy = dict(fast)
+        fast_signals = _as_string_list(fast_copy.get("signals_found"))
+        if "Returned by latency timeout guard" not in fast_signals:
+            fast_signals.append("Returned by latency timeout guard")
+        fast_copy["signals_found"] = fast_signals
+        if not _as_string_list(fast_copy.get("why_this_decision")):
+            fast_copy["why_this_decision"] = fast_signals[:6]
+        return fast_copy
+
+    return {
+        "needs_clarification": True,
+        "clarification": {
+            "question_id": "clicked_link",
+            "question_text": "Did you tap the link?",
+            "options": [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ],
+            "why_needed": "This changes urgency and the exact recovery steps.",
+        },
+        "verdict": "Awaiting one clarification before final verdict",
+        "summary": "This looks suspicious. I need one quick check before finalizing your safest next steps.",
+        "chat_reply": "I need one quick check before I finalize this. Did you tap the link?",
+        "conversational_reply": "I need one quick check before I finalize this. Did you tap the link?",
+        "scam_type": "Phishing / Impersonation",
+        "risk_level": "MEDIUM",
+        "confidence": 70,
+        "response_mode": "clarification",
+        "requires_reporting": False,
+        "requires_emergency": False,
+        "requires_financial_blocking": False,
+        "requires_device_cleanup": False,
+        "reporting_recommendation": {
+            "should_report_now": False,
+            "reason": "Waiting for one clarification to avoid incorrect exposure assumptions.",
+        },
+        "action_steps": [
+            "Do not click any link in that message",
+            "Do not share OTP, PIN, password, or bank details",
+            "Wait for the next step after this quick clarification",
+        ],
+        "signals_found": ["Latency guard returned clarification-first response"],
+        "why_this_decision": ["Latency guard returned clarification-first response"],
     }
 
 
@@ -1356,10 +3328,15 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
             "risk_level": risk_level,
             "confidence": confidence,
             "response_mode": str(payload.get("response_mode") or "proactive_warning"),
+            "needs_clarification": bool(payload.get("needs_clarification", False)),
+            "clarification": payload.get("clarification") if isinstance(payload.get("clarification"), dict) else None,
             "requires_reporting": persisted_requires_reporting,
             "requires_emergency": bool(payload.get("requires_emergency", False)),
             "requires_financial_blocking": bool(payload.get("requires_financial_blocking", payload.get("requires_account_block", False))),
             "requires_account_block": bool(payload.get("requires_financial_blocking", payload.get("requires_account_block", False))),
+            "requires_device_cleanup": bool(payload.get("requires_device_cleanup", False)),
+            "likely_app_identity": str(payload.get("likely_app_identity") or "unknown"),
+            "uncertainty_note": str(payload.get("uncertainty_note") or ""),
             "reporting_recommendation": reporting_recommendation,
             "presentation_sections": payload.get("presentation_sections") if isinstance(payload.get("presentation_sections"), dict) else {
                 "headline": persisted_verdict,
@@ -1376,6 +3353,7 @@ def _load_persisted_case(run_id: str) -> Optional[dict]:
             },
             "presentation": presentation,
             "debug": debug,
+            "timings_ms": payload.get("timings_ms") if isinstance(payload.get("timings_ms"), dict) else {},
             "presentation_markdown": str(payload.get("presentation_markdown") or "").strip() or (
                 "## What this looks like\n"
                 f"{presentation['summary_paragraph']}\n\n"
@@ -1527,6 +3505,44 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     files = run_ctx["request"]["user_input"].get("files") or []
 
     response_mode = str(pipeline_result.get("response_mode") or "").strip().lower() or "proactive_warning"
+    needs_clarification = bool(pipeline_result.get("needs_clarification", False))
+    clarification_raw = pipeline_result.get("clarification") if isinstance(pipeline_result.get("clarification"), dict) else {}
+    clarification_payload = None
+    if needs_clarification:
+        raw_options = clarification_raw.get("options") if isinstance(clarification_raw.get("options"), list) else []
+        clean_options: list[dict[str, str]] = []
+        for item in raw_options[:6]:
+            if isinstance(item, dict):
+                option_id = str(item.get("id") or "").strip().lower()
+                option_label = str(item.get("label") or "").strip()
+            else:
+                option_id = str(item or "").strip().lower()
+                option_label = str(item or "").strip()
+            if not option_id or not option_label:
+                continue
+            clean_options.append({"id": option_id, "label": option_label})
+        if not clean_options:
+            clean_options = [
+                {"id": "yes", "label": "Yes"},
+                {"id": "no", "label": "No"},
+                {"id": "not_sure", "label": "Not sure"},
+            ]
+        clarification_payload = {
+            "question_id": str(clarification_raw.get("question_id") or "clarification_needed").strip() or "clarification_needed",
+            "question_text": str(
+                clarification_raw.get("question_text")
+                or "I need one quick clarification before finalizing next steps."
+            ).strip()
+            or "I need one quick clarification before finalizing next steps.",
+            "options": clean_options,
+            "why_needed": str(
+                clarification_raw.get("why_needed")
+                or "This changes urgency and exact next steps."
+            ).strip()
+            or "This changes urgency and exact next steps.",
+        }
+
+    timings_payload = pipeline_result.get("timings_ms") if isinstance(pipeline_result.get("timings_ms"), dict) else {}
     category = str(
         pipeline_result.get("category")
         or pipeline_result.get("official_category")
@@ -1538,8 +3554,17 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     requires_financial_blocking = bool(
         pipeline_result.get("requires_financial_blocking", pipeline_result.get("requires_account_block", False))
     )
+    requires_device_cleanup = bool(pipeline_result.get("requires_device_cleanup", False))
+    likely_app_identity = str(pipeline_result.get("likely_app_identity") or "unknown").strip() or "unknown"
+    uncertainty_note = str(pipeline_result.get("uncertainty_note") or "").strip()
     requires_mcp = bool(pipeline_result.get("requires_mcp", False))
     mcp_plan = pipeline_result.get("mcp_plan") if isinstance(pipeline_result.get("mcp_plan"), dict) else {}
+
+    osint_enrichment = (
+        pipeline_result.get("osint_enrichment")
+        if isinstance(pipeline_result.get("osint_enrichment"), dict)
+        else None
+    )
 
     reporting_recommendation_raw = (
         pipeline_result.get("reporting_recommendation")
@@ -1548,10 +3573,14 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     )
     request_payload = run_ctx.get("request") if isinstance(run_ctx.get("request"), dict) else {}
     request_options = request_payload.get("options") if isinstance(request_payload.get("options"), dict) else {}
+    report_requested = bool(request_options.get("generate_report", False))
     recovery_answers = request_options.get("recovery_answers") if isinstance(request_options.get("recovery_answers"), dict) else {}
     request_user_input = request_payload.get("user_input") if isinstance(request_payload.get("user_input"), dict) else {}
     text_exposure = _infer_exposure_from_text(str(request_user_input.get("text") or ""))
-    reported_money_loss = bool(recovery_answers.get("did_lose_money_or_share_bank_details"))
+    reported_money_loss = bool(
+        recovery_answers.get("did_lose_money_or_share_bank_details")
+        or recovery_answers.get("did_lose_money")
+    )
     try:
         reported_money_loss = reported_money_loss or float(request_options.get("fraud_amount") or 0) > 0
     except Exception:
@@ -1567,9 +3596,12 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     inferred_compromise = bool(
         reported_money_loss
         or reported_sensitive_share
-        or reported_clicked_link
         or text_exposure.get("money_lost")
         or text_exposure.get("shared_sensitive")
+    )
+    link_interaction_only = bool(
+        (reported_clicked_link or text_exposure.get("clicked_link"))
+        and not inferred_compromise
     )
     if not reporting_reason and inferred_compromise:
         reasons: list[str] = []
@@ -1577,8 +3609,6 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
             reasons.append("possible money loss")
         if reported_sensitive_share or text_exposure.get("shared_sensitive"):
             reasons.append("possible sharing of OTP/PIN or banking credentials")
-        if reported_clicked_link or text_exposure.get("clicked_link"):
-            reasons.append("possible malicious link interaction")
         requires_reporting = True
         requires_emergency = requires_emergency or bool(reported_money_loss or text_exposure.get("money_lost"))
         requires_financial_blocking = requires_financial_blocking or bool(
@@ -1589,14 +3619,27 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         )
         reporting_reason = "Potential compromise detected (" + ", ".join(reasons[:3]) + "). Report now and begin immediate protective actions."
 
+    if link_interaction_only and not requires_reporting:
+        requires_device_cleanup = True
+
     if not reporting_reason:
         requires_reporting = False
+    if needs_clarification:
+        requires_reporting = False
+        requires_emergency = False
+        requires_financial_blocking = False
+        requires_device_cleanup = False
     no_reporting_mode = not requires_reporting and not reporting_reason
     if no_reporting_mode:
         reporting_reason = (
             "No money loss, no link click, and no sensitive data sharing were detected from your answers, "
             "so immediate reporting is not required."
         )
+        if link_interaction_only:
+            reporting_reason = (
+                "A suspicious link may have been opened, but no money loss or sensitive-data sharing is reported, "
+                "so immediate reporting is not required. Focus on containment and monitoring."
+            )
         requires_emergency = False
         requires_financial_blocking = False
     reporting_recommendation = {
@@ -1770,21 +3813,27 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         return "Other"
 
     intel_type = _normalize_intel_type(scam_type)
-    demo_total = int(get_fraud_patterns_count(active_only=True, cache_ttl_seconds=600, source="demo_seed") or 0)
-    if demo_total > 0:
-        intel_corpus_size = demo_total
-        intel_type_count = int(
-            get_fraud_patterns_count_by_type(
-                intel_type,
-                active_only=True,
-                cache_ttl_seconds=600,
-                source="demo_seed",
-            )
-            or 0
-        )
+    is_fast_path_response = bool(timings_payload.get("fast_path"))
+    if is_fast_path_response or not report_requested:
+        # Avoid heavy corpus counting on latency-critical responses.
+        intel_corpus_size = 0
+        intel_type_count = 0
     else:
-        intel_corpus_size = int(get_fraud_patterns_count(active_only=True, cache_ttl_seconds=600) or 0)
-        intel_type_count = int(get_fraud_patterns_count_by_type(intel_type, active_only=True, cache_ttl_seconds=600) or 0)
+        demo_total = int(get_fraud_patterns_count(active_only=True, cache_ttl_seconds=600, source="demo_seed") or 0)
+        if demo_total > 0:
+            intel_corpus_size = demo_total
+            intel_type_count = int(
+                get_fraud_patterns_count_by_type(
+                    intel_type,
+                    active_only=True,
+                    cache_ttl_seconds=600,
+                    source="demo_seed",
+                )
+                or 0
+            )
+        else:
+            intel_corpus_size = int(get_fraud_patterns_count(active_only=True, cache_ttl_seconds=600) or 0)
+            intel_type_count = int(get_fraud_patterns_count_by_type(intel_type, active_only=True, cache_ttl_seconds=600) or 0)
     raw_pattern_matches = run_ctx.get("similar_patterns")
     pattern_matches: list[dict[str, Any]] = []
     if isinstance(raw_pattern_matches, list):
@@ -1841,21 +3890,20 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     else:
         complaint_body = str(fir_template or "")
 
-    # If the model didn't produce a real FIR/NCRP-ready body, generate a pre-filled NCRP-style draft.
-    generated_complaint = _build_ncrp_complaint_body(
-        case_id=str(run_ctx.get("case_id") or ""),
-        scam_type=scam_type,
-        risk_level=risk_level,
-        summary=summary_text,
-        entities=extracted if isinstance(extracted, dict) else {},
-        osint_payload=osint_payload,
-        evidence=evidence_summary,
-    )
-    if not complaint_body or len(complaint_body.strip()) < 200:
-        complaint_body = generated_complaint
-
     complaint_payload: Optional[dict[str, Any]] = None
-    if requires_reporting:
+    if report_requested and requires_reporting:
+        # Build complaint draft only for explicit report requests.
+        generated_complaint = _build_ncrp_complaint_body(
+            case_id=str(run_ctx.get("case_id") or ""),
+            scam_type=scam_type,
+            risk_level=risk_level,
+            summary=summary_text,
+            entities=extracted if isinstance(extracted, dict) else {},
+            osint_payload=osint_payload,
+            evidence=evidence_summary,
+        )
+        if not complaint_body or len(complaint_body.strip()) < 200:
+            complaint_body = generated_complaint
         complaint_payload = {
             "title": "Cyber Fraud Complaint Draft",
             "acknowledgment_id": run_ctx["case_id"],
@@ -1879,10 +3927,15 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
 
     modality_apk = None
     if "apk_analyzer" in selected_agents:
+        apk_payload = pipeline_result.get("apk_analysis") if isinstance(pipeline_result.get("apk_analysis"), dict) else {}
         modality_apk = {
             "summary": str(pipeline_result.get("summary") or "APK static and behavioral indicators analyzed."),
             "risk_level": risk_level,
             "is_malicious": bool(apk_malicious),
+            "file_name": str(apk_payload.get("file_name") or ""),
+            "package_name": str(apk_payload.get("package_name") or ""),
+            "app_name": str(apk_payload.get("app_name") or ""),
+            "identity": likely_app_identity,
         }
 
     selected_set = set(selected_agents)
@@ -1912,10 +3965,36 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
     else:
         golden_hour_message = "Follow the manager-provided action plan."
 
+    analysis_stage = str(run_ctx.get("analysis_stage") or "").strip().lower()
+    if analysis_stage not in {"analysis", "triage", "deep"}:
+        analysis_stage = "analysis"
+    source_run_id = str(run_ctx.get("source_run_id") or "").strip() or None
+    if analysis_stage == "triage":
+        deep_eligible = True
+        deep_reason = "Triage complete. Deep analysis can be requested if needed."
+        deep_reason_code = "TRIAGE_COMPLETE_DEEP_AVAILABLE"
+    elif analysis_stage == "deep":
+        deep_eligible = False
+        deep_reason = "Deep analysis already completed for this case."
+        deep_reason_code = "DEEP_ALREADY_EXECUTED"
+    else:
+        deep_eligible = False
+        deep_reason = "Analysis complete."
+        deep_reason_code = "ANALYSIS_COMPLETE"
+
     return {
         "run_id": run_ctx["run_id"],
         "case_id": run_ctx["case_id"],
         "status": run_ctx["status"],
+        "contract_version": ANALYSIS_CONTRACT_VERSION,
+        "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+        "analysis_stage": analysis_stage,
+        "source_run_id": source_run_id,
+        "eligible_for_deep": deep_eligible,
+        "deep_reason": deep_reason,
+        "deep_reason_code": deep_reason_code,
+        "deep_analysis_available": deep_eligible,
+        "deep_analysis_endpoint": "/api/analyze/deep" if deep_eligible else None,
         "input_type": primary_type,
         "verdict": verdict,
         "chat_reply": chat_reply,
@@ -1927,18 +4006,29 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
         "risk_level": risk_level,
         "confidence": confidence,
         "response_mode": response_mode,
+        "needs_clarification": needs_clarification,
+        "clarification": clarification_payload,
         "requires_reporting": requires_reporting,
         "requires_emergency": requires_emergency,
         "requires_financial_blocking": requires_financial_blocking,
         "requires_account_block": requires_financial_blocking,
+        "requires_device_cleanup": requires_device_cleanup,
+        "reporting_artifacts_pending_narrative": bool(pipeline_result.get("reporting_artifacts_pending_narrative", False)),
+        "narrative_followup_message": str(pipeline_result.get("narrative_followup_message") or ""),
+        "narrative_followup_delay_ms": int(pipeline_result.get("narrative_followup_delay_ms") or 30000),
+        "likely_app_identity": likely_app_identity,
+        "uncertainty_note": uncertainty_note,
         "reporting_recommendation": reporting_recommendation,
         "requires_mcp": requires_mcp,
+        "mcp_execution_requested": bool(pipeline_result.get("mcp_execution_requested", False)),
+        "mcp_execution_enabled": bool(pipeline_result.get("mcp_execution_enabled", False)),
         "mcp_plan": mcp_plan,
         "why_this_decision": why_this_decision,
         "presentation_sections": presentation_sections,
         "response_sections": response_sections,
         "presentation": presentation,
         "debug": debug,
+        "timings_ms": timings_payload,
         "presentation_markdown": presentation_markdown,
         "signals_found": _as_string_list(pipeline_result.get("signals_found") or pipeline_result.get("red_flags")),
         "similar_cases": similar_cases,
@@ -1957,6 +4047,7 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
             "banks_claimed": banks_claimed,
         },
         "osint": osint_payload,
+        "osint_enrichment": osint_enrichment,
         "audio_analysis": modality_audio,
         "apk_analysis": modality_apk,
         "evidence_summary": evidence_summary,
@@ -1979,6 +4070,7 @@ def _build_result_document(run_ctx: dict, pipeline_result: dict, primary_type: s
             "doc_deep_link": doc_url or None,
             "gmail_draft_created": gmail_created,
             "gmail_draft_url": gmail_url or None,
+            "reporting_artifacts_pending_narrative": bool(pipeline_result.get("reporting_artifacts_pending_narrative", False)),
             "tgcsb_alert_sent": False,
         },
         "calendar_deep_link": calendar_url or None,
@@ -2022,6 +4114,79 @@ def _build_sync_report(text: str, files: list[dict], pipeline_result: dict, prim
     return _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
 
 
+def _build_deep_analysis_payload(source_request: dict[str, Any], deep_req: DeepAnalyzeRequest) -> dict[str, Any]:
+    payload = json.loads(json.dumps(source_request))
+    options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
+    options.update(
+        {
+            "stream": bool(deep_req.stream),
+            "deep_analysis": True,
+            "fast_first": False,
+            "generate_report": bool(deep_req.generate_report),
+            "trigger_mcp_actions": bool(deep_req.trigger_mcp_actions),
+            "clarification_followup": False,
+        }
+    )
+    payload["options"] = options
+    return payload
+
+
+def _build_deep_acceptance_response(run_ctx: dict[str, Any], *, idempotent_replay: bool = False) -> dict[str, Any]:
+    run_id = str(run_ctx.get("run_id") or "")
+    case_id = str(run_ctx.get("case_id") or "")
+    session_id = str(((run_ctx.get("request") if isinstance(run_ctx.get("request"), dict) else {}).get("session_id") or ""))
+    source_run_id = str(run_ctx.get("source_run_id") or "").strip() or None
+    return {
+        "run_id": run_id,
+        "case_id": case_id,
+        "session_id": session_id,
+        "status": str(run_ctx.get("status") or "accepted"),
+        "contract_version": ANALYSIS_CONTRACT_VERSION,
+        "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+        "analysis_stage": "deep",
+        "source_run_id": source_run_id,
+        "eligible_for_deep": False,
+        "deep_reason": "Deep analysis accepted for this case.",
+        "deep_reason_code": "DEEP_ACCEPTED",
+        "stream_url": f"/api/stream/{run_id}",
+        "result_url": f"/api/result/{run_id}",
+        "idempotent_replay": bool(idempotent_replay),
+    }
+
+
+def _find_replayable_deep_run(source_run_id: str, idempotency_key: str | None = None) -> Optional[dict[str, Any]]:
+    source_ref = str(source_run_id or "").strip()
+    if not source_ref:
+        return None
+
+    deep_runs: list[dict[str, Any]] = []
+    for item in RUN_STORE.values():
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("analysis_stage") or "").strip().lower() != "deep":
+            continue
+        if str(item.get("source_run_id") or "").strip() != source_ref:
+            continue
+        deep_runs.append(item)
+
+    if not deep_runs:
+        return None
+
+    deep_runs.sort(key=lambda x: str(x.get("created_at") or ""), reverse=True)
+
+    if idempotency_key:
+        key = str(idempotency_key).strip()
+        for item in deep_runs:
+            if str(item.get("deep_idempotency_key") or "").strip() == key and str(item.get("status") or "") != "failed":
+                return item
+
+    for item in deep_runs:
+        if str(item.get("status") or "") in {"accepted", "running"}:
+            return item
+
+    return None
+
+
 async def _orchestrate_run(run_id: str) -> None:
     run_ctx = RUN_STORE.get(run_id)
     if not run_ctx:
@@ -2029,13 +4194,64 @@ async def _orchestrate_run(run_id: str) -> None:
 
     try:
         run_ctx["status"] = "running"
+        loop = asyncio.get_running_loop()
+        orchestrate_started = loop.time()
+        wall_started = time.perf_counter()
+        classify_ms = 0.0
+        vector_lookup_ms = 0.0
+        pipeline_stage_ms = 0.0
         req = run_ctx["request"]
-        user_input = req["user_input"]
-        user_context = req.get("user_context") if isinstance(req.get("user_context"), dict) else {}
-        session_id = str(req.get("session_id") or "") or None
-        request_options = (req.get("options") or {}) if isinstance(req.get("options"), dict) else {}
+        collector = RunTimingCollector(enabled=True)
+        with collector.span("t_request_parse_ms"):
+            user_input = req["user_input"]
+            user_context = req.get("user_context") if isinstance(req.get("user_context"), dict) else {}
+            session_id = str(req.get("session_id") or "") or None
+            request_options = (req.get("options") or {}) if isinstance(req.get("options"), dict) else {}
+            deep_analysis_mode = _bool_from_any(request_options.get("deep_analysis"), False)
 
-        primary_type, selected_agents, skipped_agents = _classify_flow(user_input)
+        # For screenshot uploads, precompute OCR/vision hints early so MCQ trigger logic
+        # can detect link presence before expensive pipeline execution starts.
+        user_files = user_input.get("files") if isinstance(user_input.get("files"), list) else []
+        has_preprocessed = bool(
+            isinstance(request_options.get("preprocessed_context"), dict)
+            and request_options.get("preprocessed_context")
+        )
+        if _is_image_only_fastpath_candidate(user_files) and not has_preprocessed:
+            with collector.span("t_preprocess_ms"):
+                try:
+                    pre_ctx = await _build_preprocessed_context(user_input)
+                    if isinstance(pre_ctx, dict) and pre_ctx:
+                        request_options["preprocessed_context"] = pre_ctx
+                        req["options"] = request_options
+                except Exception:
+                    pass
+
+        clarification_followup = (
+            bool(request_options.get("clarification_followup", False)) or _has_recovery_answers(request_options)
+        ) and not deep_analysis_mode
+        urgent_money_loss_mcp = _is_urgent_money_loss_mcp_case(request_options)
+        fast_first_mode = _is_fast_first_mode(request_options)
+        analysis_stage = str(run_ctx.get("analysis_stage") or "analysis").strip().lower() or "analysis"
+        if analysis_stage not in {"analysis", "triage", "deep"}:
+            analysis_stage = "analysis"
+        if deep_analysis_mode and analysis_stage == "analysis":
+            analysis_stage = "deep"
+        run_ctx["analysis_stage"] = analysis_stage
+        collector.enabled = bool(analysis_stage == "deep" or str(os.getenv("SATARK_PROFILE_ALL_RUNS", "0")).strip().lower() in {"1", "true", "yes", "on"})
+
+        await _emit_event(
+            run_id,
+            "run.started",
+            {
+                "case_id": run_ctx["case_id"],
+                "analysis_stage": analysis_stage,
+            },
+        )
+
+        classify_started = loop.time()
+        with collector.span("t_agent_select_ms"):
+            primary_type, selected_agents, skipped_agents = _classify_flow(user_input)
+        classify_ms = (loop.time() - classify_started) * 1000.0
         run_ctx["primary_type"] = primary_type
         run_ctx["selected_agents"] = selected_agents
 
@@ -2082,6 +4298,41 @@ async def _orchestrate_run(run_id: str) -> None:
                 {"agent": agent, "label": agent.replace("_", " ").title(), "status": "queued"},
             )
 
+        if "apk_analyzer" in selected_agents:
+            await _emit_event(
+                run_id,
+                "agent.progress",
+                {
+                    "agent": "apk_analyzer",
+                    "step": "apk_static_analysis",
+                    "status": "running",
+                    "message": "Inspecting APK structure...",
+                },
+            )
+
+        if "osint" in selected_agents:
+            await _emit_event(
+                run_id,
+                "agent.progress",
+                {
+                    "agent": "osint",
+                    "step": "identity_enrichment",
+                    "status": "running",
+                    "message": "Searching public references...",
+                },
+            )
+
+        await _emit_event(
+            run_id,
+            "agent.progress",
+            {
+                "agent": "manager",
+                "step": "decision_synthesis",
+                "status": "running",
+                "message": "Preparing verdict...",
+            },
+        )
+
         await _emit_event(
             run_id,
             "tool.called",
@@ -2094,143 +4345,175 @@ async def _orchestrate_run(run_id: str) -> None:
 
         user_text = str(user_input.get("text") or "").strip()
         similar_patterns: list[dict] = []
-        if user_text:
-            await _emit_event(
-                run_id,
-                "tool.called",
-                {
-                    "agent": "manager",
-                    "tool": "vector_pattern_lookup",
-                    "message": "Searching similar historical fraud patterns",
-                },
-            )
-            similar_patterns = find_similar_patterns(
-                query_text=user_text,
-                scam_type=None,
-                limit=3,
-                min_score=25,
-            )
-            await _emit_event(
-                run_id,
-                "tool.result",
-                {
-                    "agent": "manager",
-                    "tool": "vector_pattern_lookup",
-                    "status": "ok",
-                    "matches": len(similar_patterns),
-                },
-            )
-        run_ctx["similar_patterns_count"] = len(similar_patterns)
-        run_ctx["similar_patterns"] = similar_patterns
+        used_fast_path = False
+        latency_sensitive_case = fast_first_mode or _is_demo_latency_sensitive_case(primary_type, user_input, request_options) or clarification_followup
 
-        input_type, payload = _build_pipeline_call(
-            user_input,
-            similar_patterns,
-            session_id=session_id,
-            options=request_options,
-            user_context=user_context,
-            fraud_amount=float(request_options.get("fraud_amount") or 0),
-            minutes_since_fraud=_bucket_to_minutes(request_options.get("time_bucket")),
-        )
-        legacy_input = _build_legacy_input(user_input)
+        fast_path_result: Optional[dict[str, Any]] = None
+        fast_path_reason = ""
+        if urgent_money_loss_mcp:
+            # For golden-hour incidents, return guidance quickly and let direct
+            # integrations run immediately after fast triage.
+            fast_path_result = _build_first_pass_pipeline_result(primary_type, user_input, request_options)
+            fast_path_reason = "golden_hour_urgent_fast_path"
+        elif fast_first_mode and not urgent_money_loss_mcp:
+            fast_path_result = _build_first_pass_pipeline_result(primary_type, user_input, request_options)
+            fast_path_reason = "global_first_response_sla"
+        elif not urgent_money_loss_mcp:
+            fast_path_result = _build_fast_path_pipeline_result(user_input, request_options)
+            if fast_path_result is not None:
+                fast_path_reason = "simple_sms_lure"
 
-        pipeline_timeout_s = 0.0
-        try:
-            pipeline_timeout_s = float(os.getenv("SATARK_ADK_PIPELINE_TIMEOUT_S", "120"))
-        except Exception:
-            pipeline_timeout_s = 120.0
-
-        if run_pipeline is None:
+        if fast_path_result is not None:
+            used_fast_path = True
+            pipeline_result = fast_path_result
+            run_ctx["similar_patterns_count"] = 0
+            run_ctx["similar_patterns"] = []
             await _emit_event(
                 run_id,
-                "tool.called",
+                "run.fast_path_selected",
                 {
-                    "agent": "manager",
-                    "tool": "legacy_manager_pipeline",
-                    "message": "Primary pipeline unavailable, activating fallback inference path",
+                    "case_id": run_ctx["case_id"],
+                    "reason": fast_path_reason or "simple_sms_lure",
                 },
             )
-            pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
-            await _emit_event(
-                run_id,
-                "tool.result",
-                {
-                    "agent": "manager",
-                    "tool": "legacy_manager_pipeline",
-                    "status": "ok",
-                },
-            )
+            if bool(pipeline_result.get("needs_clarification")):
+                clarification_payload = pipeline_result.get("clarification") if isinstance(pipeline_result.get("clarification"), dict) else {}
+                await _emit_event(
+                    run_id,
+                    "run.clarification_requested",
+                    {
+                        "case_id": run_ctx["case_id"],
+                        "question_id": str(clarification_payload.get("question_id") or "clarification_needed"),
+                    },
+                )
         else:
-            try:
-                if pipeline_timeout_s and pipeline_timeout_s > 0:
-                    pipeline_result = await asyncio.wait_for(
-                        run_pipeline(input_type, payload),
-                        timeout=pipeline_timeout_s,
-                    )
-                else:
-                    pipeline_result = await run_pipeline(input_type, payload)
-            except asyncio.TimeoutError:
+            if primary_type == "apk":
                 await _emit_event(
                     run_id,
-                    "tool.result",
+                    "run.preliminary_ready",
                     {
-                        "agent": "manager",
-                        "tool": "manager_pipeline",
-                        "status": "timeout",
-                        "error": f"Primary pipeline exceeded {pipeline_timeout_s:.0f}s; falling back",
-                    },
-                )
-                await _emit_event(
-                    run_id,
-                    "tool.called",
-                    {
-                        "agent": "manager",
-                        "tool": "legacy_manager_pipeline",
-                        "message": "Primary pipeline timed out, activating fallback inference path",
-                    },
-                )
-                pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
-                await _emit_event(
-                    run_id,
-                    "tool.result",
-                    {
-                        "agent": "manager",
-                        "tool": "legacy_manager_pipeline",
-                        "status": "ok",
-                    },
-                )
-            except Exception:
-                await _emit_event(
-                    run_id,
-                    "tool.called",
-                    {
-                        "agent": "manager",
-                        "tool": "legacy_manager_pipeline",
-                        "message": "Primary pipeline errored, activating fallback inference path",
-                    },
-                )
-                pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
-                await _emit_event(
-                    run_id,
-                    "tool.result",
-                    {
-                        "agent": "manager",
-                        "tool": "legacy_manager_pipeline",
-                        "status": "ok",
+                        "case_id": run_ctx["case_id"],
+                        "summary": "APK received. Running static analysis and enrichment now. Do not install it yet.",
+                        "phase": "preliminary",
                     },
                 )
 
-            if _needs_legacy_fallback(pipeline_result):
+            retrieval_eligible = bool(user_text and deep_analysis_mode and not latency_sensitive_case and not clarification_followup)
+            pending_payload_task: Optional[asyncio.Task[tuple[str, dict[str, Any]]]] = None
+            if retrieval_eligible and deep_analysis_mode:
+                pending_payload_task = asyncio.create_task(
+                    _build_pipeline_call_async(
+                        user_input,
+                        None,
+                        session_id=session_id,
+                        options=request_options,
+                        user_context=user_context,
+                        fraud_amount=float(request_options.get("fraud_amount") or 0),
+                        minutes_since_fraud=_resolve_minutes_since_fraud(request_options),
+                        timings=collector,
+                    )
+                )
+
+            if retrieval_eligible:
+                vector_started = loop.time()
+                await _emit_event(
+                    run_id,
+                    "tool.called",
+                    {
+                        "agent": "manager",
+                        "tool": "vector_pattern_lookup",
+                        "message": "Searching similar historical fraud patterns",
+                    },
+                )
+                with collector.span("t_pattern_match_ms"):
+                    similar_patterns = await asyncio.to_thread(
+                        find_similar_patterns,
+                        query_text=user_text,
+                        scam_type=None,
+                        limit=3,
+                        min_score=25,
+                    )
+                vector_lookup_ms = (loop.time() - vector_started) * 1000.0
+                collector.add_ms("t_retrieval_ms", vector_lookup_ms)
+                await _emit_event(
+                    run_id,
+                    "tool.result",
+                    {
+                        "agent": "manager",
+                        "tool": "vector_pattern_lookup",
+                        "status": "ok",
+                        "matches": len(similar_patterns),
+                    },
+                )
+            elif user_text and (latency_sensitive_case or clarification_followup):
+                await _emit_event(
+                    run_id,
+                    "tool.result",
+                    {
+                        "agent": "manager",
+                        "tool": "vector_pattern_lookup",
+                        "status": "skipped",
+                        "reason": "clarification_followup" if clarification_followup else "latency_guard",
+                    },
+                )
+            run_ctx["similar_patterns_count"] = len(similar_patterns)
+            run_ctx["similar_patterns"] = similar_patterns
+
+            if pending_payload_task is not None:
+                input_type, payload = await pending_payload_task
+                payload["text"] = _merge_similarity_text(str(user_input.get("text") or "").strip(), similar_patterns)
+            else:
+                input_type, payload = await _build_pipeline_call_async(
+                    user_input,
+                    similar_patterns,
+                    session_id=session_id,
+                    options=request_options,
+                    user_context=user_context,
+                    fraud_amount=float(request_options.get("fraud_amount") or 0),
+                    minutes_since_fraud=_resolve_minutes_since_fraud(request_options),
+                    timings=collector,
+                )
+            legacy_input = _build_legacy_input(user_input)
+
+            timeout_default = "8" if primary_type in {"text", "text_image", "image"} else "90"
+            if not deep_analysis_mode:
+                timeout_default = "6" if primary_type in {"text", "text_image", "image"} else "12"
+            if latency_sensitive_case:
+                timeout_default = "6"
+            if clarification_followup:
+                timeout_default = "4"
+            if urgent_money_loss_mcp:
+                timeout_default = "6"
+            pipeline_timeout_s = 0.0
+            try:
+                pipeline_timeout_s = float(os.getenv("SATARK_ADK_PIPELINE_TIMEOUT_S", timeout_default))
+            except Exception:
+                pipeline_timeout_s = float(timeout_default)
+
+            if "apk_analyzer" in selected_agents or "osint" in selected_agents:
+                await _emit_event(
+                    run_id,
+                    "run.enrichment_started",
+                    {
+                        "case_id": run_ctx["case_id"],
+                        "agents": [a for a in selected_agents if a in {"apk_analyzer", "osint"}],
+                    },
+                )
+
+            pipeline_started = loop.time()
+            allow_legacy_fallback = bool(deep_analysis_mode)
+            if run_pipeline is None:
                 await _emit_event(
                     run_id,
                     "tool.called",
                     {
                         "agent": "manager",
                         "tool": "legacy_manager_pipeline",
-                        "message": "Primary pipeline degraded, activating fallback inference path",
+                        "message": "Primary pipeline unavailable, activating fallback inference path",
                     },
                 )
-                pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                with collector.span("t_model_reason_ms"):
+                    pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
                 await _emit_event(
                     run_id,
                     "tool.result",
@@ -2240,6 +4523,158 @@ async def _orchestrate_run(run_id: str) -> None:
                         "status": "ok",
                     },
                 )
+            else:
+                try:
+                    if pipeline_timeout_s and pipeline_timeout_s > 0:
+                        with collector.span("t_model_reason_ms"):
+                            pipeline_result = await asyncio.wait_for(
+                                run_pipeline(input_type, payload),
+                                timeout=pipeline_timeout_s,
+                            )
+                    else:
+                        with collector.span("t_model_reason_ms"):
+                            pipeline_result = await run_pipeline(input_type, payload)
+                except asyncio.TimeoutError:
+                    await _emit_event(
+                        run_id,
+                        "tool.result",
+                        {
+                            "agent": "manager",
+                            "tool": "manager_pipeline",
+                            "status": "timeout",
+                            "error": f"Primary pipeline exceeded {pipeline_timeout_s:.0f}s; falling back",
+                        },
+                    )
+                    if latency_sensitive_case or not allow_legacy_fallback:
+                        pipeline_result = _build_timeout_guard_pipeline_result(
+                            user_input,
+                            request_options,
+                            primary_type=primary_type,
+                        )
+                        used_fast_path = True
+                        await _emit_event(
+                            run_id,
+                            "run.fast_path_selected",
+                            {
+                                "case_id": run_ctx["case_id"],
+                                "reason": "timeout_guard",
+                            },
+                        )
+                        if bool(pipeline_result.get("needs_clarification")):
+                            clarification_payload = pipeline_result.get("clarification") if isinstance(pipeline_result.get("clarification"), dict) else {}
+                            await _emit_event(
+                                run_id,
+                                "run.clarification_requested",
+                                {
+                                    "case_id": run_ctx["case_id"],
+                                    "question_id": str(clarification_payload.get("question_id") or "clarification_needed"),
+                                },
+                            )
+                        pipeline_stage_ms = (loop.time() - pipeline_started) * 1000.0
+                        pipeline_result["timings_ms"] = {
+                            "classify_ms": int(round(classify_ms)),
+                            "vector_lookup_ms": int(round(vector_lookup_ms)),
+                            "pipeline_ms": int(round(pipeline_stage_ms)),
+                            "total_ms": int(round((loop.time() - orchestrate_started) * 1000.0)),
+                            "fast_path": True,
+                        }
+                    else:
+                        await _emit_event(
+                            run_id,
+                            "tool.called",
+                            {
+                                "agent": "manager",
+                                "tool": "legacy_manager_pipeline",
+                                "message": "Primary pipeline timed out, activating fallback inference path",
+                            },
+                        )
+                        with collector.span("t_model_reason_ms"):
+                            pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                        await _emit_event(
+                            run_id,
+                            "tool.result",
+                            {
+                                "agent": "manager",
+                                "tool": "legacy_manager_pipeline",
+                                "status": "ok",
+                            },
+                        )
+                except Exception:
+                    if latency_sensitive_case or not allow_legacy_fallback:
+                        pipeline_result = _build_timeout_guard_pipeline_result(
+                            user_input,
+                            request_options,
+                            primary_type=primary_type,
+                        )
+                        used_fast_path = True
+                        await _emit_event(
+                            run_id,
+                            "run.fast_path_selected",
+                            {
+                                "case_id": run_ctx["case_id"],
+                                "reason": "exception_guard",
+                            },
+                        )
+                    else:
+                        await _emit_event(
+                            run_id,
+                            "tool.called",
+                            {
+                                "agent": "manager",
+                                "tool": "legacy_manager_pipeline",
+                                "message": "Primary pipeline errored, activating fallback inference path",
+                            },
+                        )
+                        with collector.span("t_model_reason_ms"):
+                            pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                        await _emit_event(
+                            run_id,
+                            "tool.result",
+                            {
+                                "agent": "manager",
+                                "tool": "legacy_manager_pipeline",
+                                "status": "ok",
+                            },
+                        )
+
+                if clarification_followup and _looks_like_insufficient_info_response(pipeline_result):
+                    followup_fast = _build_fast_path_pipeline_result(user_input, request_options)
+                    if isinstance(followup_fast, dict):
+                        pipeline_result = followup_fast
+                        used_fast_path = True
+                        await _emit_event(
+                            run_id,
+                            "run.fast_path_selected",
+                            {
+                                "case_id": run_ctx["case_id"],
+                                "reason": "clarification_followup_reuse",
+                            },
+                        )
+
+                quota_or_detection_degraded = _needs_legacy_fallback(pipeline_result)
+                if quota_or_detection_degraded and not latency_sensitive_case and not clarification_followup:
+                    await _emit_event(
+                        run_id,
+                        "tool.called",
+                        {
+                            "agent": "manager",
+                            "tool": "legacy_manager_pipeline",
+                            "message": "Primary pipeline quota-degraded, activating fallback inference path",
+                        },
+                    )
+                    with collector.span("t_model_reason_ms"):
+                        pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+                    await _emit_event(
+                        run_id,
+                        "tool.result",
+                        {
+                            "agent": "manager",
+                            "tool": "legacy_manager_pipeline",
+                            "status": "ok",
+                        },
+                    )
+            pipeline_stage_ms = (loop.time() - pipeline_started) * 1000.0
+            collector.set_ms("t_agent_exec_ms", pipeline_stage_ms)
 
         await _emit_event(
             run_id,
@@ -2247,9 +4682,95 @@ async def _orchestrate_run(run_id: str) -> None:
             {
                 "agent": "manager",
                 "tool": "manager_pipeline",
-                "status": "ok",
+                "status": "fast_path" if used_fast_path else "ok",
             },
         )
+
+        if isinstance(pipeline_result, dict):
+            pipeline_result = await _ensure_direct_golden_hour_actions(
+                pipeline_result=pipeline_result,
+                request_options=request_options,
+                session_id=session_id,
+                case_id=str(run_ctx.get("case_id") or run_id),
+                scam_type=str(pipeline_result.get("scam_type") or "Cyber Fraud"),
+            )
+
+        if used_fast_path:
+            total_ms = (loop.time() - orchestrate_started) * 1000.0
+            collector.set_ms("t_total_ms", (time.perf_counter() - wall_started) * 1000.0)
+            if isinstance(pipeline_result, dict):
+                span_breakdown = collector.snapshot_ms()
+                pipeline_result["timings_ms"] = {
+                    "classify_ms": int(round(classify_ms)),
+                    "vector_lookup_ms": int(round(vector_lookup_ms)),
+                    "pipeline_ms": int(round(pipeline_stage_ms)),
+                    "total_ms": int(round(total_ms)),
+                    "fast_path": True,
+                    "stage_breakdown_ms": span_breakdown,
+                }
+                pipeline_result, guarded = _apply_unknown_click_clarification_guard(
+                    user_input=user_input,
+                    request_options=request_options,
+                    pipeline_result=pipeline_result,
+                )
+                if guarded:
+                    clarification_payload = pipeline_result.get("clarification") if isinstance(pipeline_result.get("clarification"), dict) else {}
+                    await _emit_event(
+                        run_id,
+                        "run.clarification_requested",
+                        {
+                            "case_id": run_ctx["case_id"],
+                            "question_id": str(clarification_payload.get("question_id") or "clarification_needed"),
+                            "reason": "unknown_click_state_invariant",
+                        },
+                    )
+
+            run_ctx["status"] = "completed"
+            run_ctx["completed_at"] = _utc_now()
+            with collector.span("t_report_build_ms"):
+                run_ctx["result"] = _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
+            run_ctx["timings_ms"] = collector.snapshot_ms()
+
+            top_spans = collector.top_slowest(limit=3)
+            if top_spans:
+                logger.info(
+                    "deep_timing_summary run_id=%s stage=%s top=%s",
+                    run_id,
+                    analysis_stage,
+                    top_spans,
+                )
+                if analysis_stage == "deep":
+                    await _emit_event(
+                        run_id,
+                        "run.timing_summary",
+                        {
+                            "case_id": run_ctx["case_id"],
+                            "analysis_stage": analysis_stage,
+                            "timings_ms": run_ctx.get("timings_ms") or collector.snapshot_ms(),
+                            "top_spans": top_spans,
+                        },
+                    )
+
+            await _emit_event(
+                run_id,
+                f"{analysis_stage}.completed",
+                {
+                    "case_id": run_ctx["case_id"],
+                    "analysis_stage": analysis_stage,
+                    "result_url": f"/api/result/{run_id}",
+                },
+            )
+
+            await _emit_event(
+                run_id,
+                "run.completed",
+                {
+                    "case_id": run_ctx["case_id"],
+                    "analysis_stage": analysis_stage,
+                    "result_url": f"/api/result/{run_id}",
+                },
+            )
+            return
 
         backend_requires_mcp = bool(
             isinstance(pipeline_result, dict)
@@ -2359,7 +4880,11 @@ async def _orchestrate_run(run_id: str) -> None:
             if agent == "manager":
                 continue
             summary = "Stage completed"
-            if agent == "scam_detector":
+            status = "done"
+            if used_fast_path:
+                status = "skipped"
+                summary = "Fast-path response generated; deep analysis not required"
+            elif agent == "scam_detector":
                 summary = f"Risk {pipeline_result.get('risk_level', 'UNKNOWN')} | type {pipeline_result.get('scam_type', 'UNKNOWN')}"
             elif agent == "osint":
                 summary = pipeline_result.get("osint_summary", "OSINT correlation complete") or "OSINT complete"
@@ -2370,7 +4895,7 @@ async def _orchestrate_run(run_id: str) -> None:
                 "agent.completed",
                 {
                     "agent": agent,
-                    "status": "done",
+                    "status": status,
                     "output": {
                         "summary": summary,
                     },
@@ -2400,7 +4925,51 @@ async def _orchestrate_run(run_id: str) -> None:
                     run_ctx["similar_patterns"] = pipeline_result.get("pattern_matches")
         except Exception:
             pass
-        run_ctx["result"] = _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
+
+        total_ms = (loop.time() - orchestrate_started) * 1000.0
+        collector.set_ms("t_total_ms", (time.perf_counter() - wall_started) * 1000.0)
+        if isinstance(pipeline_result, dict):
+            span_breakdown = collector.snapshot_ms()
+            pipeline_result["timings_ms"] = {
+                "classify_ms": int(round(classify_ms)),
+                "vector_lookup_ms": int(round(vector_lookup_ms)),
+                "pipeline_ms": int(round(pipeline_stage_ms)),
+                "total_ms": int(round(total_ms)),
+                "fast_path": bool(used_fast_path),
+                "stage_breakdown_ms": span_breakdown,
+            }
+
+            pipeline_result, guarded = _apply_unknown_click_clarification_guard(
+                user_input=user_input,
+                request_options=request_options,
+                pipeline_result=pipeline_result,
+            )
+            if guarded:
+                clarification_payload = pipeline_result.get("clarification") if isinstance(pipeline_result.get("clarification"), dict) else {}
+                await _emit_event(
+                    run_id,
+                    "run.clarification_requested",
+                    {
+                        "case_id": run_ctx["case_id"],
+                        "question_id": str(clarification_payload.get("question_id") or "clarification_needed"),
+                        "reason": "unknown_click_state_invariant",
+                    },
+                )
+
+        with collector.span("t_report_build_ms"):
+            run_ctx["result"] = _build_result_document(run_ctx, pipeline_result, primary_type, selected_agents)
+        run_ctx["timings_ms"] = collector.snapshot_ms()
+
+        if primary_type == "apk" and not used_fast_path:
+            await _emit_event(
+                run_id,
+                "run.refined_ready",
+                {
+                    "case_id": run_ctx["case_id"],
+                    "phase": "refined",
+                    "risk_level": str((run_ctx.get("result") or {}).get("risk_level") or "UNKNOWN"),
+                },
+            )
 
         result = run_ctx["result"]
         scam_type = str(result.get("scam_type") or "UNKNOWN")
@@ -2417,7 +4986,28 @@ async def _orchestrate_run(run_id: str) -> None:
                 pipeline_result["case_id"] = run_ctx.get("case_id") or run_id
             if not pipeline_result.get("acknowledgment_id"):
                 pipeline_result["acknowledgment_id"] = run_id
-        save_case(acknowledgment_id=run_id, case_data=pipeline_result if isinstance(pipeline_result, dict) else {})
+        with collector.span("t_persist_ms"):
+            save_case(acknowledgment_id=run_id, case_data=pipeline_result if isinstance(pipeline_result, dict) else {})
+
+        top_spans = collector.top_slowest(limit=3)
+        if top_spans:
+            logger.info(
+                "deep_timing_summary run_id=%s stage=%s top=%s",
+                run_id,
+                analysis_stage,
+                top_spans,
+            )
+            if analysis_stage == "deep":
+                await _emit_event(
+                    run_id,
+                    "run.timing_summary",
+                    {
+                        "case_id": run_ctx["case_id"],
+                        "analysis_stage": analysis_stage,
+                        "timings_ms": run_ctx.get("timings_ms") or collector.snapshot_ms(),
+                        "top_spans": top_spans,
+                    },
+                )
 
         final_user_text = user_text
         final_scam_type = scam_type
@@ -2427,9 +5017,20 @@ async def _orchestrate_run(run_id: str) -> None:
 
         await _emit_event(
             run_id,
+            f"{analysis_stage}.completed",
+            {
+                "case_id": run_ctx["case_id"],
+                "analysis_stage": analysis_stage,
+                "result_url": f"/api/result/{run_id}",
+            },
+        )
+
+        await _emit_event(
+            run_id,
             "run.completed",
             {
                 "case_id": run_ctx["case_id"],
+                "analysis_stage": analysis_stage,
                 "result_url": f"/api/result/{run_id}",
             },
         )
@@ -2477,6 +5078,27 @@ def api_health():
     }
 
 
+@app.on_event("startup")
+async def startup_warmup_event():
+    if not STARTUP_WARMUP_STATE.get("enabled", True):
+        return
+    try:
+        await asyncio.wait_for(_run_startup_warmup_once(), timeout=3.0)
+    except Exception as exc:
+        logger.warning("startup_warmup.timeout_or_error error=%s", exc)
+
+
+@app.get("/api/warmup/status")
+def api_warmup_status():
+    return {
+        "enabled": bool(STARTUP_WARMUP_STATE.get("enabled", True)),
+        "done": bool(STARTUP_WARMUP_STATE.get("done", False)),
+        "duration_ms": STARTUP_WARMUP_STATE.get("duration_ms"),
+        "completed_at": STARTUP_WARMUP_STATE.get("completed_at"),
+        "error": STARTUP_WARMUP_STATE.get("error"),
+    }
+
+
 @app.post("/api/analyze/preprocess")
 async def api_analyze_preprocess(req: PreprocessRequest):
     user_input = req.user_input.model_dump()
@@ -2496,6 +5118,8 @@ async def api_analyze(req: AnalyzeRequestV1):
     session_id = req.session_id or _new_id("sess")
     req_payload = req.model_dump()
     req_payload["session_id"] = session_id
+    req_payload = _enforce_triage_request_contract(req_payload)
+    req_payload = _hydrate_clarification_followup_request(req_payload)
 
     RUN_STORE[run_id] = {
         "run_id": run_id,
@@ -2508,6 +5132,8 @@ async def api_analyze(req: AnalyzeRequestV1):
         "error": None,
         "events": [],
         "subscribers": [],
+        "analysis_stage": "analysis",
+        "source_run_id": None,
     }
 
     await _emit_event(
@@ -2516,6 +5142,9 @@ async def api_analyze(req: AnalyzeRequestV1):
         {
             "case_id": case_id,
             "status": "accepted",
+            "contract_version": ANALYSIS_CONTRACT_VERSION,
+            "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+            "analysis_stage": "analysis",
         },
     )
 
@@ -2526,9 +5155,89 @@ async def api_analyze(req: AnalyzeRequestV1):
         "case_id": case_id,
         "session_id": session_id,
         "status": "accepted",
+        "contract_version": ANALYSIS_CONTRACT_VERSION,
+        "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+        "analysis_stage": "analysis",
+        "source_run_id": None,
+        "eligible_for_deep": False,
+        "deep_reason": "Single-pass analysis accepted. If context is missing, MCQ follow-ups will be asked automatically.",
+        "deep_reason_code": "ANALYSIS_ACCEPTED",
+        "deep_analysis_url": None,
         "stream_url": f"/api/stream/{run_id}",
         "result_url": f"/api/result/{run_id}",
     }
+
+
+@app.post("/api/analyze/deep")
+async def api_analyze_deep(req: DeepAnalyzeRequest, request: Request):
+    source_run_id = str(req.source_run_id or "").strip()
+    if not source_run_id:
+        raise HTTPException(status_code=400, detail="source_run_id required")
+
+    source_run = RUN_STORE.get(source_run_id)
+    if not source_run:
+        raise HTTPException(status_code=404, detail="source_run_id not found")
+
+    source_stage = str(source_run.get("analysis_stage") or "triage").strip().lower()
+    if source_stage not in {"triage", "analysis"}:
+        raise HTTPException(status_code=400, detail="source_run_id must reference an analysis run")
+
+    source_status = str(source_run.get("status") or "")
+    if source_status == "failed":
+        raise HTTPException(status_code=409, detail="source triage run failed and is not eligible for deep analysis")
+
+    source_result = source_run.get("result") if isinstance(source_run.get("result"), dict) else None
+    if source_stage == "triage" and isinstance(source_result, dict) and source_result.get("eligible_for_deep") is False:
+        raise HTTPException(status_code=409, detail="source triage run is not eligible for deep analysis")
+
+    idem_key = str(request.headers.get("Idempotency-Key") or "").strip() or None
+    replay_run = _find_replayable_deep_run(source_run_id, idempotency_key=idem_key)
+    if replay_run is not None:
+        return _build_deep_acceptance_response(replay_run, idempotent_replay=True)
+
+    source_request = source_run.get("request") if isinstance(source_run.get("request"), dict) else {}
+    if not source_request:
+        raise HTTPException(status_code=400, detail="source run has no request payload")
+
+    run_id = _new_id("run")
+    case_id = str(source_run.get("case_id") or _new_id("case"))
+
+    req_payload = _build_deep_analysis_payload(source_request, req)
+    session_id = str(req_payload.get("session_id") or source_run.get("session_id") or _new_id("sess"))
+    req_payload["session_id"] = session_id
+
+    RUN_STORE[run_id] = {
+        "run_id": run_id,
+        "case_id": case_id,
+        "status": "accepted",
+        "created_at": _utc_now(),
+        "completed_at": None,
+        "request": req_payload,
+        "result": None,
+        "error": None,
+        "events": [],
+        "subscribers": [],
+        "analysis_stage": "deep",
+        "source_run_id": source_run_id,
+        "deep_idempotency_key": idem_key,
+    }
+
+    await _emit_event(
+        run_id,
+        "run.accepted",
+        {
+            "case_id": case_id,
+            "status": "accepted",
+            "contract_version": ANALYSIS_CONTRACT_VERSION,
+            "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+            "analysis_stage": "deep",
+            "source_run_id": source_run_id,
+        },
+    )
+
+    asyncio.create_task(_orchestrate_run(run_id))
+
+    return _build_deep_acceptance_response(RUN_STORE[run_id], idempotent_replay=False)
 
 
 @app.get("/api/stream/{run_id}")
@@ -2585,22 +5294,65 @@ async def api_result(run_id: str):
         return persisted
 
     status = run_ctx.get("status")
+    if run_ctx.get("result") is not None:
+        return run_ctx.get("result")
+
     if status in {"accepted", "running"}:
+        stage = str(run_ctx.get("analysis_stage") or "analysis").strip().lower() or "analysis"
+        if stage == "triage":
+            eligible_for_deep = True
+            deep_reason = "Triage is in progress. Deep analysis can be requested after triage acceptance."
+            deep_reason_code = "TRIAGE_IN_PROGRESS"
+        elif stage == "deep":
+            eligible_for_deep = False
+            deep_reason = "Deep analysis run is in progress."
+            deep_reason_code = "DEEP_IN_PROGRESS"
+        else:
+            eligible_for_deep = False
+            deep_reason = "Analysis run is in progress."
+            deep_reason_code = "ANALYSIS_IN_PROGRESS"
         return JSONResponse(
             status_code=202,
             content={
                 "run_id": run_id,
                 "case_id": run_ctx.get("case_id"),
                 "status": status,
+                "contract_version": ANALYSIS_CONTRACT_VERSION,
+                "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+                "analysis_stage": stage,
+                "source_run_id": run_ctx.get("source_run_id"),
+                "eligible_for_deep": eligible_for_deep,
+                "deep_reason": deep_reason,
+                "deep_reason_code": deep_reason_code,
                 "message": "Run still in progress",
             },
         )
 
     if status == "failed":
+        stage = str(run_ctx.get("analysis_stage") or "analysis").strip().lower() or "analysis"
+        if stage == "triage":
+            eligible_for_deep = True
+            deep_reason = "Triage failed before completion. You may retry triage before deep analysis."
+            deep_reason_code = "TRIAGE_FAILED"
+        elif stage == "deep":
+            eligible_for_deep = False
+            deep_reason = "Deep analysis failed for this case."
+            deep_reason_code = "DEEP_FAILED"
+        else:
+            eligible_for_deep = False
+            deep_reason = "Analysis failed for this case."
+            deep_reason_code = "ANALYSIS_FAILED"
         return {
             "run_id": run_id,
             "case_id": run_ctx.get("case_id"),
             "status": "failed",
+            "contract_version": ANALYSIS_CONTRACT_VERSION,
+            "analysis_stage_version": ANALYSIS_STAGE_VERSION,
+            "analysis_stage": stage,
+            "source_run_id": run_ctx.get("source_run_id"),
+            "eligible_for_deep": eligible_for_deep,
+            "deep_reason": deep_reason,
+            "deep_reason_code": deep_reason_code,
             "error": run_ctx.get("error", "Unknown error"),
             "timestamps": {
                 "created_at": run_ctx.get("created_at"),
@@ -2609,6 +5361,58 @@ async def api_result(run_id: str):
         }
 
     return run_ctx.get("result")
+
+
+@app.get("/api/debug/timings/{run_id}")
+async def api_debug_timings(run_id: str):
+    run_ctx = RUN_STORE.get(run_id)
+    if not run_ctx:
+        persisted = _load_persisted_case(run_id)
+        if persisted is None:
+            raise HTTPException(status_code=404, detail="run_id not found")
+        persisted_timings = (
+            persisted.get("timings_ms")
+            if isinstance(persisted, dict) and isinstance(persisted.get("timings_ms"), dict)
+            else {}
+        )
+        stage_breakdown = (
+            persisted_timings.get("stage_breakdown_ms")
+            if isinstance(persisted_timings.get("stage_breakdown_ms"), dict)
+            else {}
+        )
+        top = sorted(stage_breakdown.items(), key=lambda item: item[1], reverse=True)[:3]
+        return {
+            "run_id": run_id,
+            "status": persisted.get("status") if isinstance(persisted, dict) else "unknown",
+            "analysis_stage": persisted.get("analysis_stage") if isinstance(persisted, dict) else None,
+            "timings_ms": persisted_timings,
+            "stage_breakdown_ms": stage_breakdown,
+            "top_slowest_spans": [{"span": k, "ms": int(v)} for k, v in top],
+            "source": "persisted",
+        }
+
+    timings = run_ctx.get("timings_ms") if isinstance(run_ctx.get("timings_ms"), dict) else {}
+    if not timings and isinstance(run_ctx.get("result"), dict):
+        result_timings = run_ctx["result"].get("timings_ms")
+        if isinstance(result_timings, dict):
+            timings = result_timings
+    stage_breakdown = (
+        timings.get("stage_breakdown_ms")
+        if isinstance(timings.get("stage_breakdown_ms"), dict)
+        else timings
+        if isinstance(timings, dict)
+        else {}
+    )
+    top = sorted(stage_breakdown.items(), key=lambda item: item[1], reverse=True)[:3]
+    return {
+        "run_id": run_id,
+        "status": run_ctx.get("status"),
+        "analysis_stage": run_ctx.get("analysis_stage"),
+        "timings_ms": timings,
+        "stage_breakdown_ms": stage_breakdown,
+        "top_slowest_spans": [{"span": str(k), "ms": int(v)} for k, v in top],
+        "source": "memory",
+    }
 
 
 @app.post("/api/recovery/finalize")
@@ -2683,6 +5487,15 @@ async def api_recovery_finalize(req: RecoveryFinalizeRequest):
         if _needs_legacy_fallback(pipeline_result):
             legacy_input = _build_legacy_input(user_input)
             pipeline_result = await asyncio.to_thread(run_legacy_pipeline, legacy_input)
+
+    if isinstance(pipeline_result, dict):
+        pipeline_result = await _ensure_direct_golden_hour_actions(
+            pipeline_result=pipeline_result,
+            request_options=options,
+            session_id=session_id,
+            case_id=str(run_ctx.get("case_id") or run_id),
+            scam_type=str(pipeline_result.get("scam_type") or "Cyber Fraud"),
+        )
 
     primary_type, selected_agents, _skipped = _classify_flow(user_input)
     run_ctx["status"] = "completed"

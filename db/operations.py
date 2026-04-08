@@ -72,8 +72,11 @@ def save_case(acknowledgment_id: str, case_data: dict) -> bool:
     if not db:
         return False
     try:
+        # Keep a stable summary for listing, but also store the full case payload
+        # so historical runs can be reloaded (Tasks/Docs links, OSINT, matches).
         doc = {
             "acknowledgment_id": acknowledgment_id,
+            "case_id": case_data.get("case_id") or acknowledgment_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "scam_type": case_data.get("scam_type", "UNKNOWN"),
             "risk_level": case_data.get("risk_level", "UNKNOWN"),
@@ -82,6 +85,8 @@ def save_case(acknowledgment_id: str, case_data: dict) -> bool:
             "input_type": case_data.get("input_type", "text"),
             "summary": case_data.get("summary", ""),
         }
+        if isinstance(case_data, dict):
+            doc.update(case_data)
         db.collection(CASES).document(acknowledgment_id).set(doc)
         return True
     except Exception as e:
@@ -265,6 +270,84 @@ def get_case_stats() -> dict:
         return {"total_cases": 0, "breakdown": {}}
 
 
+def get_fraud_patterns_count(
+    active_only: bool = True,
+    cache_ttl_seconds: int = 600,
+    source: str | None = None,
+) -> int:
+    """Return count of fraud pattern docs.
+
+    Used to power demo stats like "Similar Cases" without running a full scan
+    on every request.
+    """
+    ttl = max(1, int(cache_ttl_seconds))
+    bucket = int(time.time() // ttl)
+    source_key = str(source).strip() if source else ""
+    return _get_fraud_patterns_count_cached(active_only, source_key, bucket)
+
+
+@lru_cache(maxsize=16)
+def _get_fraud_patterns_count_cached(active_only: bool, source: str, _bucket: int) -> int:
+    db = get_db()
+    if not db:
+        return 0
+    try:
+        q = db.collection(FRAUD_PATTERNS)
+        if active_only:
+            q = q.where(filter=FieldFilter("active", "==", True))
+        if source:
+            q = q.where(filter=FieldFilter("source", "==", source))
+        q = q.select([])
+        count = 0
+        for _ in q.stream():
+            count += 1
+        return count
+    except Exception as e:
+        logger.error(f"get_fraud_patterns_count failed: {e}")
+        return 0
+
+
+def get_fraud_patterns_count_by_type(
+    scam_type: str,
+    active_only: bool = True,
+    cache_ttl_seconds: int = 600,
+    source: str | None = None,
+) -> int:
+    """Return count of fraud pattern docs for a given scam type.
+
+    This is used for demo-friendly stats like "312 similar KYC fraud cases",
+    while still keeping a separate total corpus size.
+    """
+    key = str(scam_type or "").strip()
+    if not key:
+        return 0
+    ttl = max(1, int(cache_ttl_seconds))
+    bucket = int(time.time() // ttl)
+    source_key = str(source).strip() if source else ""
+    return _get_fraud_patterns_count_by_type_cached(key, active_only, source_key, bucket)
+
+
+@lru_cache(maxsize=96)
+def _get_fraud_patterns_count_by_type_cached(scam_type: str, active_only: bool, source: str, _bucket: int) -> int:
+    db = get_db()
+    if not db:
+        return 0
+    try:
+        q = db.collection(FRAUD_PATTERNS).where(filter=FieldFilter("scam_type", "==", scam_type))
+        if active_only:
+            q = q.where(filter=FieldFilter("active", "==", True))
+        if source:
+            q = q.where(filter=FieldFilter("source", "==", source))
+        q = q.select([])
+        count = 0
+        for _ in q.stream():
+            count += 1
+        return count
+    except Exception as e:
+        logger.error(f"get_fraud_patterns_count_by_type failed: {e}")
+        return 0
+
+
 def _distance_to_score(distance: float, metric: DistanceMeasure) -> int:
     if metric == DistanceMeasure.COSINE:
         similarity = 1.0 - min(max(distance, 0.0), 2.0) / 2.0
@@ -354,3 +437,16 @@ def _extract_phrases(text: str) -> list[str]:
         "digital arrest",
     ]
     return [phrase for phrase in known_triggers if phrase in text_l]
+
+def get_recent_cases(limit: int = 10) -> list[dict]:
+    db = get_db()
+    if not db:
+        return []
+    try:
+        from google.cloud.firestore import Query
+        docs = db.collection(CASES).order_by("timestamp", direction=Query.DESCENDING).limit(limit).stream()
+        return [doc.to_dict() for doc in docs]
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching recent cases: {e}")
+        return []
