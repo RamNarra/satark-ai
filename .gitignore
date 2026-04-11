@@ -1,9 +1,32 @@
 # Python virtual environment
 venv/
+.venv/
+.venv-1/
 
 # Python cache/artifacts
 __pycache__/
 *.py[cod]
+*.egg-info/
+dist/
+build/
 
 # Local environment files
 .env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node (MCP servers)
+node_modules/

@@ -598,14 +598,14 @@ def build_golden_hour_agent(
     # to this agent.
     tools: list[Any] = []
     return Agent(
-    name="golden_hour_agent",
-    model=GEMINI_FLASH_MODEL,
-    description="Generates victim action plan and FIR-ready complaint",
-    generate_content_config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
-        tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
-    ),
-    instruction="""
+        name="golden_hour_agent",
+        model=GEMINI_FLASH_MODEL,
+        description="Generates victim action plan and FIR-ready complaint",
+        generate_content_config=types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+            tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
+        ),
+        instruction="""
 You are a cyber crime response specialist working for TGCSB (Telangana Cyber
 Security Bureau). Your job is to generate an urgent, actionable response plan
 for fraud victims using the Google MCP tools available to you.

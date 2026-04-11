@@ -52,7 +52,7 @@ osint_agent = Agent(
     generate_content_config=types.GenerateContentConfig(
         thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
     ),
-        instruction="""
+    instruction="""
 You are a cyber threat intelligence investigator. Given suspicious indicators
 (URLs/domains/IPs/phone numbers), perform OSINT investigation with the tools.
 

@@ -1,15 +1,24 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 # Ensure local `.env` changes take effect even if the shell already exported
 # stale values (e.g. an old GOOGLE_CLOUD_LOCATION).
 load_dotenv(override=True)
 
-PROJECT_ID  = os.getenv("GOOGLE_CLOUD_PROJECT", "satark-ai-492219")
+_logger = logging.getLogger(__name__)
+
+PROJECT_ID  = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 
 # Gemini 3 preview models are served from the global Vertex endpoint.
 LOCATION    = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+if not PROJECT_ID:
+    _logger.warning(
+        "GOOGLE_CLOUD_PROJECT is not set. "
+        "Copy .env.example to .env and fill in your GCP project ID."
+    )
 
 # Ensure ADK and google-genai clients default to Vertex AI mode.
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "true")
@@ -29,11 +38,11 @@ GEMINI_PRO_MODEL = os.getenv("GEMINI_PRO_MODEL", MODEL_PRO)
 GEMINI_FLASH_MODEL = os.getenv("GEMINI_FLASH_MODEL", MODEL_FLASH)
 GEMINI_LIVE_MODEL = os.getenv("GEMINI_LIVE_MODEL", MODEL_LIVE)
 
-ALLOYDB_REGION   = os.getenv("ALLOYDB_REGION",   "asia-south1")
-ALLOYDB_CLUSTER  = os.getenv("ALLOYDB_CLUSTER",  "scamguard-db")
-ALLOYDB_INSTANCE = os.getenv("ALLOYDB_INSTANCE", "primary-instance")
-ALLOYDB_DATABASE = os.getenv("ALLOYDB_DATABASE", "scamguard")
-ALLOYDB_USER     = os.getenv("ALLOYDB_USER",     "postgres")
+ALLOYDB_REGION   = os.getenv("ALLOYDB_REGION",   "")
+ALLOYDB_CLUSTER  = os.getenv("ALLOYDB_CLUSTER",  "")
+ALLOYDB_INSTANCE = os.getenv("ALLOYDB_INSTANCE", "")
+ALLOYDB_DATABASE = os.getenv("ALLOYDB_DATABASE", "")
+ALLOYDB_USER     = os.getenv("ALLOYDB_USER",     "")
 ALLOYDB_PASSWORD = os.getenv("ALLOYDB_PASSWORD", "")
 
 ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY", "")

@@ -2,7 +2,7 @@ import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google import genai
 from google.genai import types
-from config import GEMINI_API_KEY, MODEL_PRO_TOOLS, PROJECT_ID, LOCATION
+from config import MODEL_PRO_TOOLS, PROJECT_ID, LOCATION
 from tools.osint_tools import (
     whois_lookup, reverse_ip_lookup, asn_lookup,
     abuseipdb_check, crtsh_lookup, web_risk_check

@@ -2,7 +2,7 @@ import os, sys, json, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google import genai
 from google.genai import types
-from config import GEMINI_API_KEY, MODEL_PRO, MODEL_FLASH, PROJECT_ID, LOCATION
+from config import MODEL_PRO, MODEL_FLASH, PROJECT_ID, LOCATION
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
 

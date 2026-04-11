@@ -8,9 +8,9 @@ from urllib.parse import urlparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google import genai
 from google.genai import types
-from config import GEMINI_API_KEY, MODEL_FLASH
+from config import PROJECT_ID, LOCATION, MODEL_FLASH
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
 
 
 def _response_text(resp) -> str:
@@ -321,10 +321,10 @@ def run(input_data: dict) -> dict:
     if not apk_bytes:
         return {"error": "No APK bytes provided", "is_malicious": False}
 
-        static = extract_apk_info(apk_bytes)
-        static["filename"] = str(input_data.get("filename") or "uploaded.apk")
+    static = extract_apk_info(apk_bytes)
+    static["filename"] = str(input_data.get("filename") or "uploaded.apk")
 
-        prompt = f"""You are a mobile malware analyst at TGCSB.
+    prompt = f"""You are a mobile malware analyst at TGCSB.
 Analyze this APK static report and return ONLY valid JSON:
 {{
     "is_malicious": true,

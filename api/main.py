@@ -230,7 +230,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+@app.on_event("shutdown")
+def _cleanup_google_resources():
+    """Delete all calendar events and task lists created during this session."""
+    try:
+        from tools.google_workspace import cleanup_all_created_resources
+        cleanup_all_created_resources()
+    except Exception as e:
+        logger.warning("Shutdown cleanup error: %s", e)
+
+
 app.include_router(workflow_router)
+
+from api.chat_api import router as chat_router
+app.include_router(chat_router)
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
@@ -241,6 +255,10 @@ def serve_ui():
         return FileResponse(preferred)
     return FileResponse("frontend/ui.html")
 
+@app.get("/chat")
+def serve_chat():
+    return FileResponse("frontend/chat.html")
+
 
 @app.get("/ops")
 def serve_ops():
@@ -249,13 +267,19 @@ def serve_ops():
 
 @app.get("/")
 def serve_root_ui():
-    preferred = "frontend/satark-ui-v2.html"
-    if os.path.exists(preferred):
-        return FileResponse(preferred)
-    return FileResponse("frontend/ui.html")
+    return FileResponse("frontend/chat.html")
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
-                   allow_methods=["*"], allow_headers=["*"])
+_CORS_ORIGINS = [
+    o.strip() for o in os.getenv("SATARK_CORS_ORIGINS", "*").split(",") if o.strip()
+] or ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def _public_base_url(request: Request) -> str:
@@ -618,12 +642,13 @@ def auth_google_callback(request: Request, code: str | None = None, state: str |
 
     joiner = "&" if "?" in next_path else "?"
     response = RedirectResponse(url=f"{next_path}{joiner}google=connected")
+    _secure_cookie = os.getenv("SATARK_PUBLIC_BASE_URL", "").startswith("https")
     response.set_cookie(
         key="session_id",
         value=session_id,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=_secure_cookie,
         max_age=60 * 60 * 24 * 30,
     )
     return response
@@ -2090,14 +2115,18 @@ def _is_fast_first_mode(request_options: dict[str, Any]) -> bool:
 
 
 def _enforce_triage_request_contract(req_payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize every /api/analyze request into pre-analysis (triage) mode.
+
+    Deep analysis, report generation, and MCP actions are only allowed via
+    /api/analyze/deep after a successful triage run."""
     if not isinstance(req_payload, dict):
         return req_payload
 
     options = req_payload.get("options") if isinstance(req_payload.get("options"), dict) else {}
-    options.setdefault("deep_analysis", False)
-    options.setdefault("fast_first", False)
-    options.setdefault("generate_report", False)
-    options.setdefault("trigger_mcp_actions", False)
+    options["deep_analysis"] = False
+    options["fast_first"] = True
+    options["generate_report"] = False
+    options["trigger_mcp_actions"] = False
     req_payload["options"] = options
     return req_payload
 
@@ -5132,7 +5161,7 @@ async def api_analyze(req: AnalyzeRequestV1):
         "error": None,
         "events": [],
         "subscribers": [],
-        "analysis_stage": "analysis",
+        "analysis_stage": "triage",
         "source_run_id": None,
     }
 
@@ -5144,7 +5173,7 @@ async def api_analyze(req: AnalyzeRequestV1):
             "status": "accepted",
             "contract_version": ANALYSIS_CONTRACT_VERSION,
             "analysis_stage_version": ANALYSIS_STAGE_VERSION,
-            "analysis_stage": "analysis",
+            "analysis_stage": "triage",
         },
     )
 
@@ -5157,12 +5186,12 @@ async def api_analyze(req: AnalyzeRequestV1):
         "status": "accepted",
         "contract_version": ANALYSIS_CONTRACT_VERSION,
         "analysis_stage_version": ANALYSIS_STAGE_VERSION,
-        "analysis_stage": "analysis",
+        "analysis_stage": "triage",
         "source_run_id": None,
-        "eligible_for_deep": False,
-        "deep_reason": "Single-pass analysis accepted. If context is missing, MCQ follow-ups will be asked automatically.",
-        "deep_reason_code": "ANALYSIS_ACCEPTED",
-        "deep_analysis_url": None,
+        "eligible_for_deep": True,
+        "deep_reason": "Phase-1 triage accepted. You can trigger deep analysis when needed.",
+        "deep_reason_code": "TRIAGE_ACCEPTED_DEEP_AVAILABLE",
+        "deep_analysis_url": "/api/analyze/deep",
         "stream_url": f"/api/stream/{run_id}",
         "result_url": f"/api/result/{run_id}",
     }

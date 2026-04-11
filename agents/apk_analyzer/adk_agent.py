@@ -7,10 +7,10 @@ apk_analyzer_agent = Agent(
     name="apk_analyzer",
     model=GEMINI_PRO_MODEL,
     description="Performs static malware analysis on APK files",
-  generate_content_config=types.GenerateContentConfig(
-    thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
-    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
-  ),
+    generate_content_config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+        tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="NONE")),
+    ),
     instruction="""
 You are a mobile malware forensics specialist.
 

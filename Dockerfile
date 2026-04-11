@@ -6,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Node.js is required for MCP stdio servers invoked via `npx`.
+# tesseract-ocr is required for screenshot OCR preprocessing.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nodejs npm \
+    && apt-get install -y --no-install-recommends nodejs npm tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./

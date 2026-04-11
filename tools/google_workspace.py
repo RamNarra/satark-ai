@@ -1,10 +1,53 @@
 from __future__ import annotations
 
+import logging
 import os
 import base64
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from typing import Any
+
+logger = logging.getLogger("uvicorn.error")
+
+# ---------------------------------------------------------------------------
+# Cleanup registry — tracks created Google resources for shutdown deletion
+# ---------------------------------------------------------------------------
+_created_resources: list[dict[str, Any]] = []
+
+
+def register_created_resource(kind: str, resource_id: str, credentials: Any, **extra: Any) -> None:
+    """Register a created Google resource for later cleanup."""
+    _created_resources.append({"kind": kind, "id": resource_id, "credentials": credentials, **extra})
+
+
+def cleanup_all_created_resources() -> dict[str, int]:
+    """Delete all registered calendar events and task lists. Called on shutdown."""
+    deleted = {"calendar_events": 0, "task_lists": 0, "errors": 0}
+    for item in list(_created_resources):
+        try:
+            creds = item.get("credentials")
+            if not creds or build is None:
+                continue
+            if item["kind"] == "calendar_event":
+                service = build("calendar", "v3", credentials=creds, cache_discovery=False)
+                service.events().delete(
+                    calendarId=item.get("calendar_id", "primary"),
+                    eventId=item["id"],
+                ).execute()
+                deleted["calendar_events"] += 1
+                logger.info("Cleaned up calendar event %s", item["id"])
+            elif item["kind"] == "task_list":
+                service = build("tasks", "v1", credentials=creds, cache_discovery=False)
+                service.tasklists().delete(tasklist=item["id"]).execute()
+                deleted["task_lists"] += 1
+                logger.info("Cleaned up task list %s", item["id"])
+        except Exception as e:
+            deleted["errors"] += 1
+            logger.warning("Cleanup failed for %s %s: %s", item.get("kind"), item.get("id"), e)
+    _created_resources.clear()
+    logger.info("Shutdown cleanup complete: %s", deleted)
+    return deleted
+
 
 try:
     from zoneinfo import ZoneInfo
@@ -93,6 +136,10 @@ def create_golden_hour_tasks(
 
     tasklist = service.tasklists().insert(body={"title": f"SATARK Alerts"}).execute()
     list_id = str(tasklist.get("id") or "")
+
+    # Track for shutdown cleanup
+    if list_id:
+        register_created_resource("task_list", list_id, credentials)
 
     tz_name = str(os.getenv("SATARK_CALENDAR_TIMEZONE") or "Asia/Kolkata")
     tz = timezone.utc
@@ -254,14 +301,18 @@ def create_golden_hour_calendar_events(
             },
         }
         created = service.events().insert(calendarId="primary", body=body).execute()
+        eid = str(created.get("id") or "")
         created_events.append(
             {
-                "event_id": str(created.get("id") or ""),
+                "event_id": eid,
                 "event_url": str(created.get("htmlLink") or ""),
                 "title": str(created.get("summary") or item["title"]),
                 "start_time": str(((created.get("start") or {}).get("dateTime") or "")),
             }
         )
+        # Track for shutdown cleanup
+        if eid:
+            register_created_resource("calendar_event", eid, credentials, calendar_id="primary")
 
     first = created_events[0] if created_events else {}
     return {
