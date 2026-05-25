@@ -1,6 +1,6 @@
 {
-  "run_id": "run_8a8aeb162127",
-  "case_id": "case_c63195bdf394",
+  "run_id": "run_f406152558f1",
+  "case_id": "case_312223318032",
   "status": "completed",
   "contract_version": "2026-04-two-phase-v1",
   "analysis_stage_version": 1,
@@ -108,7 +108,7 @@
     "classify_ms": 0,
     "vector_lookup_ms": 0,
     "pipeline_ms": 0,
-    "total_ms": 2,
+    "total_ms": 1,
     "fast_path": true,
     "stage_breakdown_ms": {}
   },
@@ -210,8 +210,8 @@
     }
   ],
   "timestamps": {
-    "created_at": "2026-05-25T17:33:19.903469Z",
-    "completed_at": "2026-05-25T17:33:19.906450Z"
+    "created_at": "2026-05-25T17:57:44.429175Z",
+    "completed_at": "2026-05-25T17:57:44.430561Z"
   },
   "raw": {
     "needs_clarification": true,
@@ -267,7 +267,7 @@
       "classify_ms": 0,
       "vector_lookup_ms": 0,
       "pipeline_ms": 0,
-      "total_ms": 2,
+      "total_ms": 1,
       "fast_path": true,
       "stage_breakdown_ms": {}
     }

@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-05-25T17:33:17Z",
+  "generated_at": "2026-05-25T17:57:42Z",
   "case": "malicious",
   "health": {
     "status": "healthy"
   },
   "analyze_request": {
-    "session_id": "sess_live_30afaeaab0",
+    "session_id": "sess_live_f6da2bcae6",
     "user_input": {
       "text": "Please investigate this APK and explain the risk in plain language.",
       "files": [
         {
           "file_name": "bank_secure_update.apk",
           "file_type": "application/vnd.android.package-archive",
-          "content_base64": "UEsDBBQAAAAAAGi4uVy/656TEAEAABABAAALAAAAY2xhc3Nlcy5kZXhjb20uZmFrZS5iYW5rLnNlY3VyZSBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgYW5kcm9pZC5wZXJtaXNzaW9uLlNFTkRfU01TIGFuZHJvaWQucGVybWlzc2lvbi5SRUNPUkRfQVVESU8gYW5kcm9pZC5wZXJtaXNzaW9uLkJJTkRfQUNDRVNTSUJJTElUWV9TRVJWSUNFIGFuZHJvaWQucGVybWlzc2lvbi5SRVFVRVNUX0lOU1RBTExfUEFDS0FHRVMgb3RwIHN0ZWFsIGNyZWRlbnRpYWwgaW50ZXJjZXB0IGtleWxvZyBleGZpbCBodHRwOi8vYmFkLWMyLmV4YW1wbGUvY29sbGVjdFBLAwQUAAAAAABouLlcv+uekxABAAAQAQAAEwAAAEFuZHJvaWRNYW5pZmVzdC54bWxjb20uZmFrZS5iYW5rLnNlY3VyZSBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgYW5kcm9pZC5wZXJtaXNzaW9uLlNFTkRfU01TIGFuZHJvaWQucGVybWlzc2lvbi5SRUNPUkRfQVVESU8gYW5kcm9pZC5wZXJtaXNzaW9uLkJJTkRfQUNDRVNTSUJJTElUWV9TRVJWSUNFIGFuZHJvaWQucGVybWlzc2lvbi5SRVFVRVNUX0lOU1RBTExfUEFDS0FHRVMgb3RwIHN0ZWFsIGNyZWRlbnRpYWwgaW50ZXJjZXB0IGtleWxvZyBleGZpbCBodHRwOi8vYmFkLWMyLmV4YW1wbGUvY29sbGVjdFBLAQIUAxQAAAAAAGi4uVy/656TEAEAABABAAALAAAAAAAAAAAAAACAAQAAAABjbGFzc2VzLmRleFBLAQIUAxQAAAAAAGi4uVy/656TEAEAABABAAATAAAAAAAAAAAAAACAATkBAABBbmRyb2lkTWFuaWZlc3QueG1sUEsFBgAAAAACAAIAegAAAHoCAAAAAA=="
+          "content_base64": "UEsDBBQAAAAAAHW7uVy/656TEAEAABABAAALAAAAY2xhc3Nlcy5kZXhjb20uZmFrZS5iYW5rLnNlY3VyZSBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgYW5kcm9pZC5wZXJtaXNzaW9uLlNFTkRfU01TIGFuZHJvaWQucGVybWlzc2lvbi5SRUNPUkRfQVVESU8gYW5kcm9pZC5wZXJtaXNzaW9uLkJJTkRfQUNDRVNTSUJJTElUWV9TRVJWSUNFIGFuZHJvaWQucGVybWlzc2lvbi5SRVFVRVNUX0lOU1RBTExfUEFDS0FHRVMgb3RwIHN0ZWFsIGNyZWRlbnRpYWwgaW50ZXJjZXB0IGtleWxvZyBleGZpbCBodHRwOi8vYmFkLWMyLmV4YW1wbGUvY29sbGVjdFBLAwQUAAAAAAB1u7lcv+uekxABAAAQAQAAEwAAAEFuZHJvaWRNYW5pZmVzdC54bWxjb20uZmFrZS5iYW5rLnNlY3VyZSBhbmRyb2lkLnBlcm1pc3Npb24uUkVBRF9TTVMgYW5kcm9pZC5wZXJtaXNzaW9uLlNFTkRfU01TIGFuZHJvaWQucGVybWlzc2lvbi5SRUNPUkRfQVVESU8gYW5kcm9pZC5wZXJtaXNzaW9uLkJJTkRfQUNDRVNTSUJJTElUWV9TRVJWSUNFIGFuZHJvaWQucGVybWlzc2lvbi5SRVFVRVNUX0lOU1RBTExfUEFDS0FHRVMgb3RwIHN0ZWFsIGNyZWRlbnRpYWwgaW50ZXJjZXB0IGtleWxvZyBleGZpbCBodHRwOi8vYmFkLWMyLmV4YW1wbGUvY29sbGVjdFBLAQIUAxQAAAAAAHW7uVy/656TEAEAABABAAALAAAAAAAAAAAAAACAAQAAAABjbGFzc2VzLmRleFBLAQIUAxQAAAAAAHW7uVy/656TEAEAABABAAATAAAAAAAAAAAAAACAATkBAABBbmRyb2lkTWFuaWZlc3QueG1sUEsFBgAAAAACAAIAegAAAHoCAAAAAA=="
         }
       ]
     },
@@ -27,9 +27,9 @@
     }
   },
   "analyze_accept": {
-    "run_id": "run_cd611ac176a9",
-    "case_id": "case_f826f44353e9",
-    "session_id": "sess_live_30afaeaab0",
+    "run_id": "run_5625b691b088",
+    "case_id": "case_7ec42b077479",
+    "session_id": "sess_live_f6da2bcae6",
     "status": "accepted",
     "contract_version": "2026-04-two-phase-v1",
     "analysis_stage_version": 1,
@@ -39,7 +39,7 @@
     "deep_reason": "Single-pass analysis accepted. If context is missing, MCQ follow-ups will be asked automatically.",
     "deep_reason_code": "ANALYSIS_ACCEPTED",
     "deep_analysis_url": null,
-    "stream_url": "/api/stream/run_cd611ac176a9",
-    "result_url": "/api/result/run_cd611ac176a9"
+    "stream_url": "/api/stream/run_5625b691b088",
+    "result_url": "/api/result/run_5625b691b088"
   }
 }

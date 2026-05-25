@@ -1,6 +1,6 @@
 {
-  "run_id": "run_cd611ac176a9",
-  "case_id": "case_f826f44353e9",
+  "run_id": "run_5625b691b088",
+  "case_id": "case_7ec42b077479",
   "status": "completed",
   "contract_version": "2026-04-two-phase-v1",
   "analysis_stage_version": 1,
@@ -210,8 +210,8 @@
     }
   ],
   "timestamps": {
-    "created_at": "2026-05-25T17:33:17.469848Z",
-    "completed_at": "2026-05-25T17:33:17.470840Z"
+    "created_at": "2026-05-25T17:57:42.798002Z",
+    "completed_at": "2026-05-25T17:57:42.798583Z"
   },
   "raw": {
     "needs_clarification": true,

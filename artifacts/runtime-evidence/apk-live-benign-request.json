@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-05-25T17:33:19Z",
+  "generated_at": "2026-05-25T17:57:44Z",
   "case": "benign",
   "health": {
     "status": "healthy"
   },
   "analyze_request": {
-    "session_id": "sess_live_355fc39928",
+    "session_id": "sess_live_ecfb61059c",
     "user_input": {
       "text": "Please investigate this APK and explain the risk in plain language.",
       "files": [
         {
           "file_name": "notes_app.apk",
           "file_type": "application/vnd.android.package-archive",
-          "content_base64": "UEsDBBQAAAAAAGm4uVy5Y13GiQAAAIkAAAALAAAAY2xhc3Nlcy5kZXhjb20uZXhhbXBsZS5ub3Rlc2FwcCBhbmRyb2lkLnBlcm1pc3Npb24uSU5URVJORVQgaHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20vdjEvbm90ZXMgc2ltcGxlIG5vdGUgYXBwIG5vIGJhbmtpbmcgbm8gb3RwIG5vIGNyZWRlbnRpYWwgY2FwdHVyZVBLAwQUAAAAAABpuLlcuWNdxokAAACJAAAAEwAAAEFuZHJvaWRNYW5pZmVzdC54bWxjb20uZXhhbXBsZS5ub3Rlc2FwcCBhbmRyb2lkLnBlcm1pc3Npb24uSU5URVJORVQgaHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20vdjEvbm90ZXMgc2ltcGxlIG5vdGUgYXBwIG5vIGJhbmtpbmcgbm8gb3RwIG5vIGNyZWRlbnRpYWwgY2FwdHVyZVBLAQIUAxQAAAAAAGm4uVy5Y13GiQAAAIkAAAALAAAAAAAAAAAAAACAAQAAAABjbGFzc2VzLmRleFBLAQIUAxQAAAAAAGm4uVy5Y13GiQAAAIkAAAATAAAAAAAAAAAAAACAAbIAAABBbmRyb2lkTWFuaWZlc3QueG1sUEsFBgAAAAACAAIAegAAAGwBAAAAAA=="
+          "content_base64": "UEsDBBQAAAAAAHa7uVy5Y13GiQAAAIkAAAALAAAAY2xhc3Nlcy5kZXhjb20uZXhhbXBsZS5ub3Rlc2FwcCBhbmRyb2lkLnBlcm1pc3Npb24uSU5URVJORVQgaHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20vdjEvbm90ZXMgc2ltcGxlIG5vdGUgYXBwIG5vIGJhbmtpbmcgbm8gb3RwIG5vIGNyZWRlbnRpYWwgY2FwdHVyZVBLAwQUAAAAAAB2u7lcuWNdxokAAACJAAAAEwAAAEFuZHJvaWRNYW5pZmVzdC54bWxjb20uZXhhbXBsZS5ub3Rlc2FwcCBhbmRyb2lkLnBlcm1pc3Npb24uSU5URVJORVQgaHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20vdjEvbm90ZXMgc2ltcGxlIG5vdGUgYXBwIG5vIGJhbmtpbmcgbm8gb3RwIG5vIGNyZWRlbnRpYWwgY2FwdHVyZVBLAQIUAxQAAAAAAHa7uVy5Y13GiQAAAIkAAAALAAAAAAAAAAAAAACAAQAAAABjbGFzc2VzLmRleFBLAQIUAxQAAAAAAHa7uVy5Y13GiQAAAIkAAAATAAAAAAAAAAAAAACAAbIAAABBbmRyb2lkTWFuaWZlc3QueG1sUEsFBgAAAAACAAIAegAAAGwBAAAAAA=="
         }
       ]
     },
@@ -27,9 +27,9 @@
     }
   },
   "analyze_accept": {
-    "run_id": "run_8a8aeb162127",
-    "case_id": "case_c63195bdf394",
-    "session_id": "sess_live_355fc39928",
+    "run_id": "run_f406152558f1",
+    "case_id": "case_312223318032",
+    "session_id": "sess_live_ecfb61059c",
     "status": "accepted",
     "contract_version": "2026-04-two-phase-v1",
     "analysis_stage_version": 1,
@@ -39,7 +39,7 @@
     "deep_reason": "Single-pass analysis accepted. If context is missing, MCQ follow-ups will be asked automatically.",
     "deep_reason_code": "ANALYSIS_ACCEPTED",
     "deep_analysis_url": null,
-    "stream_url": "/api/stream/run_8a8aeb162127",
-    "result_url": "/api/result/run_8a8aeb162127"
+    "stream_url": "/api/stream/run_f406152558f1",
+    "result_url": "/api/result/run_f406152558f1"
   }
 }

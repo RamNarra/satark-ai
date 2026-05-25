@@ -1,43 +1,43 @@
 {
-  "generated_at": "2026-05-25T17:33:19Z",
+  "generated_at": "2026-05-25T17:57:44Z",
   "case": "benign",
-  "run_id": "run_8a8aeb162127",
+  "run_id": "run_f406152558f1",
   "events": [
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.accepted",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.903518Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.429206Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
+        "case_id": "case_312223318032",
         "status": "accepted"
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904715Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.429942Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394"
+        "case_id": "case_312223318032"
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.classified",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904856Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430042Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
+        "case_id": "case_312223318032",
         "primary_type": "apk",
         "selected_agents": [
           "manager",
@@ -55,11 +55,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.completed",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904885Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430067Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -72,11 +72,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904905Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430081Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -86,11 +86,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.progress",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904924Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430107Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -101,11 +101,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904948Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430124Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -115,11 +115,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904966Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430136Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -129,11 +129,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.904985Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430150Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -143,11 +143,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.started",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.905004Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430166Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -157,11 +157,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.progress",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.905022Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430179Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -172,11 +172,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.progress",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.905038Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430191Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -187,11 +187,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "agent.progress",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.905055Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430203Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -202,11 +202,11 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "tool.called",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.905975Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430216Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -216,37 +216,37 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.fast_path_selected",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.906342Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430466Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
+        "case_id": "case_312223318032",
         "reason": "global_first_response_sla"
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.clarification_requested",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.906372Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430489Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
+        "case_id": "case_312223318032",
         "question_id": "installed_apk"
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "tool.result",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.906392Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430518Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
@@ -256,44 +256,44 @@
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "analysis.completed",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.906844Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430857Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
-        "result_url": "/api/result/run_8a8aeb162127"
+        "case_id": "case_312223318032",
+        "result_url": "/api/result/run_f406152558f1"
       }
     },
     {
-      "ts": "2026-05-25T17:33:19Z",
+      "ts": "2026-05-25T17:57:44Z",
       "event": "run.completed",
       "data": {
-        "run_id": "run_8a8aeb162127",
-        "timestamp": "2026-05-25T17:33:19.906870Z",
+        "run_id": "run_f406152558f1",
+        "timestamp": "2026-05-25T17:57:44.430883Z",
         "contract_version": "2026-04-two-phase-v1",
         "analysis_stage_version": 1,
         "analysis_stage": "analysis",
-        "case_id": "case_c63195bdf394",
-        "result_url": "/api/result/run_8a8aeb162127"
+        "case_id": "case_312223318032",
+        "result_url": "/api/result/run_f406152558f1"
       }
     }
   ],
   "errors": [],
   "last_event": {
-    "ts": "2026-05-25T17:33:19Z",
+    "ts": "2026-05-25T17:57:44Z",
     "event": "run.completed",
     "data": {
-      "run_id": "run_8a8aeb162127",
-      "timestamp": "2026-05-25T17:33:19.906870Z",
+      "run_id": "run_f406152558f1",
+      "timestamp": "2026-05-25T17:57:44.430883Z",
       "contract_version": "2026-04-two-phase-v1",
       "analysis_stage_version": 1,
       "analysis_stage": "analysis",
-      "case_id": "case_c63195bdf394",
-      "result_url": "/api/result/run_8a8aeb162127"
+      "case_id": "case_312223318032",
+      "result_url": "/api/result/run_f406152558f1"
     }
   }
 }

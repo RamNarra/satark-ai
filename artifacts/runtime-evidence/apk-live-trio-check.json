@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-25T17:33:23Z",
+  "generated_at": "2026-05-25T17:57:51Z",
   "base_url": "http://127.0.0.1:8080",
   "mode": "trio",
   "cases": [
     {
       "case": "known_training",
-      "run_id": "run_ba0fec93d6a7",
-      "case_id": "case_af8eb0a569c5",
+      "run_id": "run_52ebe01a2a9a",
+      "case_id": "case_4c3783a4c8fb",
       "stalled_phase": "completed",
       "checks": {
         "progress_stage_order_ok": false,
@@ -29,8 +29,8 @@
     },
     {
       "case": "malicious",
-      "run_id": "run_cd611ac176a9",
-      "case_id": "case_f826f44353e9",
+      "run_id": "run_5625b691b088",
+      "case_id": "case_7ec42b077479",
       "stalled_phase": "completed",
       "checks": {
         "progress_stage_order_ok": false,
@@ -53,8 +53,8 @@
     },
     {
       "case": "benign",
-      "run_id": "run_8a8aeb162127",
-      "case_id": "case_c63195bdf394",
+      "run_id": "run_f406152558f1",
+      "case_id": "case_312223318032",
       "stalled_phase": "completed",
       "checks": {
         "progress_stage_order_ok": true,
