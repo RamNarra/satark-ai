@@ -6,6 +6,16 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      }
+    ],
     "rewrites": [
       {
         "source": "/api/**",
@@ -34,6 +44,25 @@
           "serviceId": "satark-ai",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/ui",
+        "run": {
+          "serviceId": "satark-ai",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/chat",
+        "destination": "/satark-ui-v2.html"
+      },
+      {
+        "source": "/ops",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/",
+        "destination": "/satark-ui-v2.html"
       },
       {
         "source": "**",

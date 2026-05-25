@@ -1,246 +1,4210 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Satark AI Ops</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/styles.css" />
+  <meta name="description" content="SATARK AI — India's premier AI-powered citizen cyber-fraud response platform. Instant analysis, real-time protection." />
+  <meta name="theme-color" content="#030712" />
+  <title>SATARK AI — Cyber Fraud Intelligence Platform</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      /* Core palette */
+      --bg-void: #020408;
+      --bg-deep: #040810;
+      --bg-mid: #080e1a;
+      --bg-surface: #0c1424;
+      --bg-elevated: #111c30;
+      --bg-card: rgba(12, 20, 36, 0.85);
+
+      /* Glass layers */
+      --glass-1: rgba(255, 255, 255, 0.03);
+      --glass-2: rgba(255, 255, 255, 0.055);
+      --glass-3: rgba(255, 255, 255, 0.08);
+
+      /* Borders */
+      --border: rgba(255, 255, 255, 0.07);
+      --border-mid: rgba(255, 255, 255, 0.11);
+      --border-hover: rgba(255, 255, 255, 0.18);
+      --border-glow: rgba(0, 210, 160, 0.35);
+
+      /* Text */
+      --text: #eef2f8;
+      --text-muted: #7a8aa8;
+      --text-faint: #3d4f6a;
+      --text-accent: #00d2a0;
+
+      /* Brand — electric teal-green */
+      --brand: #00d2a0;
+      --brand-mid: #00b88c;
+      --brand-deep: #009474;
+      --brand-glow: rgba(0, 210, 160, 0.18);
+      --brand-glow-strong: rgba(0, 210, 160, 0.35);
+
+      /* Secondary accent — electric blue */
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.2);
+
+      /* Status colors */
+      --status-safe: #00d2a0;
+      --status-warn: #f59e0b;
+      --status-danger: #ef4444;
+      --status-info: #3b82f6;
+
+      /* Bubble surfaces */
+      --user-bubble-bg: rgba(0, 210, 160, 0.06);
+      --user-bubble-border: rgba(0, 210, 160, 0.2);
+      --bot-bubble-bg: rgba(12, 20, 36, 0.92);
+      --bot-bubble-border: rgba(255, 255, 255, 0.07);
+
+      /* Chip states */
+      --chip-run: #3b82f6;
+      --chip-done: #00d2a0;
+      --chip-failed: #ef4444;
+      --chip-idle: #2d3f5a;
+
+      /* Dimensions */
+      --radius-sm: 8px;
+      --radius: 12px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+
+      /* Shadows */
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
+      --shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 8px 60px rgba(0, 0, 0, 0.7);
+      --shadow-brand: 0 0 0 1px var(--border-glow), 0 4px 24px rgba(0, 210, 160, 0.12);
+      --glow-ring: 0 0 0 2px rgba(0, 210, 160, 0.15);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    * {
+      transition:
+        border-color 0.18s ease,
+        background-color 0.18s ease,
+        box-shadow 0.18s ease,
+        opacity 0.18s ease;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg-void);
+    }
+
+    body {
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Background orbs ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 800px 600px at 0% 0%, rgba(0, 210, 160, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 500px at 100% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 55%),
+        radial-gradient(ellipse 400px 300px at 50% 50%, rgba(0, 210, 160, 0.025) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Animated noise texture ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      height: 100dvh;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ═══════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════ */
+    .sidebar {
+      background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-void) 100%);
+      border-right: 1px solid var(--border);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 20;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Sidebar glow line */
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg, transparent 0%, var(--brand) 40%, transparent 100%);
+      opacity: 0.25;
+    }
+
+    /* ── Brand ── */
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 14px;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      background: var(--glass-1);
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      opacity: 0.4;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--brand), #0097b2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(0, 210, 160, 0.3);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .brand small {
+      color: var(--text-muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .mode-pill {
+      border-radius: 999px;
+      border: 1px solid var(--border-glow);
+      padding: 4px 9px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--brand);
+      background: var(--brand-glow);
+      white-space: nowrap;
+    }
+
+    /* ── New Chat Button ── */
+    .new-chat {
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-weight: 600;
+      color: var(--bg-void);
+      background: linear-gradient(90deg, var(--brand), #00b8d4);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transform: translateY(0);
+      box-shadow: 0 4px 16px rgba(0, 210, 160, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .new-chat:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0, 210, 160, 0.35);
+      background: linear-gradient(90deg, #00e4ae, #00cce8);
+    }
+
+    .new-chat:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 210, 160, 0.15);
+    }
+
+    /* ── Search ── */
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--glass-1);
+      color: var(--text);
+      padding: 9px 12px 9px 32px;
+      outline: none;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--border-glow);
+      background: var(--glass-2);
+      box-shadow: 0 0 0 2px rgba(0, 210, 160, 0.1);
+    }
+
+    .search-wrap::before {
+      content: '⌕';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-faint);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* ── History ── */
+    .history {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-right: 2px;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .history::-webkit-scrollbar { width: 3px; }
+    .history::-webkit-scrollbar-track { background: transparent; }
+    .history::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 9px; }
+
+    .chat-item {
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
+      padding: 10px 12px;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chat-item:hover {
+      border-color: var(--border);
+      background: var(--glass-1);
+    }
+
+    .chat-item.active {
+      border-color: var(--border-glow);
+      background: rgba(0, 210, 160, 0.05);
+    }
+
+    .chat-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 15%;
+      bottom: 15%;
+      width: 2px;
+      background: var(--brand);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .chat-item .title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .chat-item .meta {
+      margin: 3px 0 0;
+      font-size: 10px;
+      color: var(--text-faint);
+    }
+
+    .chat-item .snippet {
+      margin: 4px 0 0;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Profile ── */
+    .profile {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: var(--glass-1);
+    }
+
+    .profile-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), #0097b2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--bg-void);
+      margin-bottom: 8px;
+    }
+
+    .profile-name {
+      margin: 0;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .profile-email {
+      margin: 2px 0 8px;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-btn,
+    .profile-actions button,
+    .profile-actions a {
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      background: var(--glass-2);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ghost-btn:hover,
+    .profile-actions button:hover,
+    .profile-actions a:hover {
+      border-color: var(--border-hover);
+      background: var(--glass-3);
+    }
+
+    /* ═══════════════════════════════════
+       MAIN AREA
+    ═══════════════════════════════════ */
+    .main {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(4, 8, 16, 0.7);
+      backdrop-filter: blur(20px);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .topbar::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--brand) 40%, var(--accent) 70%, transparent 100%);
+      opacity: 0.15;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+    }
+
+    .menu-btn {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--glass-2);
+      color: var(--text);
+      padding: 6px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 6px var(--brand);
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 0.8; box-shadow: 0 0 4px var(--brand); }
+      50% { opacity: 1; box-shadow: 0 0 10px var(--brand); }
+    }
+
+    .topbar-version {
+      font-size: 10px;
+      color: var(--text-faint);
+      font-family: 'Space Grotesk', monospace;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    /* ── Thread ── */
+    .thread-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 16px 16px;
+      position: relative;
+    }
+
+    .thread-wrap::-webkit-scrollbar { width: 4px; }
+    .thread-wrap::-webkit-scrollbar-track { background: transparent; }
+    .thread-wrap::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 9px; }
+
+    .thread {
+      width: min(900px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 24px;
+    }
+
+    /* ── Hero Empty State ── */
+    .starter {
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-xl);
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .starter::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 5%, var(--brand) 40%, var(--accent) 70%, transparent 95%);
+      opacity: 0.4;
+    }
+
+    .starter-hero {
+      padding: 32px 32px 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .starter-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--brand), #0097b2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 32px rgba(0, 210, 160, 0.35);
+      animation: logoFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .starter-hero h2 {
+      margin: 0 0 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #fff 0%, var(--brand) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .starter-hero p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .starter-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .starter-feature {
+      padding: 20px 20px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+
+    .starter-feature:last-child {
+      border-right: none;
+    }
+
+    .starter-feature-icon {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .starter-feature h3 {
+      margin: 0 0 4px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .starter-feature p {
+      margin: 0;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .starter-prompts {
+      padding: 16px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .starter-prompt-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 4px;
+    }
+
+    .starter-prompt-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      border: 1px solid var(--border-mid);
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--glass-1);
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .prompt-chip:hover {
+      border-color: var(--border-glow);
+      background: var(--brand-glow);
+      color: var(--text-accent);
+      box-shadow: 0 0 12px rgba(0, 210, 160, 0.1);
+    }
+
+    /* ── Messages ── */
+    .msg {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      animation: msgSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes msgSlideIn {
+      from { transform: translateY(8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .msg.user {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: min(760px, 94%);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .bubble-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bubble.user {
+      background: var(--user-bubble-bg);
+      border-color: var(--user-bubble-border);
+    }
+
+    .bubble.user .bubble-head {
+      border-bottom-color: rgba(0, 210, 160, 0.12);
+    }
+
+    .bubble.bot {
+      background: var(--bot-bubble-bg);
+      border-color: var(--bot-bubble-border);
+    }
+
+    .bubble-body {
+      padding: 14px 16px;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .bubble-body p {
+      margin: 0 0 10px;
+    }
+
+    .bubble-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble-body a {
+      color: #5ac8fa;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    /* ── Assistant steps ── */
+    .assistant-steps {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: #c8e4ff;
+    }
+
+    /* ── Flags ── */
+    .assistant-flags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .flag {
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .flag.warn {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+    }
+
+    .flag.danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .flag.safe {
+      background: rgba(0, 210, 160, 0.08);
+      border: 1px solid rgba(0, 210, 160, 0.25);
+      color: var(--brand);
+    }
+
+    /* ── Integration Panel ── */
+    .integration-panel {
+      margin-top: 12px;
+      border: 1px solid rgba(0, 210, 160, 0.2);
+      border-radius: var(--radius);
+      background: rgba(0, 20, 38, 0.7);
+      padding: 12px;
+    }
+
+    .integration-panel-head {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: var(--text-accent);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .integration-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .integration-item {
+      border: 1px solid rgba(0, 210, 160, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      background: rgba(0, 16, 30, 0.8);
+    }
+
+    .integration-item-title {
+      margin: 0 0 4px;
+      font-size: 11px;
+      color: #d6ebff;
+      font-weight: 600;
+    }
+
+    .integration-item-status {
+      margin: 0;
+      font-size: 11px;
+      color: #9dc3df;
+    }
+
+    .integration-item-status.ok {
+      color: var(--status-safe);
+    }
+
+    .integration-item-status.warn {
+      color: var(--status-warn);
+    }
+
+    .integration-links {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .integration-link {
+      border: 1px solid rgba(0, 210, 160, 0.25);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      color: var(--text-accent);
+      background: rgba(0, 210, 160, 0.06);
+      text-decoration: none;
+    }
+
+    .integration-link:hover {
+      border-color: rgba(0, 210, 160, 0.5);
+      background: rgba(0, 210, 160, 0.12);
+    }
+
+    @media (max-width: 620px) {
+      .integration-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── Clarification Flow ── */
+    .clarification-wrap {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid rgba(0, 210, 160, 0.2);
+      border-radius: var(--radius);
+      background: rgba(0, 18, 34, 0.85);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .clarification-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      opacity: 0.35;
+    }
+
+    .clarification-question {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e7f4ff;
+    }
+
+    .clarification-why {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .clarification-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .clarification-btn {
+      border: 1px solid rgba(0, 210, 160, 0.25);
+      border-radius: 999px;
+      background: rgba(0, 210, 160, 0.06);
+      color: var(--text);
+      padding: 7px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .clarification-btn:hover {
+      border-color: rgba(0, 210, 160, 0.5);
+      background: rgba(0, 210, 160, 0.12);
+    }
+
+    .clarification-btn.selected {
+      border-color: var(--brand);
+      background: rgba(0, 210, 160, 0.15);
+      color: var(--brand);
+    }
+
+    .clarification-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .clarification-selected {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--brand);
+    }
+
+    .clarification-pending {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid rgba(0, 210, 160, 0.15);
+      border-radius: var(--radius-sm);
+      background: rgba(0, 14, 28, 0.88);
+    }
+
+    .clarification-pending-bar {
+      position: relative;
+      overflow: hidden;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(0, 210, 160, 0.12);
+    }
+
+    .clarification-pending-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      animation: clarificationShimmer 1.2s linear infinite;
+    }
+
+    .clarification-pending-text {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .clarification-pending-text::after {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 10px 0 0 rgba(0, 210, 160, 0.6), 20px 0 0 rgba(0, 210, 160, 0.35);
+      animation: clarificationDots 1s ease-in-out infinite;
+    }
+
+    .clarification-reasoning {
+      margin-top: 10px;
+    }
+
+    @keyframes clarificationShimmer {
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes clarificationDots {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* ── Jump to Latest ── */
+    .jump-latest-btn {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      border: 1px solid var(--border-glow);
+      border-radius: 999px;
+      background: rgba(4, 10, 22, 0.94);
+      backdrop-filter: blur(12px);
+      color: var(--text-accent);
+      padding: 7px 14px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+      z-index: 5;
+      box-shadow: 0 4px 20px rgba(0, 210, 160, 0.15);
+    }
+
+    .jump-latest-btn.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Agent Strip ── */
+    .agent-strip {
+      width: min(900px, 100%);
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .agent-strip-inner {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(4, 8, 20, 0.88);
+      backdrop-filter: blur(12px);
+      padding: 10px 12px;
+      display: none;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .agent-chip {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(8, 16, 32, 0.7);
+      font-family: inherit;
+    }
+
+    .agent-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--chip-idle);
+    }
+
+    .agent-chip.running {
+      border-color: rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.06);
+    }
+
+    .agent-chip.running .agent-dot {
+      background: var(--chip-run);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.7);
+      animation: agentPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes agentPulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(59, 130, 246, 0.5); }
+      50% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.9); }
+    }
+
+    .agent-chip.done .agent-dot {
+      background: var(--chip-done);
+      box-shadow: 0 0 6px rgba(0, 210, 160, 0.5);
+    }
+
+    .agent-chip.failed .agent-dot {
+      background: var(--chip-failed);
+    }
+
+    /* ── Composer ── */
+    .composer-wrap {
+      border-top: 1px solid var(--border);
+      background: rgba(2, 6, 12, 0.88);
+      backdrop-filter: blur(24px);
+      padding: 14px 16px;
+      flex-shrink: 0;
+    }
+
+    .composer {
+      width: min(900px, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      background: rgba(8, 16, 32, 0.8);
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .composer:focus-within {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 3px rgba(0, 210, 160, 0.08), 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .composer textarea {
+      border: 0;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      min-height: 48px;
+      max-height: 180px;
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .composer textarea::placeholder {
+      color: var(--text-faint);
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--glass-2);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--border-hover);
+      background: var(--glass-3);
+      color: var(--text);
+    }
+
+    .icon-btn.active {
+      border-color: var(--border-glow);
+      color: var(--brand);
+      background: var(--brand-glow);
+      box-shadow: 0 0 10px rgba(0, 210, 160, 0.15);
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--brand), #00b4cc);
+      color: var(--bg-void);
+      border: 0;
+      min-width: 72px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 210, 160, 0.2);
+    }
+
+    .send-btn:hover {
+      background: linear-gradient(135deg, #00e4ae, #00cce8);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 210, 160, 0.35);
+    }
+
+    .send-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 210, 160, 0.15);
+    }
+
+    .composer-meta {
+      width: min(900px, 100%);
+      margin: 8px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-faint);
+      font-size: 10px;
+    }
+
+    .attachment-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 12px;
+      background: var(--glass-2);
+      max-width: 100%;
+    }
+
+    .attachment-pill span {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attachment-pill button {
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .msg-attachments {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .msg-attachment-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(4, 12, 26, 0.8);
+      padding: 10px;
+      display: block;
+    }
+
+    .msg-attachment-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .msg-attachment-preview {
+      width: 100%;
+      max-width: 280px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      display: block;
+      object-fit: cover;
+      margin-bottom: 8px;
+    }
+
+    .msg-attachment-meta {
+      min-width: 0;
+    }
+
+    .msg-attachment-name {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg-attachment-sub {
+      margin: 3px 0 0;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .attachment-badge {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .msg-meta-note {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ── Stage Meta Strip ── */
+    .stage-meta-strip {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(4, 12, 26, 0.7);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .stage-chip {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── Deep Action ── */
+    .deep-action-wrap {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .deep-action-btn {
+      border: 1px solid rgba(0, 210, 160, 0.3);
+      border-radius: 999px;
+      background: rgba(0, 210, 160, 0.06);
+      color: var(--text-accent);
+      padding: 7px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .deep-action-btn:hover {
+      border-color: rgba(0, 210, 160, 0.55);
+      background: rgba(0, 210, 160, 0.12);
+    }
+
+    .deep-action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ── Technical Details ── */
+    .msg-technical-details {
+      margin-top: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .msg-technical-details summary {
+      cursor: pointer;
+      color: #6ba4dc;
+      font-size: 12px;
+    }
+
+    .msg-technical-details ul {
+      margin: 8px 0 0 16px;
+      padding: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    /* ── Drawer toggle ── */
+    .drawer-toggle {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--glass-1);
+      color: var(--text-muted);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* ── Analyst Drawer ── */
+    .drawer {
+      position: fixed;
+      right: 12px;
+      top: 66px;
+      width: min(390px, calc(100vw - 24px));
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      background: rgba(4, 10, 22, 0.97);
+      backdrop-filter: blur(24px);
+      box-shadow: var(--shadow-lg);
+      padding: 14px;
+      z-index: 40;
+      display: none;
+    }
+
+    .drawer.visible {
+      display: block;
+    }
+
+    .drawer h3 {
+      margin: 0 0 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      color: var(--text-accent);
+    }
+
+    .drawer pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    /* ── Overlay ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 15;
+    }
+
+    /* ── Upload Toast ── */
+    .upload-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 96px;
+      transform: translate(-50%, 16px);
+      border: 1px solid var(--border-glow);
+      border-radius: 999px;
+      background: rgba(4, 14, 30, 0.96);
+      backdrop-filter: blur(16px);
+      color: var(--text-accent);
+      padding: 8px 16px;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 70;
+    }
+
+    .upload-toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    /* ══════════════════════════════
+       RESPONSIVE — MOBILE
+    ══════════════════════════════ */
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: min(84vw, 320px);
+        transform: translateX(-110%);
+        transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .menu-btn {
+        display: inline-flex;
+      }
+
+      .overlay.visible {
+        display: block;
+      }
+
+      .bubble {
+        max-width: 96%;
+      }
+
+      .composer {
+        grid-template-columns: 1fr;
+      }
+
+      .composer-actions {
+        justify-content: flex-end;
+      }
+
+      .starter-features {
+        grid-template-columns: 1fr;
+      }
+
+      .starter-feature {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .starter-feature:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="bg-vignette"></div>
-  <div class="bg-orb orb-a"></div>
-  <div class="bg-orb orb-b"></div>
+  <!-- Background animated glow orbs -->
+  <div aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden">
+    <div style="position:absolute;top:-200px;left:-150px;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,210,160,0.04) 0%,transparent 70%);animation:orbDrift1 18s ease-in-out infinite;"></div>
+    <div style="position:absolute;bottom:-200px;right:-150px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.04) 0%,transparent 70%);animation:orbDrift2 22s ease-in-out infinite;"></div>
+  </div>
+  <style>
+    @keyframes orbDrift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,30px) scale(1.1)} }
+    @keyframes orbDrift2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,-40px) scale(1.08)} }
+  </style>
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <div>
-        <p class="eyebrow">SATARK OPERATOR CONSOLE</p>
-        <h1>Fraud Investigation Ops</h1>
+  <div class="overlay" id="overlay"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-left">
+          <div class="brand-icon">🛡️</div>
+          <div>
+            <small>Citizen Fraud Intelligence</small>
+            <h1>SATARK AI</h1>
+          </div>
+        </div>
+        <span class="mode-pill" id="leftModePill">Citizen</span>
       </div>
-    </div>
 
-    <div class="top-actions">
-      <div class="chip live-chip">
-        <span class="pulse"></span>
-        Live Orchestration
-      </div>
-      <a class="chip" href="/ui">Citizen UI</a>
-      <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">Theme</button>
-    </div>
-  </header>
+      <button class="new-chat" id="newChatBtn" type="button">
+        <span>＋</span>
+        New Conversation
+      </button>
 
-  <main class="app-shell">
-    <section class="hero" id="hero">
-      <div class="hero-copy">
-        <p class="hero-kicker">CYBER FRAUD COMMAND</p>
-        <h2>Paste evidence.<br />Watch six agents investigate.</h2>
-        <p class="hero-sub">
-          Manager routes suspicious content across Scam Detector, Audio, APK, OSINT,
-          and Golden Hour response to produce one final case report.
-        </p>
+      <div class="search-wrap">
+        <input id="chatSearch" type="search" placeholder="Search conversations…" autocomplete="off" />
       </div>
+
+      <div class="history" id="historyList"></div>
+
+      <div class="profile">
+        <div class="profile-avatar" id="profileAvatar">G</div>
+        <p class="profile-name" id="profileName">Guest</p>
+        <p class="profile-email" id="profileEmail">Not signed in</p>
+        <div class="profile-actions">
+          <button type="button" id="signInBtn">Sign in with Google</button>
+          <a href="/auth/google/logout" id="logoutBtn" style="display:none">Logout</a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="top-left">
+          <button class="menu-btn" id="menuBtn" type="button">☰</button>
+          <span>SATARK Conversation</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center">
+          <div class="topbar-status">
+            <div class="status-dot"></div>
+            <span>Live</span>
+          </div>
+          <span class="topbar-version">v2.5</span>
+          <span class="mode-pill" id="modePill">Citizen</span>
+          <button class="drawer-toggle" id="drawerToggle" type="button">Analyst Trace</button>
+        </div>
+      </header>
+
+      <section class="thread-wrap" id="threadWrap">
+        <div class="thread" id="thread"></div>
+        <button id="jumpToLatestBtn" class="jump-latest-btn" type="button">↓ Latest</button>
+      </section>
+
+      <section class="agent-strip">
+        <div class="agent-strip-inner" id="agentStrip"></div>
+      </section>
 
       <section class="composer-wrap">
-        <div class="composer glass" id="composer">
-          <div class="upload-row" id="filePills"></div>
-          <textarea
-            id="promptInput"
-            placeholder="Paste suspicious message, call transcript, payment request, or incident details..."
-            rows="1"
-          ></textarea>
-
+        <input id="fileInput" type="file" multiple hidden />
+        <div class="composer">
+          <textarea id="composerInput" placeholder="Paste a suspicious message, explain the call, or ask SATARK for guidance…" rows="1"></textarea>
           <div class="composer-actions">
-            <label class="upload-btn">
-              <input type="file" id="fileInput" multiple hidden />
-              Attach Evidence
-            </label>
-            <button class="send-btn" id="sendBtn" type="button" aria-label="Send">
-              Launch Investigation
-            </button>
+            <button class="icon-btn" id="uploadBtn" type="button" title="Attach files">📎</button>
+            <button class="icon-btn" id="micBtn" type="button" title="Voice input">🎙</button>
+            <button class="sendBtn send-btn" id="sendBtn" type="button">Send</button>
           </div>
+        </div>
+        <div class="composer-meta">
+          <div id="attachmentSlot"></div>
+          <div id="composerHint">Enter to send · Shift+Enter for new line</div>
         </div>
       </section>
-    </section>
+    </main>
+  </div>
 
-    <section class="ops hidden" id="opsView">
-      <section class="output-panel glass">
-        <div class="panel-head">
-          <div>
-            <span class="panel-label">Case Report</span>
-            <h3 class="panel-title" id="outputTitle">Awaiting investigation</h3>
+  <aside class="drawer" id="analystDrawer">
+    <h3>🔬 Latest Analyst Trace</h3>
+    <pre id="analystJson">No run yet.</pre>
+  </aside>
+
+  <div id="uploadToast" class="upload-toast" aria-live="polite"></div>
+
+
+  <script>
+    const SESSION_STORAGE_KEY = 'satark_session_id';
+    const ANALYST_MODE_KEY = 'satark_view_mode';
+
+    const state = {
+      sessionId: null,
+      profile: {
+        connected: false,
+        email: null,
+        givenName: null,
+        familyName: null,
+        fullName: null,
+        name: 'Guest',
+      },
+      chats: [],
+      activeChatId: null,
+      selectedFiles: [],
+      search: '',
+      isProcessing: false,
+      currentRunId: null,
+      evtSource: null,
+      pollTimer: null,
+      agentStatus: {},
+      analystMode: false,
+      drawerOpen: false,
+      latestPayload: null,
+      speechRec: null,
+      recording: false,
+      mediaRecorder: null,
+      mediaChunks: [],
+      speechBaseText: '',
+      speechFinalText: '',
+      micMode: 'idle',
+      messageSeq: 0,
+      followThread: true,
+      clarificationPulseTimer: null,
+      thinkingPulseTimer: null,
+      thinkingMessageId: null,
+      deepIdempotencyBySource: {},
+      deepRunBySource: {},
+      firConsentByCase: {},
+    };
+
+    const GEMINI_REPLY_INSTRUCTION = [
+      'You are SATARK AI, a citizen cyber-fraud safety assistant.',
+      'Write in clear IELTS 7 to 7.5 English.',
+      'When user context is already clear, do not ask unnecessary follow-up questions.',
+      'If context is missing, ask at most one concise yes/no clarification at a time.',
+      'Do not escalate to emergency unless user indicates money loss or sensitive data exposure.',
+      'Reply format is strict:',
+      '1) Provide chat_reply in 2 to 4 natural sentences.',
+      '2) Then provide summary as one short neutral sentence.',
+      '3) Then provide exactly 3 to 4 bullet points of safety precautions or next steps.',
+      '4) Use only available evidence from user text and uploaded files.',
+      '5) Do not invent urgency unless evidence supports it.',
+      '6) If an attachment exists, mention that attachment directly in chat_reply.',
+      'Return structured fields for chat_reply, summary, and recommended_actions.',
+    ].join('\n');
+
+    const AGENT_ORDER = ['manager', 'scam_detector', 'osint', 'audio_analyzer', 'apk_analyzer', 'golden_hour', 'google_calendar', 'google_tasks', 'google_gmail', 'google_docs'];
+
+    const AGENT_PROGRESS_HINTS = {
+      manager: 'Booting manager...',
+      apk_analyzer: 'Inspecting APK structure...',
+      osint: 'Searching public references...',
+      scam_detector: 'Analyzing scam indicators...',
+      golden_hour: 'Preparing response plan...',
+    };
+
+    let uploadToastTimer = null;
+
+    function getSessionId() {
+      if (state.sessionId) return state.sessionId;
+      const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (existing && existing.length > 8) {
+        state.sessionId = existing;
+        return existing;
+      }
+      const random = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      state.sessionId = 'sess_' + random;
+      localStorage.setItem(SESSION_STORAGE_KEY, state.sessionId);
+      return state.sessionId;
+    }
+
+    function normalizeStage(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      if (raw === 'analysis') return 'analysis';
+      if (raw === 'deep') return 'deep';
+      return 'triage';
+    }
+
+    function getDeepIdempotencyKey(sourceRunId) {
+      const source = String(sourceRunId || '').trim();
+      if (!source) return '';
+      if (!state.deepIdempotencyBySource[source]) {
+        state.deepIdempotencyBySource[source] = 'deep_' + source + '_' + Math.random().toString(36).slice(2, 10);
+      }
+      return state.deepIdempotencyBySource[source];
+    }
+
+    function isAnalystMode() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const explicit = String(params.get('view') || params.get('mode') || '').trim().toLowerCase();
+        if (explicit === 'analyst' || explicit === 'debug') return true;
+      } catch (_e) {}
+      try {
+        return String(localStorage.getItem(ANALYST_MODE_KEY) || '').trim().toLowerCase() === 'analyst';
+      } catch (_e) {
+        return false;
+      }
+    }
+
+    function resolveDisplayName(profile) {
+      const given = String(profile && profile.givenName ? profile.givenName : '').trim();
+      const family = String(profile && profile.familyName ? profile.familyName : '').trim();
+      const full = String(profile && profile.fullName ? profile.fullName : '').trim();
+      const email = String(profile && profile.email ? profile.email : '').trim();
+
+      const fullFromParts = [given, family].filter(Boolean).join(' ').trim();
+      if (fullFromParts) return fullFromParts;
+      if (full) return full;
+      if (email) {
+        const local = email.split('@')[0] || email;
+        return local
+          .split(/[._-]+/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ') || 'User';
+      }
+      return 'Guest';
+    }
+
+    function classifyAttachment(fileName, mimeType) {
+      const n = String(fileName || '').toLowerCase();
+      const m = String(mimeType || '').toLowerCase();
+      if (n.endsWith('.apk') || m === 'application/vnd.android.package-archive') return 'apk';
+      if (m.startsWith('image/')) return 'image';
+      if (m.startsWith('audio/')) return 'audio';
+      if (m.includes('pdf') || m.includes('text') || m.includes('document')) return 'document';
+      return 'file';
+    }
+
+    function normalizeAttachment(file) {
+      if (!file) return null;
+      return {
+        id: 'att_' + Math.random().toString(36).slice(2),
+        name: String(file.name || 'attachment.bin'),
+        mimeType: String(file.type || 'application/octet-stream'),
+        size: Number(file.size || 0),
+        category: classifyAttachment(file.name, file.type),
+        previewState: 'processing',
+        contentBase64: null,
+        file,
+      };
+    }
+
+    function primeAttachmentData(attachment) {
+      if (!attachment || !attachment.file || attachment.contentBase64) return;
+      attachment.previewState = 'processing';
+      fileToDataUrl(attachment.file)
+        .then((dataUrl) => {
+          if (dataUrl) attachment.contentBase64 = String(dataUrl);
+          attachment.previewState = 'ready';
+          renderAttachment();
+        })
+        .catch(() => {
+          attachment.previewState = 'ready';
+          renderAttachment();
+        });
+    }
+
+    function toAttachmentViewModel(att) {
+      const mime = String(att.mimeType || '');
+      const shouldEmbedInline = mime.startsWith('image/');
+      return {
+        id: att.id,
+        name: att.name,
+        mimeType: mime,
+        size: att.size,
+        category: att.category,
+        previewState: att.previewState || 'ready',
+        contentBase64: shouldEmbedInline ? String(att.contentBase64 || '') : '',
+      };
+    }
+
+    function addSelectedFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      const incoming = Array.from(fileList)
+        .map((f) => normalizeAttachment(f))
+        .filter(Boolean);
+      const seen = new Set(state.selectedFiles.map((x) => `${x.name}|${x.size}|${x.mimeType}`));
+      const added = [];
+      for (const item of incoming) {
+        const key = `${item.name}|${item.size}|${item.mimeType}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        state.selectedFiles.push(item);
+        added.push(item);
+      }
+      state.selectedFiles = state.selectedFiles.slice(0, 6);
+      renderAttachment();
+      for (const item of added) {
+        primeAttachmentData(item);
+      }
+    }
+
+    function showUploadToast(message) {
+      const node = document.getElementById('uploadToast');
+      if (!node) return;
+      node.textContent = String(message || 'Attachment added');
+      node.classList.add('visible');
+      if (uploadToastTimer) clearTimeout(uploadToastTimer);
+      uploadToastTimer = setTimeout(() => {
+        node.classList.remove('visible');
+      }, 1400);
+    }
+
+    function extractPastedFiles(e) {
+      const out = [];
+      const dt = e && e.clipboardData;
+      if (!dt) return out;
+
+      if (dt.files && dt.files.length) {
+        for (const f of Array.from(dt.files)) {
+          if (f && (String(f.type || '').startsWith('image/') || String(f.type || '') === 'application/pdf')) {
+            out.push(f);
+          }
+        }
+      }
+
+      if (!out.length && dt.items && dt.items.length) {
+        for (const item of Array.from(dt.items)) {
+          if (item.kind !== 'file') continue;
+          const f = item.getAsFile();
+          if (!f) continue;
+          if (String(f.type || '').startsWith('image/') || String(f.type || '') === 'application/pdf') {
+            out.push(f);
+          }
+        }
+      }
+
+      return out;
+    }
+
+    async function handlePastedUpload(file) {
+      if (!file) return;
+      addSelectedFiles([file]);
+      showUploadToast(String(file.type || '').startsWith('image/') ? 'Pasted image attached' : 'Pasted file attached');
+      if (!state.isProcessing) {
+        document.getElementById('composerHint').textContent = 'Attachment ready. Press Send to analyze.';
+      }
+    }
+
+    function handlePasteUploadEvent(e) {
+      if (!e || e.__satarkPasteHandled) return;
+      const files = extractPastedFiles(e);
+      if (!files.length) return;
+
+      const active = document.activeElement;
+      const typingInTextField =
+        active &&
+        (active.tagName === 'INPUT' ||
+         active.tagName === 'TEXTAREA' ||
+         active.isContentEditable);
+
+      if (typingInTextField && !e.ctrlKey && !e.metaKey) return;
+
+      e.__satarkPasteHandled = true;
+      e.preventDefault();
+      for (const file of files) {
+        void handlePastedUpload(file);
+      }
+    }
+
+    function removeSelectedFile(id) {
+      state.selectedFiles = state.selectedFiles.filter((f) => f.id !== id);
+      renderAttachment();
+    }
+
+    function storageKey() {
+      const id = (state.profile.email || 'guest').toLowerCase();
+      return 'satark_chat_history_' + encodeURIComponent(id);
+    }
+
+    function saveChats() {
+      try {
+        localStorage.setItem(storageKey(), JSON.stringify(state.chats));
+      } catch (_e) {}
+    }
+
+    function loadChats() {
+      state.deepIdempotencyBySource = {};
+      state.deepRunBySource = {};
+      try {
+        const raw = localStorage.getItem(storageKey());
+        state.chats = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(state.chats)) state.chats = [];
+      } catch (_e) {
+        state.chats = [];
+      }
+      for (const chat of state.chats) {
+        if (!chat || !Array.isArray(chat.messages)) continue;
+        for (const message of chat.messages) {
+          if (!message.id) message.id = nextMessageId();
+          if (message.clarificationPending === undefined) message.clarificationPending = false;
+          if (message.clarificationAnswered === undefined) message.clarificationAnswered = false;
+          if (message.clarificationSelectedId === undefined) message.clarificationSelectedId = null;
+          if (message.clarificationSelectedLabel === undefined) message.clarificationSelectedLabel = null;
+          if (message.clarificationPendingPhase === undefined) message.clarificationPendingPhase = 0;
+          if (message.clarificationPendingStartedAt === undefined) message.clarificationPendingStartedAt = null;
+          if (message.analysisStage === undefined) message.analysisStage = null;
+          if (message.caseId === undefined) message.caseId = null;
+          if (message.sourceRunId === undefined) message.sourceRunId = null;
+          if (message.contractVersion === undefined) message.contractVersion = null;
+          if (message.analysisStageVersion === undefined) message.analysisStageVersion = null;
+          if (message.deepReasonCode === undefined) message.deepReasonCode = null;
+          if (message.eligibleForDeep === undefined) message.eligibleForDeep = false;
+          if (message.deepRunId === undefined) message.deepRunId = null;
+          if (message.deepRunState === undefined) message.deepRunState = null;
+          if (message.idempotentReplay === undefined) message.idempotentReplay = false;
+
+          const sourceRun = String(message.runId || '').trim();
+          const deepRun = String(message.deepRunId || '').trim();
+          if (sourceRun && deepRun) {
+            state.deepRunBySource[sourceRun] = deepRun;
+          }
+          const stage = normalizeStage(message.analysisStage);
+          if (stage === 'deep') {
+            const src = String(message.sourceRunId || '').trim();
+            const ownRun = String(message.runId || '').trim();
+            if (src && ownRun) state.deepRunBySource[src] = ownRun;
+          }
+        }
+      }
+      if (!state.chats.length) {
+        const starter = createChat('New SATARK chat');
+        state.chats = [starter];
+        state.activeChatId = starter.id;
+        saveChats();
+      }
+      if (!state.activeChatId || !state.chats.some((c) => c.id === state.activeChatId)) {
+        state.activeChatId = state.chats[0].id;
+      }
+    }
+
+    function createChat(title) {
+      const now = new Date().toISOString();
+      return {
+        id: 'chat_' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+        title: title || 'New chat',
+        createdAt: now,
+        updatedAt: now,
+        messages: [],
+      };
+    }
+
+    function getActiveChat() {
+      return state.chats.find((c) => c.id === state.activeChatId) || null;
+    }
+
+    function updateChat(chat) {
+      const idx = state.chats.findIndex((c) => c.id === chat.id);
+      if (idx >= 0) state.chats[idx] = chat;
+      chat.updatedAt = new Date().toISOString();
+      state.chats.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      saveChats();
+    }
+
+    function nextMessageId() {
+      state.messageSeq += 1;
+      return 'msg_' + Date.now().toString(36) + '_' + state.messageSeq.toString(36);
+    }
+
+    function updateMessageById(messageId, patch = {}) {
+      const chat = getActiveChat();
+      if (!chat) return false;
+      const idx = (chat.messages || []).findIndex((m) => m && m.id === messageId);
+      if (idx < 0) return false;
+      chat.messages[idx] = {
+        ...chat.messages[idx],
+        ...patch,
+      };
+      updateChat(chat);
+      render();
+      return true;
+    }
+
+    function getMessageById(messageId) {
+      const chat = getActiveChat();
+      if (!chat) return null;
+      return (chat.messages || []).find((m) => m && m.id === messageId) || null;
+    }
+
+    async function triggerDeepAnalysisForMessage(messageId) {
+      if (!messageId || state.isProcessing) return;
+      const target = getMessageById(messageId);
+      if (!target) return;
+
+      const sourceRunId = String(target.runId || '').trim();
+      if (!sourceRunId) return;
+
+      const caseId = String(target.caseId || '').trim() || null;
+      const idempotencyKey = getDeepIdempotencyKey(sourceRunId);
+
+      state.isProcessing = true;
+      document.getElementById('composerHint').textContent = 'Starting deep analysis for this case...';
+      updateMessageById(messageId, {
+        deepRunState: 'running',
+      });
+
+      let deepMessageId = null;
+      try {
+        const res = await fetch('/api/analyze/deep', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': idempotencyKey,
+          },
+          body: JSON.stringify({
+            source_run_id: sourceRunId,
+            generate_report: true,
+            trigger_mcp_actions: false,
+            stream: true,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Could not start deep analysis');
+
+        const ack = await res.json();
+        const deepRunId = String(ack.run_id || '').trim();
+        if (!deepRunId) throw new Error('Missing deep run id');
+
+        state.deepRunBySource[sourceRunId] = deepRunId;
+        updateMessageById(messageId, {
+          deepRunId,
+          deepRunState: 'running',
+        });
+
+        const replayed = Boolean(ack.idempotent_replay);
+        const chat = getActiveChat();
+        const existingDeep = replayed && chat
+          ? (chat.messages || []).find((m) => m && String(m.runId || '').trim() === deepRunId && normalizeStage(m.analysisStage) === 'deep')
+          : null;
+
+        if (existingDeep && existingDeep.id) {
+          deepMessageId = String(existingDeep.id);
+          updateMessageById(deepMessageId, {
+            text: 'Resuming an existing deep analysis run for this case.',
+            flags: [{ text: 'Deep run resumed', level: 'warn' }],
+            idempotentReplay: true,
+            deepRunState: 'running',
+          });
+        } else {
+          deepMessageId = addMessage(
+            'assistant',
+            replayed ? 'Resuming an existing deep analysis run for this case.' : 'Deep analysis started. I will post refined findings shortly.',
+            {
+              runId: deepRunId,
+              caseId: String(ack.case_id || caseId || '').trim() || caseId,
+              analysisStage: 'deep',
+              sourceRunId,
+              contractVersion: String(ack.contract_version || '').trim() || null,
+              analysisStageVersion: Number(ack.analysis_stage_version || 0) || null,
+              eligibleForDeep: false,
+              deepReason: String(ack.deep_reason || 'Deep analysis accepted for this case.').trim(),
+              deepReasonCode: String(ack.deep_reason_code || 'DEEP_ACCEPTED').trim(),
+              idempotentReplay: replayed,
+              flags: replayed ? [{ text: 'Deep run resumed', level: 'warn' }] : [{ text: 'Deep run started', level: 'warn' }],
+              steps: [],
+            },
+          );
+        }
+
+        state.currentRunId = deepRunId;
+        startStream(deepRunId);
+
+        const result = await waitForResult(deepRunId);
+        state.latestPayload = result;
+        const assistant = buildAssistantPayload(result || {});
+
+        if (!assistant.ok) {
+          updateMessageById(String(deepMessageId || ''), {
+            text: assistant.error || 'Deep analysis response is incomplete. Please retry.',
+            flags: [{ text: 'Retry needed', level: 'warn' }],
+            steps: [],
+          });
+        } else {
+          updateMessageById(String(deepMessageId || ''), {
+            text: assistant.text,
+            steps: assistant.steps,
+            flags: assistant.flags,
+            confidenceNote: assistant.confidenceNote,
+            evidenceNarrative: assistant.evidenceNarrative,
+            uncertaintyNote: assistant.uncertaintyNote,
+            technicalDetails: assistant.technicalDetails,
+            clarification: assistant.clarification,
+            runId: deepRunId,
+            caseId: assistant.caseId,
+            analysisStage: assistant.analysisStage,
+            sourceRunId: assistant.sourceRunId || sourceRunId,
+            contractVersion: assistant.contractVersion,
+            analysisStageVersion: assistant.analysisStageVersion,
+            eligibleForDeep: assistant.eligibleForDeep,
+            deepReason: assistant.deepReason,
+            deepReasonCode: assistant.deepReasonCode,
+            deepAnalysisUrl: assistant.deepAnalysisUrl,
+            integrationStatus: assistant.integrationStatus,
+            idempotentReplay: replayed,
+          });
+        }
+
+        updateMessageById(messageId, {
+          deepRunState: 'done',
+          deepRunId,
+          eligibleForDeep: false,
+          deepReason: 'Deep analysis completed for this case.',
+          deepReasonCode: 'DEEP_ALREADY_EXECUTED',
+        });
+      } catch (_err) {
+        updateMessageById(messageId, {
+          deepRunState: 'failed',
+        });
+        if (deepMessageId) {
+          updateMessageById(String(deepMessageId), {
+            text: 'I could not start deep analysis right now. Please try again shortly.',
+            flags: [{ text: 'Deep analysis unavailable', level: 'warn' }],
+            steps: [],
+          });
+        } else {
+          addMessage('assistant', 'I could not start deep analysis right now. Please try again shortly.');
+        }
+      } finally {
+        state.isProcessing = false;
+        document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        closeStreamAndPoll();
+        render();
+      }
+    }
+
+    function getClarificationPendingLabel(phase) {
+      const labels = [
+        'Reading screenshot',
+        'Checking text in image',
+        'Preparing next-step guidance',
+      ];
+      const idx = Math.max(0, Number(phase || 0)) % labels.length;
+      return labels[idx];
+    }
+
+    function stopClarificationPulse() {
+      if (!state.clarificationPulseTimer) return;
+      clearInterval(state.clarificationPulseTimer);
+      state.clarificationPulseTimer = null;
+    }
+
+    function startClarificationPulse(messageId) {
+      stopClarificationPulse();
+      state.clarificationPulseTimer = setInterval(() => {
+        const chat = getActiveChat();
+        if (!chat) {
+          stopClarificationPulse();
+          return;
+        }
+        const target = (chat.messages || []).find((m) => m && m.id === messageId);
+        if (!target || !target.clarificationPending) {
+          stopClarificationPulse();
+          return;
+        }
+        updateMessageById(messageId, {
+          clarificationPendingPhase: (Number(target.clarificationPendingPhase || 0) + 1) % 3,
+        });
+      }, 900);
+    }
+
+    function stopThinkingPulse() {
+      if (!state.thinkingPulseTimer) return;
+      clearInterval(state.thinkingPulseTimer);
+      state.thinkingPulseTimer = null;
+      state.thinkingMessageId = null;
+    }
+
+    function startThinkingPulse(messageId) {
+      stopThinkingPulse();
+      state.thinkingMessageId = messageId;
+      const labels = [
+        'SATARK AI is analyzing your case.',
+        'SATARK AI is checking risk signals..',
+        'SATARK AI is preparing next steps...',
+      ];
+      state.thinkingPulseTimer = setInterval(() => {
+        const chat = getActiveChat();
+        if (!chat) {
+          stopThinkingPulse();
+          return;
+        }
+        const target = (chat.messages || []).find((m) => m && m.id === messageId);
+        if (!target) {
+          stopThinkingPulse();
+          return;
+        }
+        const phase = Number(target.clarificationPendingPhase || 0);
+        updateMessageById(messageId, {
+          text: labels[phase % labels.length],
+          clarificationPendingPhase: (phase + 1) % labels.length,
+        });
+      }, 850);
+    }
+
+    function isNearThreadBottom() {
+      const wrap = document.getElementById('threadWrap');
+      if (!wrap) return true;
+      const remaining = wrap.scrollHeight - (wrap.scrollTop + wrap.clientHeight);
+      return remaining < 72;
+    }
+
+    function updateJumpToLatestButton() {
+      const btn = document.getElementById('jumpToLatestBtn');
+      if (!btn) return;
+      btn.classList.toggle('visible', !state.followThread);
+    }
+
+    function scrollThreadToLatest(force = false) {
+      const wrap = document.getElementById('threadWrap');
+      if (!wrap) return;
+      if (force || state.followThread) {
+        wrap.scrollTop = wrap.scrollHeight;
+        state.followThread = true;
+      }
+      updateJumpToLatestButton();
+    }
+
+    function formatTime(iso) {
+      if (!iso) return '';
+      try {
+        return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (_e) {
+        return '';
+      }
+    }
+
+    function textPreview(text, maxLen = 90) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (clean.length <= maxLen) return clean;
+      return clean.slice(0, maxLen - 1) + '...';
+    }
+
+    function makeTitleFromText(text) {
+      const src = String(text || '').toLowerCase();
+      if (src.includes('kyc')) return 'Suspicious KYC SMS';
+      if (src.includes('otp') && (src.includes('lost') || src.includes('debited'))) return 'OTP shared and money lost';
+      if (src.includes('upi') && src.includes('lost')) return 'UPI money lost case';
+      if (src.includes('lottery') || src.includes('prize')) return 'Lottery message check';
+      if (src.includes('bank')) return 'Bank message check';
+      const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ').slice(0, 5).join(' ');
+      return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'New SATARK chat';
+    }
+
+    function sanitizeCitizenText(text) {
+      let out = String(text || '').trim();
+      if (!out) return out;
+      out = out.replace(/\s{2,}/g, ' ').trim();
+      return out;
+    }
+
+    function renderHistory() {
+      const host = document.getElementById('historyList');
+      host.innerHTML = '';
+      const query = state.search.toLowerCase().trim();
+      const items = state.chats.filter((chat) => {
+        if (!query) return true;
+        const blob = [chat.title, ...(chat.messages || []).map((m) => m.text || '')].join(' ').toLowerCase();
+        return blob.includes(query);
+      });
+
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'chat-item';
+        empty.innerHTML = '<p class="title">No chats found</p><p class="meta">Try another keyword.</p>';
+        host.appendChild(empty);
+        return;
+      }
+
+      for (const chat of items) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chat-item' + (chat.id === state.activeChatId ? ' active' : '');
+        const last = (chat.messages || []).slice(-1)[0];
+        btn.innerHTML = `
+          <p class="title">${escapeHtml(chat.title || 'Untitled')}</p>
+          <p class="meta">${escapeHtml(formatTime(chat.updatedAt || chat.createdAt))}</p>
+          <p class="snippet">${escapeHtml(textPreview(last ? last.text : 'No messages yet'))}</p>
+        `;
+        btn.addEventListener('click', () => {
+          state.activeChatId = chat.id;
+          closeSidebarOnMobile();
+          render();
+        });
+        host.appendChild(btn);
+      }
+    }
+
+    function renderThread() {
+      const thread = document.getElementById('thread');
+      const chat = getActiveChat();
+      thread.innerHTML = '';
+      if (!chat || !chat.messages.length) {
+        const starter = document.createElement('div');
+        starter.className = 'starter';
+        starter.innerHTML = `
+          <div class="starter-hero">
+            <div class="starter-logo">🛡️</div>
+            <h2>SATARK AI — Your Cyber Safety Partner</h2>
+            <p>India's most advanced AI platform for detecting digital fraud, scam SMS, suspicious apps, and phishing attacks in real-time.</p>
           </div>
-          <div class="panel-badges">
-            <span class="mini-chip" id="runState">Idle</span>
-            <span class="mini-chip" id="artifactCount">0 signals</span>
-          </div>
-        </div>
-
-        <div class="merge-flare" id="mergeFlare"></div>
-
-        <section class="summary-hero" id="summaryHero">
-          <div class="summary-main">
-            <p class="summary-kicker">Final Answer</p>
-            <h2 id="summaryHeadline">No verdict yet</h2>
-            <p id="summaryText">Submit content to generate a fraud investigation report.</p>
-          </div>
-          <div class="summary-stats">
-            <div class="stat-card">
-              <span>Risk Level</span>
-              <strong id="riskCount">-</strong>
+          <div class="starter-features">
+            <div class="starter-feature">
+              <div class="starter-feature-icon">📸</div>
+              <h3>Screenshot Analysis</h3>
+              <p>Upload screenshots of suspicious messages, calls, or links for instant AI-powered fraud detection.</p>
             </div>
-            <div class="stat-card">
-              <span>Confidence</span>
-              <strong id="confidenceCount">-</strong>
+            <div class="starter-feature">
+              <div class="starter-feature-icon">📱</div>
+              <h3>APK Security Scan</h3>
+              <p>Scan Android apps before installing. Our AI detects malware, data theft, and harmful permissions.</p>
             </div>
-            <div class="stat-card">
-              <span>Similar Cases</span>
-              <strong id="similarCount">0</strong>
+            <div class="starter-feature">
+              <div class="starter-feature-icon">🔎</div>
+              <h3>OSINT Intelligence</h3>
+              <p>Cross-reference phone numbers, URLs, and identifiers against fraud databases instantly.</p>
             </div>
           </div>
-        </section>
-
-        <section class="artifact-stage" id="artifactStage">
-          <article class="artifact-column" id="signalsColumn">
-            <div class="artifact-head">
-              <span class="artifact-label">Signals Found</span>
+          <div class="starter-prompts">
+            <p class="starter-prompt-label">Try asking</p>
+            <div class="starter-prompt-chips">
+              <button class="prompt-chip" type="button" data-prompt="I received a suspicious KYC message from my bank asking to click a link. Is it safe?">🏦 Suspicious bank SMS</button>
+              <button class="prompt-chip" type="button" data-prompt="Someone called me claiming to be from TRAI and said my number will be blocked. What should I do?">📞 TRAI impersonation call</button>
+              <button class="prompt-chip" type="button" data-prompt="I downloaded an APK file from a WhatsApp group. Can you check if it's safe?">📦 Check APK safety</button>
+              <button class="prompt-chip" type="button" data-prompt="I accidentally clicked a link and entered my OTP. Have I been scammed?">⚠️ Clicked suspicious link</button>
             </div>
-            <div class="artifact-list" id="signalsList">
-              <div class="empty-artifact">No signals yet.</div>
-            </div>
-          </article>
-
-          <article class="artifact-column" id="osintColumn">
-            <div class="artifact-head">
-              <span class="artifact-label">OSINT Findings</span>
-            </div>
-            <div class="artifact-list" id="osintList">
-              <div class="empty-artifact">No OSINT findings yet.</div>
-            </div>
-          </article>
-
-          <article class="artifact-column artifact-column-wide" id="actionsColumn">
-            <div class="artifact-head">
-              <span class="artifact-label">Recommended Actions</span>
-            </div>
-            <div class="artifact-list" id="actionsList">
-              <div class="empty-artifact">No action plan yet.</div>
-            </div>
-          </article>
-        </section>
-
-        <section class="approval-strip" id="approvalStrip">
-          <div class="approval-copy">
-            <p class="approval-kicker">Complaint Draft</p>
-            <h4 id="approvalTitle">No complaint draft yet</h4>
-            <p id="approvalText">Case draft will appear here after Golden Hour response.</p>
           </div>
-          <button class="approve-btn" id="copyComplaintBtn" type="button" disabled>Copy complaint draft</button>
-        </section>
-      </section>
+        `;
+        // Wire up prompt chip clicks
+        starter.querySelectorAll('.prompt-chip').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const prompt = btn.dataset.prompt;
+            if (prompt) {
+              const ta = document.getElementById('composerInput');
+              if (ta) { ta.value = prompt; ta.focus(); }
+            }
+          });
+        });
+        thread.appendChild(starter);
+        state.followThread = true;
+        updateJumpToLatestButton();
+        return;
+      }
 
-      <aside class="agents-panel glass">
-        <div class="panel-head">
-          <div>
-            <span class="panel-label">Systems Online</span>
-            <h3 class="panel-title">Fraud agent ignition</h3>
-          </div>
-          <span class="panel-meta" id="activeCount">0 / 6 active</span>
-        </div>
+      for (const msg of chat.messages) {
+        const row = document.createElement('div');
+        row.className = 'msg ' + (msg.role === 'user' ? 'user' : 'bot');
+        row.dataset.messageId = String(msg.id || '');
 
-        <div class="agent-grid" id="agentGrid">
-          <article class="agent-card idle" data-agent="manager">
-            <div class="agent-top">
-              <div>
-                <h3>Manager Agent</h3>
-                <p>Routes investigation plan</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (msg.role === 'user' ? 'user' : 'bot');
 
-          <article class="agent-card idle" data-agent="scam_detector">
-            <div class="agent-top">
-              <div>
-                <h3>Scam Detector Agent</h3>
-                <p>Classifies fraud patterns</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
+        const head = document.createElement('div');
+        head.className = 'bubble-head';
+        const label = msg.role === 'user' ? state.profile.name : 'SATARK AI';
+        head.innerHTML = `<span>${escapeHtml(label)}</span><span>${escapeHtml(formatTime(msg.ts))}</span>`;
 
-          <article class="agent-card idle" data-agent="audio_analyzer">
-            <div class="agent-top">
-              <div>
-                <h3>Audio Analyzer Agent</h3>
-                <p>Detects vishing indicators</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
+        const body = document.createElement('div');
+        body.className = 'bubble-body';
+        const text = msg.role === 'assistant'
+          ? String(msg.text || '').trim()
+          : sanitizeCitizenText(msg.text || '');
+        body.innerHTML = text ? `<p>${renderTextWithLinks(text)}</p>` : '<p>(No text)</p>';
 
-          <article class="agent-card idle" data-agent="apk_analyzer">
-            <div class="agent-top">
-              <div>
-                <h3>APK Analyzer Agent</h3>
-                <p>Inspects Android package risk</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
+        const hasClarification = (
+          msg.role === 'assistant'
+          && msg.clarification
+          && typeof msg.clarification === 'object'
+          && Array.isArray(msg.clarification.options)
+        );
 
-          <article class="agent-card idle" data-agent="osint">
-            <div class="agent-top">
-              <div>
-                <h3>OSINT Intelligence Agent</h3>
-                <p>Investigates infrastructure</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
+        if (hasClarification) {
+          const wrap = document.createElement('div');
+          wrap.className = 'clarification-wrap';
 
-          <article class="agent-card idle" data-agent="golden_hour">
-            <div class="agent-top">
-              <div>
-                <h3>Golden Hour Response Agent</h3>
-                <p>Generates urgent action plan</p>
-              </div>
-              <span class="agent-dot"></span>
-            </div>
-            <div class="agent-scan"></div>
-            <div class="agent-wave"></div>
-            <span class="status">Idle</span>
-          </article>
-        </div>
-      </aside>
-    </section>
-  </main>
+          const question = document.createElement('p');
+          question.className = 'clarification-question';
+          question.textContent = String(msg.clarification.question_text || 'Did you tap the link?');
+          wrap.appendChild(question);
 
-  <footer class="status-bar">
-    <span><strong>Mode:</strong> Fraud ops</span>
-    <span><strong>Latency:</strong> <span id="latencyValue">0 ms</span></span>
-    <span><strong>Signals:</strong> <span id="footerArtifactCount">0</span></span>
-  </footer>
+          const why = document.createElement('p');
+          why.className = 'clarification-why';
+          why.textContent = String(msg.clarification.why_needed || 'This changes urgency and next steps.');
+          wrap.appendChild(why);
 
-  <script src="/static/app.js"></script>
+          if (msg.clarificationSelectedLabel) {
+            const selected = document.createElement('p');
+            selected.className = 'clarification-selected';
+            selected.textContent = `Selected: ${String(msg.clarificationSelectedLabel)}`;
+            wrap.appendChild(selected);
+          }
+
+          const options = document.createElement('div');
+          options.className = 'clarification-options';
+          for (const option of msg.clarification.options.slice(0, 6)) {
+            const optionId = String(option.id || '').trim().toLowerCase();
+            const optionLabel = String(option.label || option.id || 'Option').trim();
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'clarification-btn';
+            if (msg.clarificationSelectedId && optionId === String(msg.clarificationSelectedId).toLowerCase()) {
+              btn.classList.add('selected');
+            }
+            btn.textContent = optionLabel;
+            btn.disabled = state.isProcessing || !!msg.clarificationPending || !!msg.clarificationAnswered;
+            btn.addEventListener('click', () => {
+              handleClarificationChoice(String(msg.id || ''), {
+                id: optionId,
+                label: optionLabel,
+              });
+            });
+            options.appendChild(btn);
+          }
+          wrap.appendChild(options);
+
+          if (msg.clarificationPending) {
+            const pending = document.createElement('div');
+            pending.className = 'clarification-pending';
+            const bar = document.createElement('div');
+            bar.className = 'clarification-pending-bar';
+            const label = document.createElement('p');
+            label.className = 'clarification-pending-text';
+            label.textContent = getClarificationPendingLabel(msg.clarificationPendingPhase || 0);
+            pending.appendChild(bar);
+            pending.appendChild(label);
+            wrap.appendChild(pending);
+          }
+
+          body.appendChild(wrap);
+        }
+
+        if (msg.role === 'assistant' && hasClarification) {
+          const whyRows = [];
+          if (msg.confidenceNote) whyRows.push(String(msg.confidenceNote));
+          if (msg.evidenceNarrative) whyRows.push(String(msg.evidenceNarrative));
+          if (msg.uncertaintyNote) whyRows.push(String(msg.uncertaintyNote));
+          if (Array.isArray(msg.technicalDetails) && msg.technicalDetails.length) {
+            for (const item of msg.technicalDetails) {
+              whyRows.push(String(item));
+            }
+          }
+          if (whyRows.length) {
+            const details = document.createElement('details');
+            details.className = 'msg-technical-details clarification-reasoning';
+            details.innerHTML = '<summary>Why SATARK is asking</summary>';
+            const ul = document.createElement('ul');
+            for (const row of whyRows) {
+              const li = document.createElement('li');
+              li.textContent = row;
+              ul.appendChild(li);
+            }
+            details.appendChild(ul);
+            body.appendChild(details);
+          }
+        } else {
+          if (msg.role === 'assistant' && msg.confidenceNote) {
+            const note = document.createElement('p');
+            note.className = 'msg-meta-note';
+            note.textContent = String(msg.confidenceNote);
+            body.appendChild(note);
+          }
+
+          if (msg.role === 'assistant' && msg.evidenceNarrative) {
+            const ev = document.createElement('p');
+            ev.className = 'msg-meta-note';
+            ev.textContent = String(msg.evidenceNarrative);
+            body.appendChild(ev);
+          }
+
+          if (msg.role === 'assistant' && msg.uncertaintyNote) {
+            const un = document.createElement('p');
+            un.className = 'msg-meta-note';
+            un.textContent = String(msg.uncertaintyNote);
+            body.appendChild(un);
+          }
+
+          if (msg.role === 'assistant' && Array.isArray(msg.technicalDetails) && msg.technicalDetails.length) {
+            const details = document.createElement('details');
+            details.className = 'msg-technical-details';
+            details.innerHTML = '<summary>Technical details</summary>';
+            const ul = document.createElement('ul');
+            for (const item of msg.technicalDetails) {
+              const li = document.createElement('li');
+              li.textContent = String(item);
+              ul.appendChild(li);
+            }
+            details.appendChild(ul);
+            body.appendChild(details);
+          }
+        }
+
+        if (msg.role === 'assistant' && Array.isArray(msg.steps) && msg.steps.length) {
+          const list = document.createElement('ol');
+          list.className = 'assistant-steps';
+          for (const step of msg.steps.slice(0, 4)) {
+            const li = document.createElement('li');
+            li.textContent = sanitizeCitizenText(step);
+            list.appendChild(li);
+          }
+          body.appendChild(list);
+        }
+
+        if (msg.role === 'assistant' && Array.isArray(msg.flags) && msg.flags.length) {
+          const flags = document.createElement('div');
+          flags.className = 'assistant-flags';
+          for (const f of msg.flags) {
+            const item = document.createElement('span');
+            item.className = 'flag ' + (f.level || 'warn');
+            item.textContent = f.text;
+            flags.appendChild(item);
+          }
+          body.appendChild(flags);
+        }
+
+        if (msg.role === 'assistant' && msg.integrationStatus && typeof msg.integrationStatus === 'object' && msg.integrationStatus.visible === true) {
+          const panel = document.createElement('div');
+          panel.className = 'integration-panel';
+
+          const head = document.createElement('p');
+          head.className = 'integration-panel-head';
+          head.textContent = 'Workflow Integrations';
+          panel.appendChild(head);
+
+          const grid = document.createElement('div');
+          grid.className = 'integration-grid';
+          const entries = [
+            { label: 'Google Calendar', key: 'calendarCreated', pendingKey: 'calendarAttempted', errKey: 'calendarError' },
+            { label: 'Google Tasks', key: 'taskCreated', pendingKey: 'taskAttempted', errKey: 'taskError' },
+            { label: 'Google Docs', key: 'docCreated', pendingKey: null, errKey: 'docError' },
+            { label: 'Gmail Draft', key: 'gmailDraftCreated', pendingKey: null, errKey: 'gmailError' },
+          ];
+
+          for (const entry of entries) {
+            const item = document.createElement('div');
+            item.className = 'integration-item';
+
+            const title = document.createElement('p');
+            title.className = 'integration-item-title';
+            title.textContent = entry.label;
+            item.appendChild(title);
+
+            const status = document.createElement('p');
+            status.className = 'integration-item-status';
+            const created = msg.integrationStatus[entry.key] === true;
+            const attempted = entry.pendingKey ? msg.integrationStatus[entry.pendingKey] === true : false;
+            const errorText = String(msg.integrationStatus[entry.errKey] || '').trim();
+            if (created) {
+              status.classList.add('ok');
+              status.textContent = 'Created';
+            } else if (attempted) {
+              status.classList.add('warn');
+              status.textContent = errorText ? `Attempted (${errorText})` : 'Attempted';
+            } else {
+              status.textContent = errorText ? `Not created (${errorText})` : 'Not created';
+            }
+
+            item.appendChild(status);
+            grid.appendChild(item);
+          }
+
+          panel.appendChild(grid);
+
+          const links = [];
+          if (msg.integrationStatus.calendarUrl) links.push({ label: 'Open Calendar', href: msg.integrationStatus.calendarUrl });
+          if (msg.integrationStatus.taskUrl) links.push({ label: 'Open Tasks', href: msg.integrationStatus.taskUrl });
+          if (msg.integrationStatus.docUrl) links.push({ label: 'Open FIR Doc', href: msg.integrationStatus.docUrl });
+          if (msg.integrationStatus.gmailDraftUrl) links.push({ label: 'Open Gmail Draft', href: msg.integrationStatus.gmailDraftUrl });
+
+          if (links.length) {
+            const linksWrap = document.createElement('div');
+            linksWrap.className = 'integration-links';
+            for (const link of links) {
+              const anchor = document.createElement('a');
+              anchor.className = 'integration-link';
+              anchor.href = String(link.href);
+              anchor.target = '_blank';
+              anchor.rel = 'noopener noreferrer';
+              anchor.textContent = String(link.label);
+              linksWrap.appendChild(anchor);
+            }
+            panel.appendChild(linksWrap);
+          }
+
+          body.appendChild(panel);
+        }
+
+        if (msg.role === 'assistant' && isAnalystMode() && (msg.analysisStage || msg.caseId || msg.runId)) {
+          const strip = document.createElement('div');
+          strip.className = 'stage-meta-strip';
+
+          const stage = normalizeStage(msg.analysisStage);
+          const stageChip = document.createElement('span');
+          stageChip.className = 'stage-chip';
+          stageChip.textContent = stage;
+          strip.appendChild(stageChip);
+
+          if (msg.caseId) {
+            const caseNode = document.createElement('span');
+            caseNode.textContent = `Case ${String(msg.caseId)}`;
+            strip.appendChild(caseNode);
+          }
+
+          if (msg.sourceRunId) {
+            const sourceNode = document.createElement('span');
+            sourceNode.textContent = `Linked to ${String(msg.sourceRunId)}`;
+            strip.appendChild(sourceNode);
+          }
+
+          if (msg.contractVersion) {
+            const contractNode = document.createElement('span');
+            contractNode.textContent = `Contract ${String(msg.contractVersion)}`;
+            strip.appendChild(contractNode);
+          }
+
+          body.appendChild(strip);
+        }
+
+        const canTriggerDeep = (
+          msg.role === 'assistant'
+          && normalizeStage(msg.analysisStage) === 'triage'
+          && Boolean(msg.eligibleForDeep)
+          && !msg.clarification
+          && String(msg.runId || '').trim()
+        );
+
+        if (canTriggerDeep) {
+          const actionWrap = document.createElement('div');
+          actionWrap.className = 'deep-action-wrap';
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'deep-action-btn';
+
+          const stateLabel = String(msg.deepRunState || '').trim().toLowerCase();
+          if (stateLabel === 'running') {
+            button.textContent = 'Deep analysis running...';
+            button.disabled = true;
+          } else if (stateLabel === 'done') {
+            button.textContent = 'Deep analysis completed';
+            button.disabled = true;
+          } else {
+            button.textContent = 'Run deep analysis';
+            button.disabled = state.isProcessing;
+            button.addEventListener('click', () => {
+              triggerDeepAnalysisForMessage(String(msg.id || ''));
+            });
+          }
+
+          actionWrap.appendChild(button);
+
+          if (msg.deepReason) {
+            const note = document.createElement('span');
+            note.className = 'msg-meta-note';
+            note.textContent = String(msg.deepReason);
+            actionWrap.appendChild(note);
+          }
+          body.appendChild(actionWrap);
+        }
+
+        if (Array.isArray(msg.attachments) && msg.attachments.length) {
+          const wrap = document.createElement('div');
+          wrap.className = 'msg-attachments';
+          for (const attachment of msg.attachments) {
+            const card = document.createElement('div');
+            card.className = 'msg-attachment-card';
+            const dataUrl = String(attachment.contentBase64 || '').trim();
+            const isInlineImage = String(attachment.category || '').toLowerCase() === 'image' && dataUrl.startsWith('data:image/');
+            if (isInlineImage) {
+              const img = document.createElement('img');
+              img.className = 'msg-attachment-preview';
+              img.loading = 'lazy';
+              img.alt = String(attachment.name || 'uploaded image');
+              img.src = dataUrl;
+              card.appendChild(img);
+            }
+            const sizeKb = Math.max(1, Math.round(Number(attachment.size || 0) / 1024));
+            const meta = document.createElement('div');
+            meta.className = 'msg-attachment-meta';
+            meta.innerHTML = `
+              <p class="msg-attachment-name">${escapeHtml(attachment.name || 'attachment')}</p>
+              <p class="msg-attachment-sub">${escapeHtml(String(attachment.mimeType || 'application/octet-stream'))} | ${sizeKb} KB | ${escapeHtml(String(attachment.previewState || 'uploaded'))}</p>
+            `;
+            const badge = document.createElement('span');
+            badge.className = 'attachment-badge';
+            badge.textContent = String(attachment.category || 'file');
+            const footer = document.createElement('div');
+            footer.className = 'msg-attachment-footer';
+            footer.appendChild(meta);
+            footer.appendChild(badge);
+            card.appendChild(footer);
+            wrap.appendChild(card);
+          }
+          body.appendChild(wrap);
+        }
+
+        bubble.appendChild(head);
+        bubble.appendChild(body);
+        row.appendChild(bubble);
+        thread.appendChild(row);
+      }
+
+      requestAnimationFrame(() => {
+        scrollThreadToLatest(false);
+      });
+    }
+
+    function renderAgentStrip() {
+      const strip = document.getElementById('agentStrip');
+      strip.innerHTML = '';
+      const keys = Object.keys(state.agentStatus);
+      if (!state.isProcessing || !keys.length) {
+        strip.style.display = 'none';
+        return;
+      }
+
+      strip.style.display = 'flex';
+      for (const name of AGENT_ORDER) {
+        if (!state.agentStatus[name]) continue;
+        const s = state.agentStatus[name];
+        const chip = document.createElement('div');
+        chip.className = 'agent-chip ' + (s.state || 'idle');
+        const label = name.replaceAll('_', ' ');
+        chip.innerHTML = `<span class="agent-dot"></span><span>${escapeHtml(label)}: ${escapeHtml(s.label || s.state)}</span>`;
+        strip.appendChild(chip);
+      }
+    }
+
+    function renderProfile() {
+      document.getElementById('profileName').textContent = state.profile.name;
+      document.getElementById('profileEmail').textContent = state.profile.email || 'Not signed in';
+      document.getElementById('signInBtn').style.display = state.profile.connected ? 'none' : 'inline-block';
+      document.getElementById('logoutBtn').style.display = state.profile.connected ? 'inline-block' : 'none';
+      // Update avatar initial
+      const avatarEl = document.getElementById('profileAvatar');
+      if (avatarEl) {
+        const name = state.profile.name || 'G';
+        avatarEl.textContent = name.charAt(0).toUpperCase();
+      }
+    }
+
+    function renderAttachment() {
+      const slot = document.getElementById('attachmentSlot');
+      slot.innerHTML = '';
+      if (!state.selectedFiles.length) return;
+      for (const meta of state.selectedFiles) {
+        const pill = document.createElement('div');
+        pill.className = 'attachment-pill';
+        const kb = Math.max(1, Math.round(meta.size / 1024));
+        pill.innerHTML = `<span>${escapeHtml(meta.name)} (${escapeHtml(meta.mimeType)}) | ${kb} KB | ${escapeHtml(meta.previewState || 'ready')}</span>`;
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.textContent = 'Remove';
+        clear.addEventListener('click', () => removeSelectedFile(meta.id));
+        pill.appendChild(clear);
+        slot.appendChild(pill);
+      }
+    }
+
+    function renderMode() {
+      const text = state.analystMode ? 'Analyst View' : 'Citizen View';
+      document.getElementById('modePill').textContent = text;
+      document.getElementById('leftModePill').textContent = state.analystMode ? 'Analyst' : 'Citizen';
+      const drawerToggle = document.getElementById('drawerToggle');
+      drawerToggle.style.display = state.analystMode ? 'inline-block' : 'none';
+      if (!state.analystMode) {
+        document.getElementById('analystDrawer').classList.remove('visible');
+        state.drawerOpen = false;
+      }
+    }
+
+    function renderAnalystDrawer() {
+      if (!state.analystMode) return;
+      const el = document.getElementById('analystJson');
+      el.textContent = state.latestPayload ? JSON.stringify(state.latestPayload, null, 2) : 'No run yet.';
+    }
+
+    function render() {
+      renderProfile();
+      renderMode();
+      renderHistory();
+      renderThread();
+      renderAgentStrip();
+      renderAttachment();
+      renderAnalystDrawer();
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderTextWithLinks(text) {
+      const src = String(text || '');
+      if (!src) return '';
+      const urlRegex = /(https?:\/\/[^\s<>")']+)/gi;
+      let out = '';
+      let lastIndex = 0;
+      let match = urlRegex.exec(src);
+      while (match) {
+        const url = String(match[0] || '').trim();
+        out += escapeHtml(src.slice(lastIndex, match.index)).replace(/\n/g, '<br>');
+        const safeUrl = escapeHtml(url);
+        out += `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
+        lastIndex = match.index + url.length;
+        match = urlRegex.exec(src);
+      }
+      out += escapeHtml(src.slice(lastIndex)).replace(/\n/g, '<br>');
+      return out;
+    }
+
+    function isYesOption(optionId) {
+      const v = String(optionId || '').trim().toLowerCase();
+      return v === 'yes' || v === 'y' || v === 'true';
+    }
+
+    function queueFirConsentPrompt(context = {}, delayMs = 4200) {
+      const caseKey = String(context.caseId || context.runId || 'global').trim() || 'global';
+      if (state.firConsentByCase[caseKey]) return;
+      state.firConsentByCase[caseKey] = true;
+
+      queueAssistantFollowup(
+        'If you are ready, I can generate an FIR Google Docs report and an email draft now. Shall I continue?',
+        delayMs,
+        {
+          flags: [{ text: 'FIR and email prep', level: 'warn' }],
+          clarification: {
+            question_id: 'generate_fir_docs',
+            question_text: 'Generate FIR Google Docs report and Gmail draft now?',
+            why_needed: 'I need your confirmation before creating these artifacts.',
+            options: [
+              { id: 'yes', label: 'Yes' },
+              { id: 'no', label: 'No' },
+            ],
+          },
+          clarificationContext: {
+            text: String(context.text || '').trim(),
+            files: Array.isArray(context.files) ? context.files : [],
+            preprocessed_context: context.preprocessed_context && typeof context.preprocessed_context === 'object'
+              ? context.preprocessed_context
+              : {},
+            recovery_answers: context.recovery_answers && typeof context.recovery_answers === 'object'
+              ? context.recovery_answers
+              : {},
+          },
+          caseId: context.caseId || null,
+          runId: context.runId || null,
+          analysisStage: context.analysisStage || null,
+          sourceRunId: context.sourceRunId || null,
+          contractVersion: context.contractVersion || null,
+          analysisStageVersion: context.analysisStageVersion || null,
+          eligibleForDeep: Boolean(context.eligibleForDeep),
+          deepReason: context.deepReason || null,
+          deepReasonCode: context.deepReasonCode || null,
+          deepAnalysisUrl: context.deepAnalysisUrl || null,
+        }
+      );
+    }
+
+    function setAgentState(agent, stateName, label) {
+      if (!agent) return;
+      state.agentStatus[agent] = {
+        state: stateName,
+        label: label || stateName,
+      };
+      renderAgentStrip();
+    }
+
+    function addMessage(role, text, extra = {}) {
+      const chat = getActiveChat();
+      if (!chat) return;
+      const message = {
+        id: extra.id || nextMessageId(),
+        role,
+        text: role === 'assistant' ? String(text || '').trim() : sanitizeCitizenText(text),
+        ts: new Date().toISOString(),
+        steps: extra.steps || null,
+        flags: extra.flags || null,
+        confidenceNote: extra.confidenceNote || null,
+        evidenceNarrative: extra.evidenceNarrative || null,
+        uncertaintyNote: extra.uncertaintyNote || null,
+        technicalDetails: Array.isArray(extra.technicalDetails) ? extra.technicalDetails : null,
+        attachments: Array.isArray(extra.attachments) ? extra.attachments : [],
+        runId: extra.runId || null,
+        caseId: extra.caseId || null,
+        analysisStage: extra.analysisStage || null,
+        sourceRunId: extra.sourceRunId || null,
+        contractVersion: extra.contractVersion || null,
+        analysisStageVersion: extra.analysisStageVersion || null,
+        eligibleForDeep: Boolean(extra.eligibleForDeep),
+        deepReason: extra.deepReason || null,
+        deepReasonCode: extra.deepReasonCode || null,
+        deepAnalysisUrl: extra.deepAnalysisUrl || null,
+        deepRunId: extra.deepRunId || null,
+        deepRunState: extra.deepRunState || null,
+        idempotentReplay: Boolean(extra.idempotentReplay),
+        clarification: extra.clarification && typeof extra.clarification === 'object' ? extra.clarification : null,
+        clarificationContext: extra.clarificationContext && typeof extra.clarificationContext === 'object' ? extra.clarificationContext : null,
+        clarificationPending: Boolean(extra.clarificationPending),
+        clarificationAnswered: Boolean(extra.clarificationAnswered),
+        clarificationSelectedId: extra.clarificationSelectedId || null,
+        clarificationSelectedLabel: extra.clarificationSelectedLabel || null,
+        clarificationPendingPhase: Number(extra.clarificationPendingPhase || 0),
+        clarificationPendingStartedAt: extra.clarificationPendingStartedAt || null,
+        integrationStatus: extra.integrationStatus && typeof extra.integrationStatus === 'object' ? extra.integrationStatus : null,
+      };
+      chat.messages.push(message);
+      if (chat.messages.length === 1 && role === 'user') {
+        chat.title = makeTitleFromText(text);
+      }
+      updateChat(chat);
+      render();
+      return message.id;
+    }
+
+    function queueAssistantFollowup(text, delayMs, extra = {}) {
+      const body = String(text || '').trim();
+      if (!body) return;
+      const waitMs = Math.max(5000, Math.min(90000, Number(delayMs || 30000) || 30000));
+      window.setTimeout(() => {
+        addMessage('assistant', body, extra);
+      }, waitMs);
+    }
+
+    async function fileToDataUrl(file) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function closeStreamAndPoll() {
+      if (state.evtSource) {
+        try { state.evtSource.close(); } catch (_e) {}
+        state.evtSource = null;
+      }
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+    }
+
+    function buildAssistantPayload(result) {
+      function normalizeSteps(items) {
+        const arr = Array.isArray(items) ? items : [];
+        const out = [];
+        const seen = new Set();
+        for (const item of arr) {
+          let step = sanitizeCitizenText(String(item || '').replace(/^[-*\d.\s]+/, '').trim());
+          if (!step) continue;
+          const key = step.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(step);
+          if (out.length >= 4) break;
+        }
+        return out;
+      }
+
+      const mainReply = String(result.chat_reply || result.conversational_reply || result.summary || '').trim();
+      const narrativeFollowupMessage = String(result.narrative_followup_message || '').trim();
+      const narrativeFollowupDelayMs = Math.max(5000, Math.min(90000, Number(result.narrative_followup_delay_ms || 30000) || 30000));
+      const reportingArtifactsPendingNarrative = Boolean(result.reporting_artifacts_pending_narrative);
+      const caseReportDoc = result.case_report_doc && typeof result.case_report_doc === 'object' ? result.case_report_doc : {};
+      const gmailDraft = result.gmail_draft && typeof result.gmail_draft === 'object' ? result.gmail_draft : {};
+      const followUpActions = result.follow_up_actions && typeof result.follow_up_actions === 'object' ? result.follow_up_actions : {};
+      const docCreated = Boolean(caseReportDoc.created);
+      const docUrl = String(caseReportDoc.doc_url || '').trim();
+      const gmailDraftCreated = Boolean(gmailDraft.created);
+      const gmailDraftUrl = String(gmailDraft.draft_url || '').trim();
+      const integrationStatus = {
+        visible: Boolean(
+          result.requires_emergency
+          || result.golden_hour_active
+          || followUpActions.calendar_event_created
+          || followUpActions.task_created
+          || followUpActions.calendar_attempted
+          || String(followUpActions.task_url || '').trim()
+        ),
+        calendarCreated: Boolean(followUpActions.calendar_event_created),
+        calendarAttempted: Boolean(followUpActions.calendar_attempted),
+        calendarError: String(followUpActions.calendar_error || '').trim(),
+        calendarUrl: String(followUpActions.calendar_url || result.calendar_deep_link || '').trim(),
+        taskCreated: Boolean(followUpActions.task_created),
+        taskAttempted: Boolean(followUpActions.task_created) || Boolean(String(followUpActions.task_url || '').trim()),
+        taskError: '',
+        taskUrl: String(followUpActions.task_url || result.task_deep_link || '').trim(),
+        docCreated: Boolean(followUpActions.doc_created || docCreated),
+        docError: String(caseReportDoc.error || '').trim(),
+        docUrl: String(followUpActions.doc_url || docUrl || '').trim(),
+        gmailDraftCreated: Boolean(followUpActions.gmail_draft_created || gmailDraftCreated),
+        gmailError: String(gmailDraft.error || '').trim(),
+        gmailDraftUrl: String(followUpActions.gmail_draft_url || gmailDraftUrl || '').trim(),
+      };
+      const steps = normalizeSteps(result.recommended_actions);
+      const analysisStage = normalizeStage(result.analysis_stage);
+      const caseId = String(result.case_id || '').trim() || null;
+      const sourceRunId = String(result.source_run_id || '').trim() || null;
+      const contractVersion = String(result.contract_version || '').trim() || null;
+      const analysisStageVersion = Number(result.analysis_stage_version || 0) || null;
+      const deepReason = String(result.deep_reason || '').trim() || null;
+      const deepReasonCode = String(result.deep_reason_code || '').trim() || null;
+      const deepAnalysisUrl = String(result.deep_analysis_endpoint || result.deep_analysis_url || '').trim() || '/api/analyze/deep';
+      const eligibleForDeep = Boolean(result.eligible_for_deep);
+      const goldenHourActive = Boolean(result.golden_hour_active || String(result.golden_hour_status || '').toUpperCase() === 'ACTIVE');
+
+      const clarification = result && result.needs_clarification && result.clarification && typeof result.clarification === 'object'
+        ? {
+            question_id: String(result.clarification.question_id || 'clarification_needed').trim() || 'clarification_needed',
+            question_text: String(result.clarification.question_text || '').trim() || 'I need one quick clarification before finalizing next steps.',
+            why_needed: String(result.clarification.why_needed || '').trim() || 'This changes urgency and exact next steps.',
+            options: Array.isArray(result.clarification.options)
+              ? result.clarification.options
+                  .map((item) => ({
+                    id: String((item && item.id) || '').trim().toLowerCase(),
+                    label: String((item && item.label) || (item && item.id) || '').trim(),
+                  }))
+                  .filter((item) => item.id && item.label)
+                  .slice(0, 6)
+              : [],
+          }
+        : null;
+
+      if (clarification && !clarification.options.length) {
+        clarification.options = [
+          { id: 'yes', label: 'Yes' },
+          { id: 'no', label: 'No' },
+          { id: 'not_sure', label: 'Not sure' },
+        ];
+      }
+
+      const why = Array.isArray(result.why_this_decision) ? result.why_this_decision.map((x) => sanitizeCitizenText(String(x || '').trim())).filter(Boolean) : [];
+      const evidenceNarrative = why.length ? `Why this verdict: ${why.slice(0, 2).join(' ')}` : '';
+
+      let confidenceNote = '';
+      const confidenceRaw = Number(result.confidence || 0);
+      if (!Number.isNaN(confidenceRaw) && confidenceRaw > 0) {
+        const confidencePct = confidenceRaw <= 1 ? Math.round(confidenceRaw * 100) : Math.round(confidenceRaw);
+        confidenceNote = `Confidence: ${confidencePct}%`;
+      }
+
+      const uncertaintyNote = sanitizeCitizenText(String(result.uncertainty_note || '').trim());
+
+      const technicalDetails = [];
+      if (result.apk_analysis && typeof result.apk_analysis === 'object') {
+        const apk = result.apk_analysis;
+        if (apk.file_name) technicalDetails.push(`File: ${apk.file_name}`);
+        if (apk.app_name) technicalDetails.push(`App: ${apk.app_name}`);
+        if (apk.package_name) technicalDetails.push(`Package: ${apk.package_name}`);
+        if (apk.identity) technicalDetails.push(`Identity assessment: ${apk.identity}`);
+      }
+
+      if (result.timings_ms && typeof result.timings_ms === 'object') {
+        const classifyMs = Number(result.timings_ms.classify_ms || 0);
+        const vectorMs = Number(result.timings_ms.vector_lookup_ms || 0);
+        const pipelineMs = Number(result.timings_ms.pipeline_ms || 0);
+        const totalMs = Number(result.timings_ms.total_ms || 0);
+        if (totalMs > 0) {
+          technicalDetails.push(`Latency: total ${Math.round(totalMs)} ms | classify ${Math.round(classifyMs)} ms | retrieval ${Math.round(vectorMs)} ms | pipeline ${Math.round(pipelineMs)} ms`);
+        }
+      }
+
+      if (clarification) {
+        return {
+          ok: true,
+          text: mainReply || 'One quick check before I finalize the safest next steps.',
+          steps: [],
+          flags: [{ text: 'Need your input', level: 'warn' }],
+          confidenceNote,
+          evidenceNarrative,
+          uncertaintyNote,
+          technicalDetails,
+          followupMessage: '',
+          followupDelayMs: narrativeFollowupDelayMs,
+          reportingArtifactsPendingNarrative,
+          clarification,
+          analysisStage,
+          caseId,
+          sourceRunId,
+          contractVersion,
+          analysisStageVersion,
+          deepReason,
+          deepReasonCode,
+          deepAnalysisUrl,
+          eligibleForDeep,
+          goldenHourActive,
+          integrationStatus,
+          docCreated,
+          docUrl,
+          gmailDraftCreated,
+          gmailDraftUrl,
+        };
+      }
+
+      if (!mainReply || steps.length < 2) {
+        return {
+          ok: false,
+          error: 'Model response is incomplete. Please retry this analysis.',
+          text: '',
+          steps: [],
+          flags: [],
+          confidenceNote: '',
+          evidenceNarrative: '',
+          uncertaintyNote: '',
+          technicalDetails: [],
+          followupMessage: '',
+          followupDelayMs: narrativeFollowupDelayMs,
+          reportingArtifactsPendingNarrative,
+          analysisStage,
+          caseId,
+          sourceRunId,
+          contractVersion,
+          analysisStageVersion,
+          deepReason,
+          deepReasonCode,
+          deepAnalysisUrl,
+          eligibleForDeep,
+          goldenHourActive,
+          integrationStatus,
+          docCreated,
+          docUrl,
+          gmailDraftCreated,
+          gmailDraftUrl,
+        };
+      }
+
+      const flags = [];
+      if (result.requires_emergency) flags.push({ text: 'Act now', level: 'danger' });
+      if (result.requires_reporting) flags.push({ text: 'Report guidance', level: 'warn' });
+      if (result.requires_financial_blocking || result.requires_account_block) flags.push({ text: 'Protect accounts', level: 'warn' });
+
+      return {
+        ok: true,
+        text: mainReply,
+        steps,
+        flags,
+        confidenceNote,
+        evidenceNarrative,
+        uncertaintyNote,
+        technicalDetails,
+        followupMessage: reportingArtifactsPendingNarrative ? narrativeFollowupMessage : '',
+        followupDelayMs: narrativeFollowupDelayMs,
+        reportingArtifactsPendingNarrative,
+        clarification: null,
+        analysisStage,
+        caseId,
+        sourceRunId,
+        contractVersion,
+        analysisStageVersion,
+        deepReason,
+        deepReasonCode,
+        deepAnalysisUrl,
+        eligibleForDeep,
+        goldenHourActive,
+        integrationStatus,
+        docCreated,
+        docUrl,
+        gmailDraftCreated,
+        gmailDraftUrl,
+      };
+    }
+
+    function startStream(runId) {
+      closeStreamAndPoll();
+      state.agentStatus = {};
+      renderAgentStrip();
+
+      const src = new EventSource('/api/stream/' + encodeURIComponent(runId));
+      state.evtSource = src;
+
+      src.addEventListener('run.classified', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const selected = Array.isArray(data.selected_agents) ? data.selected_agents : [];
+          setAgentState('manager', 'running', AGENT_PROGRESS_HINTS.manager || 'starting');
+          for (const name of selected) {
+            const key = String(name || '');
+            setAgentState(key, 'running', AGENT_PROGRESS_HINTS[key] || 'queued');
+          }
+        } catch (_e) {}
+      });
+
+      src.addEventListener('run.fast_path_selected', () => {
+        setAgentState('manager', 'running', 'fast path selected');
+      });
+
+      src.addEventListener('run.clarification_requested', () => {
+        setAgentState('manager', 'running', 'awaiting your quick answer');
+      });
+
+      src.addEventListener('run.preliminary_ready', () => {
+        setAgentState('apk_analyzer', 'running', 'preliminary ready');
+      });
+
+      src.addEventListener('run.enrichment_started', () => {
+        setAgentState('osint', 'running', 'enrichment running');
+      });
+
+      src.addEventListener('run.refined_ready', () => {
+        setAgentState('manager', 'running', 'refined verdict ready');
+      });
+
+      src.addEventListener('triage.completed', () => {
+        setAgentState('manager', 'done', 'triage completed');
+      });
+
+      src.addEventListener('deep.completed', () => {
+        setAgentState('manager', 'done', 'deep completed');
+      });
+
+      src.addEventListener('agent.started', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const agent = String(data.agent || '').trim();
+          if (agent) setAgentState(agent, 'running', AGENT_PROGRESS_HINTS[agent] || 'running');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('agent.progress', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const agent = String(data.agent || '').trim();
+          const message = String(data.message || '').trim();
+          if (!agent) return;
+          setAgentState(agent, 'running', message || AGENT_PROGRESS_HINTS[agent] || 'running');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('agent.completed', (evt) => {
+        try {
+          const data = JSON.parse(evt.data || '{}');
+          const agent = String(data.agent || '').trim();
+          if (!agent) return;
+          const status = String(data.status || 'done').toLowerCase();
+          if (status === 'failed') setAgentState(agent, 'failed', 'failed');
+          else if (status === 'skipped') setAgentState(agent, 'done', 'skipped');
+          else setAgentState(agent, 'done', 'done');
+        } catch (_e) {}
+      });
+
+      src.addEventListener('run.failed', () => {
+        state.isProcessing = false;
+        render();
+        closeStreamAndPoll();
+      });
+
+      src.onerror = () => {
+        try { src.close(); } catch (_e) {}
+      };
+    }
+
+    async function waitForResult(runId) {
+      return await new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 90;
+        let inFlight = false;
+        state.pollTimer = setInterval(async () => {
+          if (inFlight) return;
+          attempts += 1;
+          if (attempts > maxAttempts) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            reject(new Error('Analysis timed out'));
+            return;
+          }
+
+          try {
+            inFlight = true;
+            const res = await fetch('/api/result/' + encodeURIComponent(runId));
+            if (res.status === 202) return;
+            if (!res.ok) throw new Error('Could not fetch result');
+            const data = await res.json();
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            resolve(data);
+          } catch (err) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+            reject(err);
+          } finally {
+            inFlight = false;
+          }
+        }, 800);
+      });
+    }
+
+    function parseChoiceToTriState(optionId) {
+      const o = String(optionId || '').trim().toLowerCase();
+      if (['yes', 'y', 'true', 'clicked', 'lost', 'shared'].includes(o)) return true;
+      if (['no', 'n', 'false', 'not_clicked', 'did_not_click', 'safe'].includes(o)) return false;
+      if (['not_sure', 'unknown', 'maybe', 'unsure'].includes(o)) return null;
+      return null;
+    }
+
+    function buildRecoveryAnswers(questionId, optionId, existingAnswers = {}) {
+      const q = String(questionId || '').trim().toLowerCase();
+      const o = String(optionId || '').trim().toLowerCase();
+      const tri = parseChoiceToTriState(o);
+      const merged = (existingAnswers && typeof existingAnswers === 'object')
+        ? JSON.parse(JSON.stringify(existingAnswers))
+        : {};
+
+      const assignTriState = (key) => {
+        merged[key] = tri;
+      };
+
+      if (q === 'clicked_link' || q === 'opened_link') {
+        assignTriState('clicked_link');
+        return merged;
+      }
+
+      if (q === 'installed_apk' || q === 'downloaded_apk' || q === 'opened_apk' || q === 'installed_or_opened_apk') {
+        assignTriState('installed_apk');
+        assignTriState('downloaded_apk');
+        return merged;
+      }
+
+      if (
+        q === 'shared_sensitive'
+        || q === 'shared_sensitive_data'
+        || q === 'shared_sensitive_details'
+        || q === 'shared_personal_details'
+        || q === 'shared_otp'
+        || q === 'shared_otp_or_pin'
+      ) {
+        assignTriState('shared_sensitive_data');
+        assignTriState('shared_personal_details');
+        return merged;
+      }
+
+      if (q === 'shared_bank_details' || q === 'shared_bank_or_otp') {
+        assignTriState('shared_bank_details');
+        return merged;
+      }
+
+      if (q === 'money_lost' || q === 'did_lose_money' || q === 'did_lose_money_or_share_bank_details') {
+        assignTriState('did_lose_money_or_share_bank_details');
+        assignTriState('did_lose_money');
+        return merged;
+      }
+
+      if (q === 'amount_lost_bucket' || q === 'amount_bucket' || q === 'money_loss_range') {
+        const amountMap = {
+          under_10k: 5000,
+          between_10k_50k: 25000,
+          between_50k_100k: 75000,
+          over_100k: 150000,
+        };
+        if (o === 'not_sure' || o === 'unknown') {
+          merged.amount_lost_bucket = 'not_sure';
+        } else if (Object.prototype.hasOwnProperty.call(amountMap, o)) {
+          merged.amount_lost_bucket = o;
+          merged.amount_lost = amountMap[o];
+          merged.did_lose_money = true;
+          merged.did_lose_money_or_share_bank_details = true;
+        }
+        return merged;
+      }
+
+      if (q === 'time_bucket') {
+        if (o === 'within_15_min') {
+          merged.time_bucket = 'within_15_min';
+          merged.minutes_since_incident = 10;
+          merged.minutes_since_fraud = 10;
+        } else if (o === '15_30_min') {
+          merged.time_bucket = '15_30_min';
+          merged.minutes_since_incident = 25;
+          merged.minutes_since_fraud = 25;
+        } else if (o === '30_60_min') {
+          merged.time_bucket = '30_60_min';
+          merged.minutes_since_incident = 45;
+          merged.minutes_since_fraud = 45;
+        } else if (o === 'within_15_minutes') {
+          merged.time_bucket = 'within_15_min';
+          merged.minutes_since_incident = 10;
+          merged.minutes_since_fraud = 10;
+        } else if (o === 'within_30_min' || o === 'within_30_minutes') {
+          merged.time_bucket = '15_30_min';
+          merged.minutes_since_incident = 25;
+          merged.minutes_since_fraud = 25;
+        } else if (o === 'within_60_min' || o === 'within_60_minutes') {
+          merged.time_bucket = '30_60_min';
+          merged.minutes_since_incident = 45;
+          merged.minutes_since_fraud = 45;
+        } else if (o === 'over_1_hour') {
+          merged.time_bucket = 'over_1_hour';
+          merged.minutes_since_incident = 90;
+          merged.minutes_since_fraud = 90;
+        } else if (o === 'over_1_day') {
+          merged.time_bucket = 'over_1_day';
+          merged.minutes_since_incident = 1440;
+          merged.minutes_since_fraud = 1440;
+        } else if (o === 'minutes' || o === 'min' || o === 'lt_60_min' || o === 'within_1_hour') {
+          merged.time_bucket = 'minutes';
+          merged.minutes_since_incident = 15;
+          merged.minutes_since_fraud = 15;
+        } else if (o === 'hours' || o === 'hr') {
+          merged.time_bucket = 'hours';
+          merged.minutes_since_incident = 180;
+          merged.minutes_since_fraud = 180;
+        } else if (o === 'days' || o === 'day') {
+          merged.time_bucket = 'days';
+          merged.minutes_since_incident = 1440;
+          merged.minutes_since_fraud = 1440;
+        } else if (o === 'not_sure' || o === 'unknown') {
+          merged.time_bucket = null;
+          merged.minutes_since_incident = null;
+          merged.minutes_since_fraud = null;
+        }
+        return merged;
+      }
+
+      if (q === 'minutes_since_incident' || q === 'minutes_since_fraud') {
+        const raw = Number(o);
+        if (!Number.isNaN(raw) && raw >= 0) {
+          merged.minutes_since_incident = raw;
+          merged.minutes_since_fraud = raw;
+          if (raw <= 15) merged.time_bucket = 'within_15_min';
+          else if (raw <= 30) merged.time_bucket = '15_30_min';
+          else if (raw <= 60) merged.time_bucket = '30_60_min';
+          else if (raw <= 1440) merged.time_bucket = 'over_1_hour';
+          else merged.time_bucket = 'over_1_day';
+        }
+        return merged;
+      }
+
+      // Preserve dynamic clarification identifiers for backend/model awareness.
+      merged[q] = tri === null ? o : tri;
+      return merged;
+    }
+
+    function shouldTriggerMcpActions(recoveryAnswers = {}) {
+      const answers = (recoveryAnswers && typeof recoveryAnswers === 'object') ? recoveryAnswers : {};
+      const lost = answers.did_lose_money_or_share_bank_details === true || answers.did_lose_money === true;
+      if (!lost) return false;
+
+      const minutes = Number(answers.minutes_since_incident || answers.minutes_since_fraud || 0);
+      if (!Number.isNaN(minutes) && minutes > 0) return minutes <= 60;
+
+      const bucket = String(
+        answers.time_bucket
+        || answers.time_since_loss
+        || answers.minutes_bucket
+        || answers.minutes_since_fraud_bucket
+        || ''
+      ).trim().toLowerCase();
+      return [
+        'within_15_min',
+        'within_15_minutes',
+        '15_30_min',
+        'within_30_min',
+        'within_30_minutes',
+        '30_60_min',
+        'within_60_min',
+        'within_60_minutes',
+        'minutes',
+        'lt_60_min',
+        'within_1_hour',
+      ].includes(bucket);
+    }
+
+    async function handleClarificationChoice(messageId, choice) {
+      if (!messageId || state.isProcessing) return;
+
+      const chat = getActiveChat();
+      if (!chat) return;
+      const target = (chat.messages || []).find((m) => m && m.id === messageId);
+      if (!target || !target.clarification) return;
+
+      const questionId = String(target.clarification.question_id || 'clarification_needed').trim();
+      const choiceId = String(choice && choice.id ? choice.id : '').trim().toLowerCase();
+      const choiceLabel = String(choice && choice.label ? choice.label : choiceId).trim() || 'Selected option';
+      if (!choiceId) return;
+
+      const baseText = String((target.clarificationContext && target.clarificationContext.text) || '').trim();
+      const followupFiles = (target.clarificationContext && Array.isArray(target.clarificationContext.files))
+        ? JSON.parse(JSON.stringify(target.clarificationContext.files))
+        : [];
+      if (!baseText && !followupFiles.length) return;
+
+      const followupPreprocessed = (
+        target.clarificationContext
+        && target.clarificationContext.preprocessed_context
+        && typeof target.clarificationContext.preprocessed_context === 'object'
+      )
+        ? JSON.parse(JSON.stringify(target.clarificationContext.preprocessed_context))
+        : {};
+      const previousRecoveryAnswers = (
+        target.clarificationContext
+        && target.clarificationContext.recovery_answers
+        && typeof target.clarificationContext.recovery_answers === 'object'
+      )
+        ? JSON.parse(JSON.stringify(target.clarificationContext.recovery_answers))
+        : {};
+      const mergedRecoveryAnswers = buildRecoveryAnswers(questionId, choiceId, previousRecoveryAnswers);
+      const isFirGenerationQuestion = String(questionId || '').trim().toLowerCase() === 'generate_fir_docs';
+
+      if (isFirGenerationQuestion && !isYesOption(choiceId)) {
+        updateMessageById(messageId, {
+          clarificationPending: false,
+          clarificationAnswered: true,
+          clarificationSelectedId: choiceId,
+          clarificationSelectedLabel: choiceLabel,
+          clarificationPendingStartedAt: null,
+          clarificationPendingPhase: 0,
+          text: 'No problem. I will skip FIR and email generation for now. If you want it later, just tell me "generate FIR now".',
+          steps: [],
+          flags: [{ text: 'Skipped by you', level: 'warn' }],
+          clarification: null,
+        });
+        return;
+      }
+
+      state.isProcessing = true;
+      document.getElementById('composerHint').textContent = 'Refining answer based on your input...';
+
+      updateMessageById(messageId, {
+        clarificationPending: true,
+        clarificationAnswered: true,
+        clarificationSelectedId: choiceId,
+        clarificationSelectedLabel: choiceLabel,
+        clarificationPendingStartedAt: Date.now(),
+        clarificationPendingPhase: 0,
+        steps: [],
+        flags: [{ text: 'Refining answer', level: 'warn' }],
+      });
+      startClarificationPulse(messageId);
+
+      const payload = {
+        session_id: getSessionId(),
+        user_input: {
+          text: baseText,
+          files: followupFiles,
+        },
+        user_context: {
+          channel: 'web-ui',
+          locale: navigator.language || 'en-IN',
+        },
+        options: {
+          stream: true,
+          generate_report: isFirGenerationQuestion,
+          deep_analysis: false,
+          fast_first: true,
+          clarification_followup: true,
+          trigger_mcp_actions: isFirGenerationQuestion ? true : shouldTriggerMcpActions(mergedRecoveryAnswers),
+          response_instruction: GEMINI_REPLY_INSTRUCTION,
+          enforce_response_structure: true,
+          output_format: 'summary_and_bullets',
+          recovery_answers: mergedRecoveryAnswers,
+          preprocessed_context: followupPreprocessed,
+        },
+      };
+
+      try {
+        const analyzeRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!analyzeRes.ok) throw new Error('Could not start follow-up analysis');
+
+        const ack = await analyzeRes.json();
+        const runId = String(ack.run_id || '').trim();
+        if (!runId) throw new Error('Missing run id for follow-up');
+        state.currentRunId = runId;
+        startStream(runId);
+
+        const result = await waitForResult(runId);
+        state.latestPayload = result;
+        const assistant = buildAssistantPayload(result || {});
+
+        if (!assistant.ok) {
+          updateMessageById(messageId, {
+            text: assistant.error || 'Model response is incomplete. Please retry this analysis.',
+            steps: [],
+            flags: [],
+            clarification: null,
+            clarificationPending: false,
+            clarificationAnswered: false,
+            runId,
+            caseId: assistant.caseId,
+            analysisStage: assistant.analysisStage,
+            sourceRunId: assistant.sourceRunId,
+            contractVersion: assistant.contractVersion,
+            analysisStageVersion: assistant.analysisStageVersion,
+            eligibleForDeep: assistant.eligibleForDeep,
+            deepReason: assistant.deepReason,
+            deepReasonCode: assistant.deepReasonCode,
+            deepAnalysisUrl: assistant.deepAnalysisUrl,
+            integrationStatus: assistant.integrationStatus,
+          });
+        } else {
+          updateMessageById(messageId, {
+            text: assistant.text,
+            steps: assistant.steps,
+            flags: assistant.flags,
+            confidenceNote: assistant.confidenceNote,
+            evidenceNarrative: assistant.evidenceNarrative,
+            uncertaintyNote: assistant.uncertaintyNote,
+            technicalDetails: assistant.technicalDetails,
+            clarification: assistant.clarification,
+            clarificationContext: assistant.clarification
+              ? {
+                  text: baseText,
+                  files: followupFiles,
+                  preprocessed_context: followupPreprocessed,
+                  recovery_answers: mergedRecoveryAnswers,
+                }
+              : null,
+            clarificationPending: false,
+            clarificationAnswered: !assistant.clarification,
+            clarificationSelectedId: assistant.clarification ? null : choiceId,
+            clarificationSelectedLabel: assistant.clarification ? null : choiceLabel,
+            clarificationPendingStartedAt: null,
+            clarificationPendingPhase: 0,
+            runId,
+            caseId: assistant.caseId,
+            analysisStage: assistant.analysisStage,
+            sourceRunId: assistant.sourceRunId,
+            contractVersion: assistant.contractVersion,
+            analysisStageVersion: assistant.analysisStageVersion,
+            eligibleForDeep: assistant.eligibleForDeep,
+            deepReason: assistant.deepReason,
+            deepReasonCode: assistant.deepReasonCode,
+            deepAnalysisUrl: assistant.deepAnalysisUrl,
+            integrationStatus: assistant.integrationStatus,
+          });
+
+          if (!assistant.clarification && assistant.followupMessage) {
+            queueAssistantFollowup(assistant.followupMessage, assistant.followupDelayMs, {
+              flags: [{ text: 'Report details needed', level: 'warn' }],
+              caseId: assistant.caseId,
+              runId,
+              analysisStage: assistant.analysisStage,
+              sourceRunId: assistant.sourceRunId,
+              contractVersion: assistant.contractVersion,
+              analysisStageVersion: assistant.analysisStageVersion,
+              eligibleForDeep: assistant.eligibleForDeep,
+              deepReason: assistant.deepReason,
+              deepReasonCode: assistant.deepReasonCode,
+              deepAnalysisUrl: assistant.deepAnalysisUrl,
+            });
+          }
+
+          if (!assistant.clarification && assistant.goldenHourActive) {
+            queueAssistantFollowup(
+              'Good that you are still inside the Golden Hour. If a financial fraud is reported within 60 minutes, recovery chances are very high. I am creating Google Calendar events and Google Tasks now so you can act fast.',
+              1200,
+              {
+                flags: [{ text: 'Golden Hour active', level: 'warn' }],
+                caseId: assistant.caseId,
+                runId,
+              }
+            );
+
+            queueFirConsentPrompt({
+              text: baseText,
+              files: followupFiles,
+              preprocessed_context: followupPreprocessed,
+              recovery_answers: mergedRecoveryAnswers,
+              caseId: assistant.caseId,
+              runId,
+              analysisStage: assistant.analysisStage,
+              sourceRunId: assistant.sourceRunId,
+              contractVersion: assistant.contractVersion,
+              analysisStageVersion: assistant.analysisStageVersion,
+              eligibleForDeep: assistant.eligibleForDeep,
+              deepReason: assistant.deepReason,
+              deepReasonCode: assistant.deepReasonCode,
+              deepAnalysisUrl: assistant.deepAnalysisUrl,
+            }, 4200);
+          }
+
+          if (!assistant.clarification && assistant.docCreated && assistant.docUrl) {
+            queueAssistantFollowup(
+              `Done. Your FIR Google Doc is ready: ${assistant.docUrl}\n\nPlease check your Gmail app for the draft email as well.`,
+              900,
+              {
+                flags: [{ text: 'Artifacts ready', level: 'warn' }],
+                caseId: assistant.caseId,
+                runId,
+              }
+            );
+          }
+        }
+      } catch (_err) {
+        updateMessageById(messageId, {
+          clarificationPending: false,
+          clarificationAnswered: false,
+          clarificationPendingStartedAt: null,
+          clarificationPendingPhase: 0,
+          text: 'I could not refine this answer right now. Please try selecting again in a moment.',
+          steps: [],
+          flags: [{ text: 'Retry needed', level: 'warn' }],
+        });
+      } finally {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.value = '';
+        stopClarificationPulse();
+        state.isProcessing = false;
+        document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        closeStreamAndPoll();
+        render();
+      }
+    }
+
+    async function sendMessage() {
+      if (state.isProcessing) return;
+      const input = document.getElementById('composerInput');
+      const text = String(input.value || '').trim();
+      if (!text && !state.selectedFiles.length) {
+        input.focus();
+        return;
+      }
+
+      if (!getActiveChat()) {
+        const chat = createChat('New SATARK chat');
+        state.chats.unshift(chat);
+        state.activeChatId = chat.id;
+      }
+
+      const pendingFiles = state.selectedFiles.slice();
+      const pendingAttachments = pendingFiles.map((f) => toAttachmentViewModel(f));
+      const pendingText = text;
+
+      const userMessageId = addMessage('user', text || '(Sent file evidence)', {
+        attachments: pendingAttachments,
+      });
+      const thinkingMessageId = addMessage('assistant', 'SATARK AI is analyzing your case.', {
+        flags: [{ text: 'Analyzing', level: 'warn' }],
+        clarificationPendingPhase: 0,
+      });
+      startThinkingPulse(thinkingMessageId);
+      state.followThread = true;
+      input.value = '';
+      state.selectedFiles = [];
+      renderAttachment();
+      state.isProcessing = true;
+      document.getElementById('composerHint').textContent = 'SATARK is working...';
+      renderAgentStrip();
+
+      try {
+        const files = [];
+        for (const selected of pendingFiles) {
+          if (!selected || !selected.file) continue;
+          const dataUrl = selected.contentBase64 || await fileToDataUrl(selected.file);
+          if (!dataUrl) continue;
+          if (!selected.contentBase64) selected.contentBase64 = String(dataUrl);
+          files.push({
+            file_name: selected.name,
+            file_type: selected.mimeType || 'application/octet-stream',
+            content_base64: dataUrl,
+          });
+        }
+
+        updateMessageById(userMessageId, {
+          attachments: pendingFiles.map((f) => toAttachmentViewModel(f)),
+        });
+
+        const payload = {
+          session_id: getSessionId(),
+          user_input: {
+            text: pendingText,
+            files,
+          },
+          user_context: {
+            channel: 'web-ui',
+            locale: navigator.language || 'en-IN',
+          },
+          options: {
+            stream: true,
+            generate_report: false,
+            deep_analysis: false,
+            fast_first: true,
+            trigger_mcp_actions: Boolean(state.profile.connected),
+            response_instruction: GEMINI_REPLY_INSTRUCTION,
+            enforce_response_structure: true,
+            output_format: 'summary_and_bullets',
+          },
+        };
+
+        const analyzeRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!analyzeRes.ok) {
+          throw new Error('Could not start analysis');
+        }
+
+        const ack = await analyzeRes.json();
+        const runId = String(ack.run_id || '').trim();
+        if (!runId) throw new Error('Missing run id');
+        state.currentRunId = runId;
+        startStream(runId);
+
+        const result = await waitForResult(runId);
+        state.latestPayload = result;
+
+        const assistant = buildAssistantPayload(result || {});
+        if (!assistant.ok) {
+          updateMessageById(thinkingMessageId, {
+            text: assistant.error || 'Model response is incomplete. Please retry this analysis.',
+            steps: [],
+            flags: [],
+            runId,
+            caseId: assistant.caseId,
+            analysisStage: assistant.analysisStage,
+            sourceRunId: assistant.sourceRunId,
+            contractVersion: assistant.contractVersion,
+            analysisStageVersion: assistant.analysisStageVersion,
+            eligibleForDeep: assistant.eligibleForDeep,
+            deepReason: assistant.deepReason,
+            deepReasonCode: assistant.deepReasonCode,
+            deepAnalysisUrl: assistant.deepAnalysisUrl,
+            integrationStatus: assistant.integrationStatus,
+          });
+        } else {
+          updateMessageById(thinkingMessageId, {
+            text: assistant.text,
+            steps: assistant.steps,
+            flags: assistant.flags,
+            confidenceNote: assistant.confidenceNote,
+            evidenceNarrative: assistant.evidenceNarrative,
+            uncertaintyNote: assistant.uncertaintyNote,
+            technicalDetails: assistant.technicalDetails,
+            clarification: assistant.clarification,
+            clarificationContext: {
+              text: pendingText,
+              files: files,
+              preprocessed_context: {},
+              recovery_answers: {},
+            },
+            runId,
+            caseId: assistant.caseId,
+            analysisStage: assistant.analysisStage,
+            sourceRunId: assistant.sourceRunId,
+            contractVersion: assistant.contractVersion,
+            analysisStageVersion: assistant.analysisStageVersion,
+            eligibleForDeep: assistant.eligibleForDeep,
+            deepReason: assistant.deepReason,
+            deepReasonCode: assistant.deepReasonCode,
+            deepAnalysisUrl: assistant.deepAnalysisUrl,
+            integrationStatus: assistant.integrationStatus,
+          });
+
+          if (!assistant.clarification && assistant.followupMessage) {
+            queueAssistantFollowup(assistant.followupMessage, assistant.followupDelayMs, {
+              flags: [{ text: 'Report details needed', level: 'warn' }],
+              caseId: assistant.caseId,
+              runId,
+              analysisStage: assistant.analysisStage,
+              sourceRunId: assistant.sourceRunId,
+              contractVersion: assistant.contractVersion,
+              analysisStageVersion: assistant.analysisStageVersion,
+              eligibleForDeep: assistant.eligibleForDeep,
+              deepReason: assistant.deepReason,
+              deepReasonCode: assistant.deepReasonCode,
+              deepAnalysisUrl: assistant.deepAnalysisUrl,
+            });
+          }
+
+          if (!assistant.clarification && assistant.goldenHourActive) {
+            queueAssistantFollowup(
+              'Good that you are still inside the Golden Hour. If a financial fraud is reported within 60 minutes, recovery chances are very high. I am creating Google Calendar events and Google Tasks now so you can act fast.',
+              1200,
+              {
+                flags: [{ text: 'Golden Hour active', level: 'warn' }],
+                caseId: assistant.caseId,
+                runId,
+              }
+            );
+
+            queueFirConsentPrompt({
+              text: pendingText,
+              files,
+              preprocessed_context: {},
+              recovery_answers: {},
+              caseId: assistant.caseId,
+              runId,
+              analysisStage: assistant.analysisStage,
+              sourceRunId: assistant.sourceRunId,
+              contractVersion: assistant.contractVersion,
+              analysisStageVersion: assistant.analysisStageVersion,
+              eligibleForDeep: assistant.eligibleForDeep,
+              deepReason: assistant.deepReason,
+              deepReasonCode: assistant.deepReasonCode,
+              deepAnalysisUrl: assistant.deepAnalysisUrl,
+            }, 4200);
+          }
+
+          if (!assistant.clarification && assistant.docCreated && assistant.docUrl) {
+            queueAssistantFollowup(
+              `Done. Your FIR Google Doc is ready: ${assistant.docUrl}\n\nPlease check your Gmail app for the draft email as well.`,
+              900,
+              {
+                flags: [{ text: 'Artifacts ready', level: 'warn' }],
+                caseId: assistant.caseId,
+                runId,
+              }
+            );
+          }
+        }
+
+        const chat = getActiveChat();
+        if (chat && chat.messages.length >= 2) {
+          const firstUser = chat.messages.find((m) => m.role === 'user');
+          if (firstUser) {
+            chat.title = makeTitleFromText(firstUser.text);
+            updateChat(chat);
+          }
+        }
+
+      } catch (_err) {
+        input.value = pendingText;
+        state.selectedFiles = pendingFiles;
+        // Keep a visible retry path without fabricating assistance.
+        updateMessageById(thinkingMessageId, {
+          text: 'I could not finish this request right now. Please try again in a moment.',
+          steps: [],
+          flags: [{ text: 'Retry needed', level: 'warn' }],
+        });
+      } finally {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.value = '';
+        stopThinkingPulse();
+        stopClarificationPulse();
+        state.isProcessing = false;
+        document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        closeStreamAndPoll();
+        render();
+      }
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/status');
+        const data = await res.json();
+        state.profile.connected = !!data.connected;
+        state.profile.email = data.email || null;
+        state.profile.givenName = data.given_name || null;
+        state.profile.familyName = data.family_name || null;
+        state.profile.fullName = data.name || null;
+        state.profile.name = resolveDisplayName(state.profile);
+      } catch (_e) {
+        state.profile.connected = false;
+        state.profile.email = null;
+        state.profile.givenName = null;
+        state.profile.familyName = null;
+        state.profile.fullName = null;
+        state.profile.name = 'Guest';
+      }
+    }
+
+    function setupMic() {
+      const micBtn = document.getElementById('micBtn');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        const recog = new SpeechRecognition();
+        recog.lang = navigator.language || 'en-IN';
+        recog.interimResults = true;
+        recog.maxAlternatives = 1;
+        recog.continuous = true;
+        state.speechRec = recog;
+
+        recog.onstart = () => {
+          const textarea = document.getElementById('composerInput');
+          state.speechBaseText = String(textarea.value || '').trim();
+          state.speechFinalText = '';
+          state.recording = true;
+          micBtn.classList.add('active');
+          document.getElementById('composerHint').textContent = 'Listening... Speak now';
+        };
+
+        recog.onresult = (event) => {
+          const textarea = document.getElementById('composerInput');
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const transcript = String(event.results[i][0].transcript || '').trim();
+            if (!transcript) continue;
+            if (event.results[i].isFinal) {
+              state.speechFinalText = (state.speechFinalText + ' ' + transcript).trim();
+            } else {
+              interim = (interim + ' ' + transcript).trim();
+            }
+          }
+          textarea.value = [state.speechBaseText, state.speechFinalText, interim].filter(Boolean).join(' ').trim();
+        };
+
+        recog.onend = () => {
+          const textarea = document.getElementById('composerInput');
+          textarea.value = [state.speechBaseText, state.speechFinalText].filter(Boolean).join(' ').trim();
+          state.speechBaseText = '';
+          state.speechFinalText = '';
+          state.recording = false;
+          micBtn.classList.remove('active');
+          document.getElementById('composerHint').textContent = 'Enter to send, Shift+Enter for new line';
+        };
+
+        micBtn.addEventListener('click', () => {
+          if (state.recording) {
+            recog.stop();
+            return;
+          }
+          recog.start();
+        });
+        return;
+      }
+
+      // Backend-ready path for Google Cloud Speech streaming.
+      const hasCaptureSupport = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      if (!hasCaptureSupport) {
+        micBtn.disabled = true;
+        micBtn.title = 'Live speech input is not supported in this browser.';
+        document.getElementById('composerHint').textContent = 'Mic not supported in this browser. Please type your message.';
+        return;
+      }
+      micBtn.addEventListener('click', async () => {
+        if (state.recording && state.mediaRecorder) {
+          state.mediaRecorder.stop();
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(stream);
+          state.mediaChunks = [];
+          state.mediaRecorder = recorder;
+          recorder.ondataavailable = (evt) => {
+            if (evt.data && evt.data.size > 0) state.mediaChunks.push(evt.data);
+          };
+          recorder.onstart = () => {
+            state.recording = true;
+            micBtn.classList.add('active');
+            document.getElementById('composerHint').textContent = 'Recording... click Mic to stop';
+          };
+          recorder.onstop = async () => {
+            state.recording = false;
+            micBtn.classList.remove('active');
+            document.getElementById('composerHint').textContent = 'Audio captured as an attachment. Enter to send, Shift+Enter for new line';
+            const blob = new Blob(state.mediaChunks, { type: 'audio/webm' });
+            const audioFile = new File([blob], `voice-note-${Date.now()}.webm`, { type: 'audio/webm' });
+            addSelectedFiles([audioFile]);
+            stream.getTracks().forEach((t) => t.stop());
+          };
+          recorder.start();
+        } catch (_e) {
+          document.getElementById('composerHint').textContent = 'Mic access denied in this browser';
+        }
+      });
+    }
+
+    async function bootstrap() {
+      state.analystMode = isAnalystMode();
+      await checkAuth();
+      loadChats();
+      render();
+
+      const input = document.getElementById('composerInput');
+      const threadWrap = document.getElementById('threadWrap');
+      const composerWrap = document.querySelector('.composer-wrap');
+      input.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter' && !evt.shiftKey) {
+          evt.preventDefault();
+          sendMessage();
+        }
+      });
+
+      if (composerWrap) {
+        composerWrap.addEventListener('paste', handlePasteUploadEvent);
+      }
+      threadWrap.addEventListener('paste', handlePasteUploadEvent);
+      window.addEventListener('paste', handlePasteUploadEvent);
+
+      threadWrap.addEventListener('scroll', () => {
+        state.followThread = isNearThreadBottom();
+        updateJumpToLatestButton();
+      });
+
+      document.getElementById('jumpToLatestBtn').addEventListener('click', () => {
+        state.followThread = true;
+        scrollThreadToLatest(true);
+      });
+
+      document.getElementById('sendBtn').addEventListener('click', sendMessage);
+      document.getElementById('newChatBtn').addEventListener('click', () => {
+        const chat = createChat('New SATARK chat');
+        state.chats.unshift(chat);
+        state.activeChatId = chat.id;
+        saveChats();
+        closeSidebarOnMobile();
+        render();
+      });
+
+      document.getElementById('chatSearch').addEventListener('input', (evt) => {
+        state.search = String(evt.target.value || '');
+        renderHistory();
+      });
+
+      document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+      });
+
+      document.getElementById('fileInput').addEventListener('change', (evt) => {
+        const files = evt.target.files ? Array.from(evt.target.files) : [];
+        addSelectedFiles(files);
+        evt.target.value = '';
+      });
+
+      document.getElementById('signInBtn').addEventListener('click', () => {
+        const sid = getSessionId();
+        window.location.href = '/auth/google/start?session_id=' + encodeURIComponent(sid) + '&next=/ui';
+      });
+
+      document.getElementById('drawerToggle').addEventListener('click', () => {
+        state.drawerOpen = !state.drawerOpen;
+        document.getElementById('analystDrawer').classList.toggle('visible', state.drawerOpen);
+      });
+
+      document.getElementById('menuBtn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('visible');
+      });
+
+      document.getElementById('overlay').addEventListener('click', closeSidebarOnMobile);
+
+      setupMic();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('google') === 'connected') {
+        window.history.replaceState({}, '', '/ui');
+      }
+    }
+
+    function closeSidebarOnMobile() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('visible');
+    }
+
+    bootstrap();
+  </script>
 </body>
 </html>
