@@ -47,7 +47,7 @@ from db.client import get_db
 from fastapi.staticfiles import StaticFiles
 import base64
 from urllib.parse import urlparse
-from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL, MODEL_FLASH
+from config import PROJECT_ID, LOCATION, GEMINI_LIVE_MODEL, MODEL_FLASH, get_genai_client
 from api.workflow_api import router as workflow_router
 
 from db.sessions_repo import (
@@ -165,7 +165,7 @@ def _content_hash(data: str) -> str:
 
 
 live_client = (
-    genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+    get_genai_client()
     if genai is not None
     else None
 )

@@ -1,6 +1,6 @@
 {
-  "run_id": "run_ba0fec93d6a7",
-  "case_id": "case_af8eb0a569c5",
+  "run_id": "run_8a8aeb162127",
+  "case_id": "case_c63195bdf394",
   "status": "completed",
   "contract_version": "2026-04-two-phase-v1",
   "analysis_stage_version": 1,
@@ -108,7 +108,7 @@
     "classify_ms": 0,
     "vector_lookup_ms": 0,
     "pipeline_ms": 0,
-    "total_ms": 0,
+    "total_ms": 2,
     "fast_path": true,
     "stage_breakdown_ms": {}
   },
@@ -205,13 +205,13 @@
   "submitted_evidence": [
     {
       "type": "application/vnd.android.package-archive",
-      "source": "InsecureBankv2.apk",
+      "source": "notes_app.apk",
       "storage_uri": null
     }
   ],
   "timestamps": {
-    "created_at": "2026-05-25T17:33:16.163075Z",
-    "completed_at": "2026-05-25T17:33:16.163580Z"
+    "created_at": "2026-05-25T17:33:19.903469Z",
+    "completed_at": "2026-05-25T17:33:19.906450Z"
   },
   "raw": {
     "needs_clarification": true,
@@ -267,7 +267,7 @@
       "classify_ms": 0,
       "vector_lookup_ms": 0,
       "pipeline_ms": 0,
-      "total_ms": 0,
+      "total_ms": 2,
       "fast_path": true,
       "stage_breakdown_ms": {}
     }

@@ -1,0 +1,299 @@
+{
+  "generated_at": "2026-05-25T17:33:19Z",
+  "case": "benign",
+  "run_id": "run_8a8aeb162127",
+  "events": [
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.accepted",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.903518Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "status": "accepted"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904715Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.classified",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904856Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "primary_type": "apk",
+        "selected_agents": [
+          "manager",
+          "scam_detector",
+          "osint",
+          "apk_analyzer",
+          "golden_hour"
+        ],
+        "skipped_agents": [
+          {
+            "agent": "audio_analyzer",
+            "reason": "no audio file uploaded"
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.completed",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904885Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "audio_analyzer",
+        "status": "skipped",
+        "output": {
+          "summary": "Skipped: no audio file uploaded",
+          "reason": "no audio file uploaded"
+        }
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904905Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "manager",
+        "label": "Manager Agent",
+        "status": "booting"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904924Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "manager",
+        "step": "route_planning",
+        "status": "running",
+        "message": "Manager selected execution graph"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904948Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "scam_detector",
+        "label": "Scam Detector",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904966Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "osint",
+        "label": "Osint",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.904985Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "apk_analyzer",
+        "label": "Apk Analyzer",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.started",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.905004Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "golden_hour",
+        "label": "Golden Hour",
+        "status": "queued"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.905022Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "apk_analyzer",
+        "step": "apk_static_analysis",
+        "status": "running",
+        "message": "Inspecting APK structure..."
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.905038Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "osint",
+        "step": "identity_enrichment",
+        "status": "running",
+        "message": "Searching public references..."
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "agent.progress",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.905055Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "manager",
+        "step": "decision_synthesis",
+        "status": "running",
+        "message": "Preparing verdict..."
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "tool.called",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.905975Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "manager",
+        "tool": "manager_pipeline",
+        "message": "Manager delegating to selected agents"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.fast_path_selected",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.906342Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "reason": "global_first_response_sla"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.clarification_requested",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.906372Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "question_id": "installed_apk"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "tool.result",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.906392Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "agent": "manager",
+        "tool": "manager_pipeline",
+        "status": "fast_path"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "analysis.completed",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.906844Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "result_url": "/api/result/run_8a8aeb162127"
+      }
+    },
+    {
+      "ts": "2026-05-25T17:33:19Z",
+      "event": "run.completed",
+      "data": {
+        "run_id": "run_8a8aeb162127",
+        "timestamp": "2026-05-25T17:33:19.906870Z",
+        "contract_version": "2026-04-two-phase-v1",
+        "analysis_stage_version": 1,
+        "analysis_stage": "analysis",
+        "case_id": "case_c63195bdf394",
+        "result_url": "/api/result/run_8a8aeb162127"
+      }
+    }
+  ],
+  "errors": [],
+  "last_event": {
+    "ts": "2026-05-25T17:33:19Z",
+    "event": "run.completed",
+    "data": {
+      "run_id": "run_8a8aeb162127",
+      "timestamp": "2026-05-25T17:33:19.906870Z",
+      "contract_version": "2026-04-two-phase-v1",
+      "analysis_stage_version": 1,
+      "analysis_stage": "analysis",
+      "case_id": "case_c63195bdf394",
+      "result_url": "/api/result/run_8a8aeb162127"
+    }
+  }
+}

@@ -150,9 +150,9 @@ def _run_browser_flow(base_url: str, timeout_s: int) -> dict[str, Any]:
 	_build_tiny_png(temp_png)
 
 	prompts = [
-		"I got this suspicious screenshot. I am not sure whether I clicked any link. Is this a scam?",
-		"Please verify this screenshot. I am unsure what happened and need safe next steps.",
-		"I received this fraud-looking message screenshot. Can you assess the risk?",
+		"I got this suspicious screenshot containing http://scam-lure.example/path. I am not sure whether I clicked it. Is this a scam?",
+		"Please verify this screenshot containing http://scam-lure.example/path. I am unsure what happened and need safe next steps.",
+		"I received this fraud-looking message screenshot containing http://scam-lure.example/path. Can you assess the risk?",
 	]
 
 	with sync_playwright() as p:
@@ -232,7 +232,7 @@ def _run_browser_flow(base_url: str, timeout_s: int) -> dict[str, Any]:
 		user_count_before = int(info.get("userCount") or 0)
 		analyze_count_before_click = len(analyze_payloads)
 
-		page.click(f".msg.bot[data-message-id='{clarification_msg_id}'] .clarification-btn:not([disabled])")
+		page.click(f".msg.bot[data-message-id='{clarification_msg_id}'] .clarification-btn:has-text('No')")
 		page.wait_for_selector(
 			f".msg.bot[data-message-id='{clarification_msg_id}'] .clarification-pending",
 			timeout=15_000,

@@ -10,7 +10,7 @@ from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.vector import Vector
 
-from config import LOCATION, MODEL_EMBEDDING, PROJECT_ID
+from config import LOCATION, MODEL_EMBEDDING, PROJECT_ID, get_genai_client
 
 try:
     from google import genai
@@ -27,7 +27,7 @@ OSINT_CACHE = "osint_cache"
 
 
 _embed_client = (
-    genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+    get_genai_client()
     if genai is not None
     else None
 )

@@ -2,9 +2,9 @@ import json, re, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google import genai
 from google.genai import types
-from config import MODEL_PRO, MODEL_PRO_TOOLS, PROJECT_ID, LOCATION
+from config import get_genai_client, MODEL_PRO, MODEL_PRO_TOOLS, PROJECT_ID
 
-client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+client = get_genai_client()
 
 
 def _response_text(resp) -> str:

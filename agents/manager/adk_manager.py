@@ -18,7 +18,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 
 from agents.scam_detector import scam_detector_agent
-from config import LOCATION, MODEL_FLASH, PROJECT_ID
+from config import LOCATION, MODEL_FLASH, PROJECT_ID, get_genai_client, USE_VERTEXAI
 from db.operations import find_similar_patterns, save_case, save_fraud_pattern
 
 try:
@@ -63,9 +63,14 @@ except Exception:
 
 logger = logging.getLogger(__name__)
 
-vertexai.init(project=PROJECT_ID, location=LOCATION)
+if USE_VERTEXAI:
+    try:
+        import vertexai
+        vertexai.init(project=PROJECT_ID, location=LOCATION)
+    except Exception as e:
+        logger.warning(f"Failed to initialize Vertex AI: {e}")
 
-genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+genai_client = get_genai_client()
 
 session_service = InMemorySessionService()
 artifact_service = InMemoryArtifactService()

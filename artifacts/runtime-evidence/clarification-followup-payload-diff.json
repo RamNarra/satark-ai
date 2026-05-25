@@ -14,7 +14,7 @@
       "op": "added",
       "path": "$.options.recovery_answers",
       "after": {
-        "clicked_link": true
+        "clicked_link": false
       }
     },
     {

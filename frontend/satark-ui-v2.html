@@ -5,31 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SATARK AI Chat</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
     :root {
-      --bg-deep: #061426;
-      --bg-mid: #0b1f36;
-      --panel: rgba(9, 21, 40, 0.9);
-      --panel-soft: rgba(10, 25, 45, 0.72);
-      --border: rgba(120, 180, 220, 0.22);
-      --text: #e5f0ff;
-      --text-muted: #9bb4d1;
-      --brand: #20e3c2;
-      --brand-deep: #1cb0a4;
-      --user-bubble: #1c3a64;
-      --bot-bubble: #0f2d4e;
-      --chip-run: #4cc9f0;
-      --chip-done: #3ddc97;
-      --chip-failed: #ff6b6b;
-      --warn: #ffb347;
-      --danger: #ff5c5c;
-      --radius: 18px;
-      --shadow: 0 16px 40px rgba(0, 0, 0, 0.26);
+      --bg-deep: #030712;
+      --bg-mid: #0b0f19;
+      --panel: rgba(17, 24, 39, 0.8);
+      --panel-soft: rgba(31, 41, 55, 0.5);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --brand: #10b981;
+      --brand-deep: #059669;
+      --user-bubble: #1f2937;
+      --bot-bubble: #111827;
+      --chip-run: #3b82f6;
+      --chip-done: #10b981;
+      --chip-failed: #ef4444;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+      --shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
     }
 
     * {
       box-sizing: border-box;
+      transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     html,
@@ -37,12 +39,12 @@
       height: 100%;
       margin: 0;
       overflow: hidden;
-      font-family: 'IBM Plex Sans', sans-serif;
+      font-family: 'Outfit', sans-serif;
       color: var(--text);
       background:
-        radial-gradient(1200px 800px at 10% -20%, rgba(39, 118, 202, 0.28), transparent),
-        radial-gradient(900px 700px at 85% -10%, rgba(38, 170, 150, 0.20), transparent),
-        linear-gradient(140deg, var(--bg-deep), var(--bg-mid));
+        radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 45%),
+        var(--bg-deep);
     }
 
     body {
@@ -58,13 +60,13 @@
     }
 
     .sidebar {
-      background: linear-gradient(180deg, rgba(10, 25, 48, 0.96), rgba(8, 18, 35, 0.93));
+      background: linear-gradient(180deg, var(--bg-mid), var(--bg-deep));
       border-right: 1px solid var(--border);
-      padding: 18px 14px 14px;
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      backdrop-filter: blur(12px);
+      gap: 16px;
+      backdrop-filter: blur(20px);
       z-index: 20;
       min-height: 0;
       overflow: hidden;
@@ -75,47 +77,66 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 10px;
+      padding: 12px;
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: var(--radius);
       background: var(--panel-soft);
     }
 
     .brand h1 {
       margin: 0;
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 20px;
-      letter-spacing: 0.04em;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
     }
 
     .brand small {
       color: var(--text-muted);
-      font-size: 11px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .new-chat {
       border: 0;
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 12px;
-      font-weight: 700;
-      color: #012330;
-      background: linear-gradient(90deg, var(--brand), #7fffd4);
+      font-weight: 600;
+      color: #030712;
+      background: linear-gradient(90deg, var(--brand), #6ee7b7);
       cursor: pointer;
-      transition: transform .15s ease;
+      font-size: 14px;
+      transform: translateY(0);
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
     }
 
     .new-chat:hover {
       transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .new-chat:active {
+      transform: translateY(0);
     }
 
     .search-wrap input {
       width: 100%;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      background: rgba(7, 19, 36, 0.8);
+      border-radius: var(--radius);
+      background: rgba(17, 24, 39, 0.6);
       color: var(--text);
-      padding: 10px 12px;
+      padding: 10px 14px;
       outline: none;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
     }
 
     .history {
@@ -129,31 +150,35 @@
     }
 
     .chat-item {
-      border: 1px solid transparent;
-      border-radius: 12px;
-      background: rgba(9, 20, 39, 0.66);
-      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(17, 24, 39, 0.4);
+      padding: 12px;
       cursor: pointer;
       text-align: left;
       color: inherit;
+      transition: all 0.2s ease;
     }
 
     .chat-item:hover {
-      border-color: var(--border);
+      border-color: var(--border-hover);
+      background: rgba(31, 41, 55, 0.3);
     }
 
     .chat-item.active {
-      border-color: rgba(70, 214, 191, 0.5);
-      background: rgba(18, 48, 69, 0.72);
+      border-color: var(--brand);
+      background: rgba(16, 185, 129, 0.08);
+      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1);
     }
 
     .chat-item .title {
       margin: 0;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: #fff;
     }
 
     .chat-item .meta {
@@ -165,7 +190,7 @@
     .chat-item .snippet {
       margin: 6px 0 0;
       font-size: 11px;
-      color: #c5d8ef;
+      color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -173,7 +198,7 @@
 
     .profile {
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: var(--radius);
       padding: 12px;
       background: var(--panel-soft);
     }
@@ -332,11 +357,13 @@
     }
 
     .bubble.user {
-      background: linear-gradient(160deg, rgba(30, 62, 99, 0.95), var(--user-bubble));
+      background: var(--user-bubble);
+      border-color: rgba(255, 255, 255, 0.06);
     }
 
     .bubble.bot {
-      background: linear-gradient(160deg, rgba(12, 37, 66, 0.93), var(--bot-bubble));
+      background: var(--bot-bubble);
+      border-color: var(--border);
     }
 
     .bubble-body {
@@ -650,21 +677,27 @@
 
     .composer-wrap {
       border-top: 1px solid var(--border);
-      background: rgba(6, 14, 27, 0.84);
-      backdrop-filter: blur(8px);
-      padding: 12px;
+      background: rgba(3, 7, 18, 0.8);
+      backdrop-filter: blur(20px);
+      padding: 16px;
     }
 
     .composer {
       width: min(1060px, 100%);
       margin: 0 auto;
       border: 1px solid var(--border);
-      border-radius: 18px;
-      background: rgba(7, 20, 39, 0.95);
-      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(17, 24, 39, 0.7);
+      padding: 12px;
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 8px;
+      gap: 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .composer:focus-within {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
     }
 
     .composer textarea {
@@ -673,11 +706,15 @@
       resize: none;
       background: transparent;
       color: var(--text);
-      min-height: 68px;
+      min-height: 48px;
       max-height: 180px;
       font: inherit;
       font-size: 15px;
       line-height: 1.5;
+    }
+
+    .composer textarea::placeholder {
+      color: var(--text-muted);
     }
 
     .composer-actions {
@@ -689,26 +726,45 @@
     .icon-btn,
     .send-btn {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      background: rgba(8, 22, 42, 0.9);
+      border-radius: 8px;
+      background: rgba(31, 41, 55, 0.6);
       color: var(--text);
-      padding: 9px 12px;
+      padding: 8px 14px;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 12px;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--border-hover);
+      background: rgba(55, 65, 81, 0.8);
     }
 
     .icon-btn.active {
-      border-color: rgba(76, 201, 240, 0.9);
-      color: #d8f6ff;
-      box-shadow: 0 0 14px rgba(76, 201, 240, 0.42);
+      border-color: var(--brand);
+      color: #fff;
+      background: rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
     }
 
     .send-btn {
-      background: linear-gradient(90deg, var(--brand), #52f6e4);
-      color: #082233;
+      background: var(--brand);
+      color: #030712;
       border: 0;
-      min-width: 76px;
+      min-width: 80px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+
+    .send-btn:hover {
+      background: var(--brand-deep);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .send-btn:active {
+      transform: translateY(0);
     }
 
     .composer-meta {
@@ -728,8 +784,8 @@
       gap: 8px;
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 5px 10px;
-      background: rgba(10, 24, 44, 0.9);
+      padding: 5px 12px;
+      background: rgba(31, 41, 55, 0.8);
       max-width: 100%;
     }
 

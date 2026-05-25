@@ -1,0 +1,44 @@
+{
+  "hosting": {
+    "public": "frontend",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "satark-ai",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/health",
+        "run": {
+          "serviceId": "satark-ai",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/auth/**",
+        "run": {
+          "serviceId": "satark-ai",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/workflow/**",
+        "run": {
+          "serviceId": "satark-ai",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/satark-ui-v2.html"
+      }
+    ]
+  }
+}

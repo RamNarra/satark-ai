@@ -26,11 +26,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from google import genai
 from google.genai import types
-from config import MODEL_FLASH, PROJECT_ID, LOCATION
+from config import MODEL_FLASH, PROJECT_ID, LOCATION, get_genai_client
 
 logger = logging.getLogger("uvicorn.error")
 
-_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+_client = get_genai_client()
 
 # ---------------------------------------------------------------------------
 # Helpers
