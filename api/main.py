@@ -229,6 +229,8 @@ app = FastAPI(
     description="Smart Anti-fraud Technology for Awareness, Reporting & Knowledge",
     version="1.0.0"
 )
+from api.routes.incidents_v2 import router as incidents_v2_router
+app.include_router(incidents_v2_router)
 
 
 @app.on_event("shutdown")
