@@ -85,3 +85,15 @@ class ForensicCase:
     events: List[CaseTimelineEvent] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class EntityRelationship:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    case_id: str = ""
+    source_entity_id: str = ""
+    target_entity_id: str = ""
+    relation_type: str = ""
+    confidence: float = 1.0
+    supporting_evidence_id: Optional[str] = None
+    created_at: datetime = field(default_factory=datetime.utcnow)

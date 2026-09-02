@@ -1,11 +1,15 @@
 """
 Multimodal Evidence Normalizer Pipeline.
-Parses Text, PDF, and APK artifacts into normalized text and extracted atomic entities.
+Parses Text, PDF, APK, and Image artifacts (via OCR) into normalized text and extracted atomic entities.
 """
 import io
+import os
 import re
+import subprocess
+import tempfile
 from typing import List, Tuple, Optional
-from db.schema.models import EvidenceItem, DiscoveredEntity
+from PIL import Image
+from db.schema.models import DiscoveredEntity
 
 
 def extract_regex_entities(case_id: str, evidence_id: str, text: str) -> List[DiscoveredEntity]:
@@ -66,6 +70,27 @@ def extract_regex_entities(case_id: str, evidence_id: str, text: str) -> List[Di
 
 class EvidenceParserService:
     """Parses raw artifact bytes based on detected MIME / file type."""
+
+    @staticmethod
+    def parse_image(data: bytes) -> str:
+        """Extracts text from screenshots using local Tesseract OCR engine."""
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                tmp.write(data)
+                tmp_path = tmp.name
+
+            # Run tesseract directly
+            result = subprocess.run(
+                ["tesseract", tmp_path, "stdout", "-l", "eng", "--oem", "1"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10
+            )
+            os.unlink(tmp_path)
+            extracted = result.stdout.decode("utf-8", errors="ignore").strip()
+            return extracted if extracted else "[OCR extracted no readable text]"
+        except Exception as e:
+            return f"[OCR Error: {e}]"
 
     @staticmethod
     def parse_pdf(data: bytes) -> str:
