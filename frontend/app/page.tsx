@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 
 type Reply = { title: string; body: string; evidence: string[] }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? ''
+
 export default function Home() {
   const [text, setText] = useState('')
   const [reply, setReply] = useState<Reply | null>(null)
@@ -16,7 +18,7 @@ export default function Home() {
     setBusy(true)
     setReply(null)
     try {
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: value, deep_analysis: false, fast_first: true, generate_report: false, trigger_mcp_actions: false }),
@@ -31,8 +33,8 @@ export default function Home() {
     } catch {
       setReply({
         title: 'SATARK is ready, but the analysis service is not connected yet',
-        body: 'Your new interface is live. The case-reconstruction API can be wired here without changing the experience.',
-        evidence: ['conversation preserved', 'backend adapter pending'],
+        body: 'The interface is intentionally decoupled from the backend. Set NEXT_PUBLIC_API_BASE_URL when the v2 incident-reconstruction API is deployed.',
+        evidence: ['conversation preserved', 'backend adapter ready'],
       })
     } finally {
       setBusy(false)
@@ -58,7 +60,7 @@ export default function Home() {
         </div>
 
         <div className="composer">
-          <textarea value={text} onChange={e => setText(e.target.value)} onKeyDown={onKeyDown} placeholder="“I got this SMS, clicked the link, then someone called me…”" aria-label="Describe the incident" />
+          <textarea value={text} onChange={e => setText(e.target.value)} onKeyDown={onKeyDown} placeholder={'“I got this SMS, clicked the link, then someone called me…”'} aria-label="Describe the incident" />
           <input ref={fileRef} hidden type="file" multiple accept="image/*,audio/*,video/*,.pdf,.apk,.txt" />
           <div className="tools">
             <button className="attach" onClick={() => fileRef.current?.click()}>＋ Add evidence</button>
