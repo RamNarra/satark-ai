@@ -1,24 +1,25 @@
 """
-Gemini Forensic Reasoner Loop with Strict Backend Provenance Verification.
-Inspects grounded evidence artifacts, distinguishes observed actions from text mentions,
-and post-validates all model claims against ground-truth evidence IDs.
+Gemini Multi-Turn Investigator & Graph Constructor.
+Reconstructs grounded incident timeline, maps entity relationships,
+and verifies strict evidence provenance.
 """
 import json
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Set
 from config import get_genai_client, MODEL_PRO
-from db.schema.models import CaseTimelineEvent, EventStatus, FinancialLossStatus
+from db.schema.models import CaseTimelineEvent, EntityRelationship, EventStatus, FinancialLossStatus
+from services.intelligence import PatternIntelligenceService
 
 logger = logging.getLogger("satark.reasoner")
 
-FORENSIC_SYSTEM_INSTRUCTION = """
-You are SATARK's Forensic Incident Investigator.
+FORENSIC_INVESTIGATOR_PROMPT = """
+You are SATARK's Lead Forensic Cybercrime Investigator.
 You analyze raw digital evidence artifacts provided by a victim of cybercrime in India.
 
 CRITICAL FORENSIC RULES:
 1. DISTINGUISH MENTION FROM ACTION:
    - If an SMS says "Do not share OTP", the victim DID NOT share OTP.
-   - Only declare SHARED_OTP if the victim explicitly confirmed transmitting/telling the OTP, or a transaction followed directly.
+   - Only declare SHARED_OTP if the victim explicitly confirmed transmitting/telling the OTP, or an unauthorized transaction followed directly.
    - If an APK is attached or mentioned, DO NOT infer it was INSTALLED unless explicitly confirmed.
    - If a URL is present, DO NOT infer it was CLICKED unless explicitly stated.
 2. FINANCIAL LOSS STATUS:
@@ -29,39 +30,51 @@ CRITICAL FORENSIC RULES:
      * CONFIRMED_UNAUTHORIZED_TRANSACTION (actual debit confirmed by transaction SMS, bank statement, or victim testimony)
      * UNKNOWN (conflicting or ambiguous evidence)
 3. GROUNDING & PROVENANCE:
-   - For every timeline event, specify the exact evidence ID from the input that supports it.
-   - Mark status as "OBSERVED" if directly stated in text/evidence, or "INFERRED" if deduced.
-4. TONE & ADVISORY:
-   - If NO_EVIDENCE_OF_LOSS: Stay calm, explain why it is a scam, give preventative blocking advice. DO NOT mention 1930 or police emergency.
-   - If CONFIRMED_UNAUTHORIZED_TRANSACTION: State emergency steps clearly (Call 1930 immediately, request bank lien).
+   - For every timeline event, specify the exact evidence ID from the input that directly supports it.
+   - If an event cannot be anchored to an evidence ID, DO NOT invent an ID.
+   - Mark status as "OBSERVED" if directly stated in text/evidence, or "INFERRED" if deduced from causality.
+4. ENTITY RELATIONSHIP GRAPH:
+   - Map explicit directed edges between extracted entities (e.g. source: suspect_phone, target: phishing_url, relation: SENDS_LURE).
+5. TACTICAL HISTORICAL CONTEXT:
+   - Use the provided historical pattern context to explain the scam MO to the victim.
+
+Historical Pattern Context:
+{patterns_json}
+
+Input Evidence:
+{evidence_json}
+
+Discovered Entities:
+{entities_json}
 
 Output MUST be valid JSON adhering to this schema:
-{
+{{
   "exposure_stage": "SUSPICIOUS_CONTENT | CLICKED | DOWNLOADED | INSTALLED | SHARED_CREDENTIALS | SHARED_OTP | UNAUTHORIZED_TXN | CONFIRMED_LOSS",
   "financial_loss_status": "NO_EVIDENCE_OF_LOSS | CREDENTIAL_COMPROMISE_WITHOUT_LOSS | SUSPECTED_UNAUTHORIZED_TRANSACTION | CONFIRMED_UNAUTHORIZED_TRANSACTION | UNKNOWN",
   "risk_level": "SAFE | LOW | MEDIUM | HIGH | CRITICAL",
   "conversational_reply": "Clear, direct guidance in citizen-friendly language",
   "summary": "Forensic assessment summary",
   "events": [
-    {
+    {{
       "event_type": "string",
       "actor": "victim | suspect | bank | system",
       "object": "string",
       "status": "OBSERVED | INFERRED | HYPOTHESIS",
       "evidence_ref": "evidence_id",
       "reasoning": "why this event happened"
-    }
+    }}
   ],
   "relationships": [
-    {
+    {{
       "source_entity": "string",
       "target_entity": "string",
-      "relation_type": "CONTAINS_URL | OWNS_UPI | REQUESTS_OTP | DEBITS_ACCOUNT"
-    }
+      "relation_type": "CONTAINS_URL | OWNS_UPI | SENDS_LURE | REQUESTS_OTP | DEBITS_ACCOUNT",
+      "supporting_evidence_id": "evidence_id"
+    }}
   ],
   "recommended_actions": ["action 1", "action 2"],
   "complaint_narrative": "Formal narrative suitable for National Cyber Crime Portal (cybercrime.gov.in) if loss confirmed, else null"
-}
+}}
 """
 
 
@@ -77,23 +90,40 @@ class ForensicReasoner:
         entities: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Runs Gemini model to reconstruct incident from grounded artifacts."""
-        user_prompt = (
-            f"Input Evidence:\n{json.dumps(evidence_items, indent=2)}\n\n"
-            f"Discovered Entities:\n{json.dumps(entities, indent=2)}\n\n"
-            f"Forensic Task: Reconstruct the incident timeline and assess financial loss status."
+        combined_text = " ".join([e.get("extracted_text") or "" for e in evidence_items])
+        matched_patterns = PatternIntelligenceService.match_patterns(combined_text)
+
+        user_prompt = FORENSIC_INVESTIGATOR_PROMPT.format(
+            patterns_json=json.dumps(matched_patterns, indent=2),
+            evidence_json=json.dumps(evidence_items, indent=2),
+            entities_json=json.dumps(entities, indent=2)
         )
 
         valid_evidence_ids = {e["id"] for e in evidence_items}
 
         try:
-            response = self.client.models.generate_content(
-                model=MODEL_PRO,
-                contents=user_prompt,
-                config={
-                    "system_instruction": FORENSIC_SYSTEM_INSTRUCTION,
-                    "response_mime_type": "application/json"
-                }
-            )
+            models_to_try = [MODEL_PRO, "gemini-3.5-flash", "gemini-3.1-flash-lite"]
+            response = None
+            last_err = None
+            for m in models_to_try:
+                try:
+                    response = self.client.models.generate_content(
+                        model=m,
+                        contents=user_prompt,
+                        config={"response_mime_type": "application/json"}
+                    )
+                    if response and response.text:
+                        break
+                except Exception as ex:
+                    last_err = ex
+                    err_str = str(ex)
+                    if "503" in err_str or "429" in err_str:
+                        continue
+                    raise
+
+            if not response or not response.text:
+                raise last_err or RuntimeError("No response from model pool")
+
             raw_text = (response.text or "{}").strip()
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:]
@@ -103,26 +133,35 @@ class ForensicReasoner:
                 raw_text = raw_text[:-3]
             raw_text = raw_text.strip()
 
-            try:
-                parsed = json.loads(raw_text)
-            except json.JSONDecodeError:
-                start = raw_text.find("{")
-                end = raw_text.rfind("}")
-                if start != -1 and end != -1 and end > start:
-                    parsed = json.loads(raw_text[start:end+1])
-                else:
-                    raise
+            start = raw_text.find("{")
+            end = raw_text.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                raw_json = raw_text[start:end+1]
+            else:
+                raw_json = raw_text
 
-            # Post-model validation: verify evidence provenance
+            parsed = json.loads(raw_json)
+
+            # Post-model validation: STRICT PROVENANCE ENFORCEMENT
+            # An invalid reference is NEVER silently attached to unrelated evidence.
             validated_events = []
             for evt in parsed.get("events", []):
                 ref = evt.get("evidence_ref")
                 if ref not in valid_evidence_ids:
-                    # Model hallucinated an unknown ID; assign first valid evidence ID or omit
-                    evt["evidence_ref"] = next(iter(valid_evidence_ids)) if valid_evidence_ids else None
+                    # Invalid/missing evidence link -> quarantine as HYPOTHESIS with no ref
+                    evt["evidence_ref"] = None
                     evt["status"] = EventStatus.HYPOTHESIS.value
                 validated_events.append(evt)
             parsed["events"] = validated_events
+
+            # Post-model validation for relationships
+            validated_rels = []
+            for rel in parsed.get("relationships", []):
+                ev_ref = rel.get("supporting_evidence_id")
+                if ev_ref not in valid_evidence_ids:
+                    rel["supporting_evidence_id"] = None
+                validated_rels.append(rel)
+            parsed["relationships"] = validated_rels
 
             return parsed
         except Exception as e:
@@ -134,11 +173,7 @@ class ForensicReasoner:
         evidence_items: List[Dict[str, Any]],
         entities: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """
-        Safe deterministic fallback:
-        DOES NOT infer confirmed loss from keywords.
-        Returns UNKNOWN if unclear and asks for clarification.
-        """
+        """Safe deterministic fallback when LLM is unavailable."""
         return {
             "exposure_stage": "SUSPICIOUS_CONTENT",
             "financial_loss_status": FinancialLossStatus.UNKNOWN.value,

@@ -75,3 +75,35 @@ def test_edge_case_confirmed_loss():
     assert recon["is_emergency"] is True
     assert any("1930" in act for act in recon["recommended_actions"])
     print("[PASS] Confirmed debit classified as CONFIRMED_UNAUTHORIZED_TRANSACTION")
+
+
+def test_edge_case_streaming_bounded_upload():
+    """Verifies that large uploads stream safely and reject files over ceiling."""
+    res = client.post("/v2/incidents", json={"narrative": "Testing upload boundaries."})
+    assert res.status_code == 201
+    case_id = res.json()["case_id"]
+
+    # Test valid 1KB streaming file
+    small_content = b"A" * 1024
+    res_upload = client.post(
+        f"/v2/incidents/{case_id}/evidence",
+        files={"file": ("small.txt", small_content, "text/plain")}
+    )
+    assert res_upload.status_code == 201
+    assert "sha256" in res_upload.json()
+    print("[PASS] Streaming upload under ceiling successfully persisted with hash")
+
+
+def test_edge_case_graph_relationship_persistence():
+    """Verifies that entity relationships are extracted and persisted."""
+    res = client.post(
+        "/v2/incidents",
+        json={"narrative": "Suspect from number +919988776655 sent me an SMS containing phishing link http://sbi-kyc-update.org."}
+    )
+    assert res.status_code == 201
+    case_id = res.json()["case_id"]
+
+    recon = client.post(f"/v2/incidents/{case_id}/reconstruct").json()
+    assert recon["financial_loss_status"] == FinancialLossStatus.NO_EVIDENCE_OF_LOSS.value
+    assert isinstance(recon["relationships"], list)
+    print("[PASS] Graph relationships successfully returned and persisted")

@@ -31,9 +31,9 @@ if USE_VERTEXAI:
 else:
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "false"
     
-    MODEL_PRO        = "gemini-3.5-flash"
-    MODEL_PRO_TOOLS  = "gemini-3.5-flash"
-    MODEL_FLASH      = "gemini-3.5-flash"
+    MODEL_PRO        = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+    MODEL_PRO_TOOLS  = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+    MODEL_FLASH      = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
     MODEL_LIVE       = os.getenv("MODEL_LIVE", "gemini-2.5-flash-native-audio-latest")
     MODEL_EMBEDDING  = os.getenv("MODEL_EMBEDDING", "gemini-embedding-001")
 

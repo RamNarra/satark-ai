@@ -1,7 +1,7 @@
 """
 SATARK v2 Incidents API Router.
 Authoritative implementation powered by PostgreSQL CasesRepository,
-Durable Storage, OCR/PDF/APK Normalizers, and Gemini Reasoner.
+Durable Storage, OCR/PDF/APK Normalizers, Gemini Reasoner, and Graph Persistence.
 """
 import uuid
 from typing import List, Optional, Dict, Any
@@ -9,7 +9,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 
 from db.cases_repo import CasesRepository
-from db.schema.models import ForensicCase, EvidenceItem, CaseTimelineEvent, FinancialLossStatus
+from db.schema.models import ForensicCase, EvidenceItem, CaseTimelineEvent, EntityRelationship, FinancialLossStatus
 from services.storage import EvidenceStorageService
 from services.normalizers import EvidenceParserService, extract_regex_entities
 from services.reasoner import ForensicReasoner
@@ -61,17 +61,30 @@ async def create_incident(req: CreateIncidentRequest):
 
 @router.post("/{case_id}/evidence", status_code=201)
 async def upload_evidence(case_id: str, file: UploadFile = File(...)):
-    """Uploads and normalizes raw evidence artifact with SHA-256 integrity into PostgreSQL."""
+    """Uploads and normalizes raw evidence artifact with streaming bounded storage."""
     case = cases_repo.get_case(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Incident case not found")
 
-    content = await file.read()
-    if len(content) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File exceeds 50MB ceiling")
-
     filename = file.filename or "artifact"
-    rel_path, sha, size = storage.store_bytes(case_id, filename, content)
+
+    # Async generator for streaming chunks
+    async def chunk_generator():
+        while chunk := await file.read(1024 * 1024):  # 1MB chunks
+            yield chunk
+
+    try:
+        rel_path, sha, size = await storage.store_stream(
+            case_id=case_id,
+            filename=filename,
+            stream=chunk_generator(),
+            max_bytes=50 * 1024 * 1024
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=413, detail=str(ve))
+
+    # Read bytes from disk to parse
+    content = storage.read_bytes(rel_path)
 
     # Classify MIME & parse text
     lower_name = filename.lower()
@@ -122,7 +135,7 @@ async def upload_evidence(case_id: str, file: UploadFile = File(...)):
 
 @router.post("/{case_id}/reconstruct")
 async def reconstruct_incident(case_id: str):
-    """Executes Gemini 3.8 Forensic Reasoner loop over PostgreSQL case evidence."""
+    """Executes Gemini 3.8 Forensic Reasoner loop and persists timeline + graph."""
     case = cases_repo.get_case(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Incident case not found")
@@ -163,13 +176,26 @@ async def reconstruct_incident(case_id: str):
             reasoning_trace=ed.get("reasoning")
         ))
 
+    # Convert relationship dicts to EntityRelationship dataclasses
+    relationships: List[EntityRelationship] = []
+    for rd in analysis.get("relationships", []):
+        relationships.append(EntityRelationship(
+            case_id=case_id,
+            source_entity_id=rd.get("source_entity", "unknown"),
+            target_entity_id=rd.get("target_entity", "unknown"),
+            relation_type=rd.get("relation_type", "RELATED_TO"),
+            supporting_evidence_id=rd.get("supporting_evidence_id")
+        ))
+
+    # Persist validated timeline and graph edges into database
     cases_repo.save_reconstruction(
         case_id=case_id,
         stage=stage,
         loss_status=loss_status,
         risk=risk,
         summary=summary,
-        events=timeline_events
+        events=timeline_events,
+        relationships=relationships
     )
 
     is_emergency = loss_status == FinancialLossStatus.CONFIRMED_UNAUTHORIZED_TRANSACTION.value
@@ -183,6 +209,7 @@ async def reconstruct_incident(case_id: str):
         "conversational_reply": analysis.get("conversational_reply"),
         "summary": summary,
         "events": analysis.get("events", []),
+        "relationships": analysis.get("relationships", []),
         "entities": ent_payloads,
         "recommended_actions": analysis.get("recommended_actions", []),
         "complaint_narrative": analysis.get("complaint_narrative")
