@@ -1,73 +1,18 @@
 {
   "hosting": {
     "public": "frontend",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "headers": [
-      {
-        "source": "**/*.html",
-        "headers": [
-          { "key": "X-Content-Type-Options", "value": "nosniff" },
-          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-        ]
-      }
-    ],
+    "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+    "headers": [{"source":"**/*.html","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"X-Frame-Options","value":"SAMEORIGIN"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]}],
     "rewrites": [
-      {
-        "source": "/api/**",
-        "run": {
-          "serviceId": "satark-ai",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/health",
-        "run": {
-          "serviceId": "satark-ai",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/auth/**",
-        "run": {
-          "serviceId": "satark-ai",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/workflow/**",
-        "run": {
-          "serviceId": "satark-ai",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/ui",
-        "run": {
-          "serviceId": "satark-ai",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/chat",
-        "destination": "/satark-ui-v2.html"
-      },
-      {
-        "source": "/ops",
-        "destination": "/index.html"
-      },
-      {
-        "source": "/",
-        "destination": "/satark-ui-v2.html"
-      },
-      {
-        "source": "**",
-        "destination": "/satark-ui-v2.html"
-      }
+      {"source":"/api/**","run":{"serviceId":"satark-ai","region":"us-central1"}},
+      {"source":"/health","run":{"serviceId":"satark-ai","region":"us-central1"}},
+      {"source":"/auth/**","run":{"serviceId":"satark-ai","region":"us-central1"}},
+      {"source":"/workflow/**","run":{"serviceId":"satark-ai","region":"us-central1"}},
+      {"source":"/ui","run":{"serviceId":"satark-ai","region":"us-central1"}},
+      {"source":"/chat","destination":"/satark-ui-v2.html"},
+      {"source":"/ops","destination":"/satark-ui-v2.html"},
+      {"source":"/","destination":"/satark-ui-v2.html"},
+      {"source":"**","destination":"/satark-ui-v2.html"}
     ]
   }
 }
