@@ -1,0 +1,7 @@
+{
+  "name": "satark-v2-web",
+  "private": true,
+  "version": "2.0.0",
+  "scripts": {"dev": "next dev", "build": "next build", "start": "next start"},
+  "dependencies": {"next": "^16.3.3", "react": "^19.2.0", "react-dom": "^19.2.0"}
+}
