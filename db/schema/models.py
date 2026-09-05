@@ -24,6 +24,39 @@ class EventStatus(str, Enum):
     HYPOTHESIS = "HYPOTHESIS"    # Plausible assumption requiring confirmation
 
 
+class ExposureStage(str, Enum):
+    SUSPICIOUS_CONTENT = "SUSPICIOUS_CONTENT"
+    CLICKED = "CLICKED"
+    OPENED = "OPENED"
+    DOWNLOADED = "DOWNLOADED"
+    INSTALLED = "INSTALLED"
+    SHARED_CREDENTIALS = "SHARED_CREDENTIALS"
+    SHARED_OTP = "SHARED_OTP"
+    UNAUTHORIZED_TXN = "UNAUTHORIZED_TXN"
+    CONFIRMED_LOSS = "CONFIRMED_LOSS"
+    ONGOING_COMPROMISE = "ONGOING_COMPROMISE"
+    UNASSESSED = "UNASSESSED"
+
+
+class RiskLevel(str, Enum):
+    SAFE = "SAFE"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+    UNKNOWN = "UNKNOWN"
+
+
+class RelationType(str, Enum):
+    CONTAINS_URL = "CONTAINS_URL"
+    OWNS_UPI = "OWNS_UPI"
+    SENDS_LURE = "SENDS_LURE"
+    REQUESTS_OTP = "REQUESTS_OTP"
+    DEBITS_ACCOUNT = "DEBITS_ACCOUNT"
+    PRECEDES = "PRECEDES"
+    RELATED_TO = "RELATED_TO"
+
+
 @dataclass
 class EvidenceItem:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))

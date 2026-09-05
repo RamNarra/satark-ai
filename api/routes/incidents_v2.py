@@ -150,6 +150,7 @@ async def reconstruct_incident(case_id: str):
     ]
     ent_payloads = [
         {
+            "id": ent.id,
             "type": ent.entity_type,
             "value": ent.normalized_value,
             "evidence_id": ent.first_seen_evidence_id
@@ -181,8 +182,8 @@ async def reconstruct_incident(case_id: str):
     for rd in analysis.get("relationships", []):
         relationships.append(EntityRelationship(
             case_id=case_id,
-            source_entity_id=rd.get("source_entity", "unknown"),
-            target_entity_id=rd.get("target_entity", "unknown"),
+            source_entity_id=rd.get("source_entity_id", "unknown"),
+            target_entity_id=rd.get("target_entity_id", "unknown"),
             relation_type=rd.get("relation_type", "RELATED_TO"),
             supporting_evidence_id=rd.get("supporting_evidence_id")
         ))
@@ -256,5 +257,5 @@ async def get_incident(case_id: str):
                 "evidence_refs": evt.evidence_refs
             } for evt in case.events
         ],
-        "created_at": case.created_at.isoformat()
+        "created_at": case.created_at.isoformat() if hasattr(case.created_at, "isoformat") else str(case.created_at)
     }

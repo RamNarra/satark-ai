@@ -25,10 +25,12 @@ class EvidenceStorageService:
         Streams chunks directly to disk/storage computing SHA-256 on the fly.
         Enforces max_bytes ceiling during streaming to prevent RAM exhaustion.
         """
+        import uuid
         case_dir = self.root / case_id
         case_dir.mkdir(parents=True, exist_ok=True)
         
-        tmp_path = case_dir / f"tmp_{filename}"
+        # Security fix: Completely isolate temporary path from untrusted filename
+        tmp_path = case_dir / f"tmp_upload_{uuid.uuid4().hex}.bin"
         sha_hasher = hashlib.sha256()
         total_size = 0
 
