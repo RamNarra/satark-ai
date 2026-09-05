@@ -140,6 +140,12 @@ async def reconstruct_incident(case_id: str):
     if not case:
         raise HTTPException(status_code=404, detail="Incident case not found")
 
+    from services.entity_resolver import EntityResolver
+    from services.policy_engine import PolicyEngine
+
+    # 1. Deterministic Entity Resolution across all case entities
+    resolved_entities, alias_map = EntityResolver.resolve_entities(case.entities)
+
     ev_payloads = [
         {
             "id": e.id,
@@ -154,13 +160,12 @@ async def reconstruct_incident(case_id: str):
             "type": ent.entity_type,
             "value": ent.normalized_value,
             "evidence_id": ent.first_seen_evidence_id
-        } for ent in case.entities
+        } for ent in resolved_entities
     ]
 
     analysis = reasoner.analyze_incident(ev_payloads, ent_payloads)
 
     stage = analysis.get("exposure_stage", "UNASSESSED")
-    loss_status = analysis.get("financial_loss_status", FinancialLossStatus.UNKNOWN.value)
     risk = analysis.get("risk_level", "UNKNOWN")
     summary = analysis.get("summary", "")
 
@@ -177,16 +182,31 @@ async def reconstruct_incident(case_id: str):
             reasoning_trace=ed.get("reasoning")
         ))
 
-    # Convert relationship dicts to EntityRelationship dataclasses
+    # Convert relationship dicts to EntityRelationship dataclasses using canonical entity IDs
     relationships: List[EntityRelationship] = []
     for rd in analysis.get("relationships", []):
-        relationships.append(EntityRelationship(
-            case_id=case_id,
-            source_entity_id=rd.get("source_entity_id", "unknown"),
-            target_entity_id=rd.get("target_entity_id", "unknown"),
-            relation_type=rd.get("relation_type", "RELATED_TO"),
-            supporting_evidence_id=rd.get("supporting_evidence_id")
-        ))
+        raw_src = rd.get("source_entity_id", "unknown")
+        raw_tgt = rd.get("target_entity_id", "unknown")
+        # Remap through alias_map if needed
+        src = alias_map.get(raw_src, raw_src)
+        tgt = alias_map.get(raw_tgt, raw_tgt)
+        if src != tgt:
+            relationships.append(EntityRelationship(
+                case_id=case_id,
+                source_entity_id=src,
+                target_entity_id=tgt,
+                relation_type=rd.get("relation_type", "RELATED_TO"),
+                supporting_evidence_id=rd.get("supporting_evidence_id")
+            ))
+
+    # 2. DETERMINISTIC POLICY VALIDATION: 'Gemini Proposes. SATARK Verifies.'
+    policy_eval = PolicyEngine.evaluate_loss(
+        evidence_items=ev_payloads,
+        events=timeline_events,
+        model_proposed_status=analysis.get("financial_loss_status", FinancialLossStatus.UNKNOWN.value)
+    )
+    loss_status = policy_eval["financial_loss_status"]
+    is_emergency = policy_eval["is_emergency"]
 
     # Persist validated timeline and graph edges into database
     cases_repo.save_reconstruction(
@@ -199,14 +219,13 @@ async def reconstruct_incident(case_id: str):
         relationships=relationships
     )
 
-    is_emergency = loss_status == FinancialLossStatus.CONFIRMED_UNAUTHORIZED_TRANSACTION.value
-
     return {
         "case_id": case.id,
         "exposure_stage": stage,
         "financial_loss_status": loss_status,
         "risk_level": risk,
         "is_emergency": is_emergency,
+        "policy_reasoning": policy_eval["policy_reasoning"],
         "conversational_reply": analysis.get("conversational_reply"),
         "summary": summary,
         "events": analysis.get("events", []),

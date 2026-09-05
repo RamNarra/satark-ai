@@ -157,3 +157,38 @@ def test_edge_case_graph_relationship_persistence():
     assert recon["financial_loss_status"] == FinancialLossStatus.NO_EVIDENCE_OF_LOSS.value
     assert isinstance(recon["relationships"], list)
     print("[PASS] Graph relationships successfully returned and validated against known entities")
+
+
+def test_edge_case_phone_entity_resolution():
+    """Verifies that varied phone formats (+91, 0, spaces) resolve to one canonical entity."""
+    from services.entity_resolver import EntityResolver
+    from db.schema.models import DiscoveredEntity
+
+    ent1 = DiscoveredEntity(entity_type="PHONE_NUMBER", entity_value="+91 98765 43210")
+    ent2 = DiscoveredEntity(entity_type="PHONE_NUMBER", entity_value="09876543210")
+    ent3 = DiscoveredEntity(entity_type="PHONE_NUMBER", entity_value="98765-43210")
+
+    clusters, alias_map = EntityResolver.resolve_entities([ent1, ent2, ent3])
+    assert len(clusters) == 1
+    assert clusters[0].normalized_value == "+919876543210"
+    assert alias_map[ent2.id] == clusters[0].id
+    assert alias_map[ent3.id] == clusters[0].id
+    print("[PASS] Phone entity resolution canonicalized multiple phone formats into single entity")
+
+
+def test_edge_case_policy_engine_override():
+    """Verifies that PolicyEngine overrides model hallucination when no debit exists."""
+    from services.policy_engine import PolicyEngine
+
+    fake_evidence = [{"extracted_text": "A scammer asked for money but I refused to pay anything."}]
+    fake_events = []
+
+    # Model hallucinates CONFIRMED loss, but evidence has no debit
+    policy_res = PolicyEngine.evaluate_loss(
+        evidence_items=fake_evidence,
+        events=fake_events,
+        model_proposed_status=FinancialLossStatus.CONFIRMED_UNAUTHORIZED_TRANSACTION.value
+    )
+    assert policy_res["financial_loss_status"] == FinancialLossStatus.NO_EVIDENCE_OF_LOSS.value
+    assert policy_res["is_emergency"] is False
+    print("[PASS] Deterministic PolicyEngine overrode hallucinated model status")
