@@ -1,12 +1,15 @@
-from __future__ import annotations
+try:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.sse import sse_client
+except ImportError:
+    ClientSession = None
+    StdioServerParameters = None
+    sse_client = None
 
 import json
 import os
 from dataclasses import dataclass
 from typing import Any, Iterable
-
-from mcp import ClientSession
-from mcp import StdioServerParameters
 
 try:
     from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
