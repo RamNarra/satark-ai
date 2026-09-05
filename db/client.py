@@ -26,7 +26,11 @@ def get_db_url() -> str:
         return url
 
     # Default to persistent local SQLite for testing if no Postgres credentials supplied
-    sqlite_path = os.getenv("SQLITE_PATH", "data/satark_forensic.db")
+    # On serverless (Vercel/AWS Lambda), only /tmp is writable
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        sqlite_path = os.getenv("SQLITE_PATH", "/tmp/satark_forensic.db")
+    else:
+        sqlite_path = os.getenv("SQLITE_PATH", "data/satark_forensic.db")
     os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
     return f"sqlite:///{sqlite_path}"
 

@@ -6,9 +6,14 @@ from functools import lru_cache
 import os
 import time
 
-from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
-from google.cloud.firestore_v1.base_query import FieldFilter
-from google.cloud.firestore_v1.vector import Vector
+try:
+    from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
+    from google.cloud.firestore_v1.base_query import FieldFilter
+    from google.cloud.firestore_v1.vector import Vector
+except Exception:
+    DistanceMeasure = None
+    FieldFilter = None
+    Vector = None
 
 from config import LOCATION, MODEL_EMBEDDING, PROJECT_ID, get_genai_client
 
@@ -444,7 +449,11 @@ def get_recent_cases(limit: int = 10) -> list[dict]:
         return []
     try:
         from google.cloud.firestore import Query
-        docs = db.collection(CASES).order_by("timestamp", direction=Query.DESCENDING).limit(limit).stream()
+        direction = Query.DESCENDING
+    except Exception:
+        direction = "DESCENDING"
+    try:
+        docs = db.collection(CASES).order_by("timestamp", direction=direction).limit(limit).stream()
         return [doc.to_dict() for doc in docs]
     except Exception as e:
         import logging

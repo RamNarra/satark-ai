@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from google.cloud.firestore_v1.base_query import FieldFilter
+try:
+    from google.cloud.firestore_v1.base_query import FieldFilter
+except Exception:
+    FieldFilter = None
 
 from db.client import get_db
 

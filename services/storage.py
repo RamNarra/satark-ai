@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Tuple, BinaryIO, AsyncIterator
 
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").lower()
-STORAGE_ROOT = Path(os.getenv("SATARK_STORAGE_ROOT", "data/evidence")).resolve()
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    DEFAULT_STORAGE_ROOT = "/tmp/satark_evidence"
+else:
+    DEFAULT_STORAGE_ROOT = "data/evidence"
+STORAGE_ROOT = Path(os.getenv("SATARK_STORAGE_ROOT", DEFAULT_STORAGE_ROOT)).resolve()
 
 
 class EvidenceStorageService:
